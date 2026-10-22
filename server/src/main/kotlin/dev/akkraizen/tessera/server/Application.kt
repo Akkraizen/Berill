@@ -1,6 +1,8 @@
 package dev.akkraizen.tessera.server
 
 import dev.akkraizen.tessera.protocol.SyncRequest
+import dev.akkraizen.tessera.server.tokens.TokenRepository
+import dev.akkraizen.tessera.server.tokens.runTokenCli
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application

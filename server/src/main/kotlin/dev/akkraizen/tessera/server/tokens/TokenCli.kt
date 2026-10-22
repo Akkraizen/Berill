@@ -1,5 +1,6 @@
-package dev.akkraizen.tessera.server
+package dev.akkraizen.tessera.server.tokens
 
+import dev.akkraizen.tessera.server.ServerDatabase
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,14 +24,14 @@ fun runTokenCli(args: List<String>): Int {
       val (info, token) = store.create(user, name)
       println(
         """
-                |Token for `${info.user}` (${info.name}), id ${info.id}:
-                |
-                |    $token
-                |
-                |Copy it now — the server stores only its hash and cannot show the token again.
-                |In the app: Settings → Sync → `Access token`.
-                |Revoke: token revoke ${info.id}
-                """
+        |Token for `${info.user}` (${info.name}), id ${info.id}:
+        |
+        |    $token
+        |
+        |Copy it now — the server stores only its hash and cannot show the token again.
+        |In the app: Settings → Sync → `Access token`.
+        |Revoke: token revoke ${info.id}
+        """
           .trimMargin(),
       )
       0

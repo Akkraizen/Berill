@@ -1,4 +1,4 @@
-package dev.akkraizen.tessera.server
+package dev.akkraizen.tessera.server.tokens
 
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.ResultRow
@@ -55,7 +55,10 @@ object TokenCodec {
   val USER = Regex("[A-Za-z0-9_.-]{1,64}")
 }
 
-class TokenRepository(private val db: Database, private val now: () -> Long = System::currentTimeMillis) {
+class TokenRepository(
+  private val db: Database,
+  private val now: () -> Long = System::currentTimeMillis
+) {
   private val touched = ConcurrentHashMap<String, Long>()
 
   fun create(user: String, name: String): Pair<TokenInfo, String> {

@@ -2,6 +2,7 @@ package dev.akkraizen.tessera.server
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import dev.akkraizen.tessera.server.tokens.Tokens
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -49,6 +50,7 @@ object ServerDatabase {
     connect(
       url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/tessera",
       user = System.getenv("DATABASE_USER") ?: "tessera",
-      password = System.getenv("DATABASE_PASSWORD") ?: throw IllegalStateException("No database password."),
+      password = System.getenv("DATABASE_PASSWORD")
+        ?: throw IllegalStateException("No database password."),
     )
 }

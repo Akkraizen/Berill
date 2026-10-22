@@ -1,5 +1,6 @@
 package dev.akkraizen.tessera.server
 
+import dev.akkraizen.tessera.server.tokens.TokenCodec
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
