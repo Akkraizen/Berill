@@ -31,7 +31,7 @@ data class TokenInfo(
   val name: String,
   val createdAt: Long,
   val lastUsedAt: Long?,
-  val revokedAt: Long?,
+  val revokedAt: Long?
 )
 
 object TokenCodec {
@@ -49,16 +49,12 @@ object TokenCodec {
       "%02x".format(it)
     }
 
-  fun newId(): String =
-    (1..8).map { ID_ALPHABET[random.nextInt(ID_ALPHABET.length)] }.joinToString("")
+  fun newId(): String = (1..8).map { ID_ALPHABET[random.nextInt(ID_ALPHABET.length)] }.joinToString("")
 
   val USER = Regex("[A-Za-z0-9_.-]{1,64}")
 }
 
-class TokenRepository(
-  private val db: Database,
-  private val now: () -> Long = System::currentTimeMillis
-) {
+class TokenRepository(private val db: Database, private val now: () -> Long = System::currentTimeMillis) {
   private val touched = ConcurrentHashMap<String, Long>()
 
   fun create(user: String, name: String): Pair<TokenInfo, String> {
@@ -142,7 +138,7 @@ class TokenRepository(
       name = row[Tokens.name],
       createdAt = row[Tokens.createdAt],
       lastUsedAt = row[Tokens.lastUsedAt],
-      revokedAt = row[Tokens.revokedAt],
+      revokedAt = row[Tokens.revokedAt]
     )
 
   private companion object {

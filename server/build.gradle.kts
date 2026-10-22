@@ -8,9 +8,15 @@ group = "dev.akkraizen.tessera"
 
 version = "1.0.0"
 
-application { mainClass = "dev.akkraizen.tessera.server.ApplicationKt" }
+application {
+  mainClass = "dev.akkraizen.tessera.server.ApplicationKt"
+}
 
-ktor { fatJar { archiveFileName.set("tessera-server.jar") } }
+ktor {
+  fatJar {
+    archiveFileName.set("tessera-server.jar")
+  }
+}
 
 dependencies {
   api(project(":protocol"))

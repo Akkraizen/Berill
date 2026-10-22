@@ -14,7 +14,9 @@ kotlin {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     minSdk = libs.versions.android.minSdk.get().toInt()
 
-    compilerOptions { jvmTarget = JvmTarget.JVM_11 }
+    compilerOptions {
+      jvmTarget = JvmTarget.JVM_11
+    }
     withHostTest {}
   }
 
@@ -23,6 +25,8 @@ kotlin {
       api(libs.kotlinx.serializationJson)
       implementation(libs.atomicfu)
     }
-    commonTest.dependencies { implementation(libs.kotlin.test) }
+    commonTest.dependencies {
+      implementation(libs.kotlin.test)
+    }
   }
 }

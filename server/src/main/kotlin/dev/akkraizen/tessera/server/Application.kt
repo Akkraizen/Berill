@@ -59,9 +59,7 @@ fun Application.module() {
   install(StatusPages) {
     exception<Throwable> { call, cause ->
       call.application.log.error("Request failed", cause)
-      call.respond(
-        HttpStatusCode.InternalServerError, mapOf("error" to (cause.message ?: "internal error"))
-      )
+      call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (cause.message ?: "internal error")))
     }
   }
   install(Authentication) {
@@ -99,4 +97,3 @@ private fun parseTokens(): Map<String, String> {
 
   return res
 }
-

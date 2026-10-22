@@ -8,17 +8,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MergeTest {
-  private fun rec(
-    vararg fields: Pair<String, Pair<Int, String>>,
-    deletedAt: String? = null,
-  ) =
-    SyncRecord(
-      collection = "habit_days",
-      id = "2026-10-19",
-      fields = JsonObject(fields.associate { (k, v) -> k to JsonPrimitive(v.first) }),
-      clocks = fields.associate { (k, v) -> k to v.second },
-      deletedAt = deletedAt,
-    )
+  private fun rec(vararg fields: Pair<String, Pair<Int, String>>, deletedAt: String? = null) = SyncRecord(
+    collection = "habit_days",
+    id = "2026-10-19",
+    fields = JsonObject(fields.associate { (k, v) -> k to JsonPrimitive(v.first) }),
+    clocks = fields.associate { (k, v) -> k to v.second },
+    deletedAt = deletedAt
+  )
 
   @Test
   fun differentFieldsFromTwoDevicesAreBothKept() {

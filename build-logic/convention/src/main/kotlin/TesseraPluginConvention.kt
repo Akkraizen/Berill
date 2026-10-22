@@ -10,8 +10,7 @@ import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
-private val AUTO_GROUPS =
-  listOf("org.jetbrains.kotlin", "org.jetbrains.compose", "androidx.compose")
+private val AUTO_GROUPS = listOf("org.jetbrains.kotlin", "org.jetbrains.compose", "androidx.compose")
 
 class TesseraPluginConvention : Plugin<Project> {
   override fun apply(project: Project) =
@@ -22,6 +21,7 @@ class TesseraPluginConvention : Plugin<Project> {
         apply("org.jetbrains.compose")
         apply("org.jetbrains.kotlin.plugin.compose")
         apply("org.jetbrains.kotlin.plugin.serialization")
+        apply("tessera.localization")
       }
       val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
       val pluginName = name.replace('-', '_')
@@ -44,28 +44,28 @@ class TesseraPluginConvention : Plugin<Project> {
       }
 
       val srcRoot = layout.projectDirectory.dir("src")
-      val verify =
-        tasks.register("verifyPluginSources", VerifyPluginSourcesTask::class.java) {
-          group = "verification"
-          description = "Verifies that the plugin only uses core-api"
-          srcDir.set(srcRoot)
-          this.pluginName.set(project.name)
-          sources.from(fileTree(srcRoot) { include("**/*.kt") })
-          sourceSetNames.set(
-            provider {
-              srcRoot.asFile
-                .listFiles()
-                .orEmpty()
-                .filter { it.isDirectory }
-                .joinToString(",") { it.name }
-            },
-          )
-          report.set(layout.buildDirectory.file("reports/plugin-isolation.txt"))
-        }
+      val verify = tasks.register("verifyPluginSources", VerifyPluginSourcesTask::class.java) {
+        group = "verification"
+        description = "Verifies that the plugin only uses core-api"
+        srcDir.set(srcRoot)
+        this.pluginName.set(project.name)
+        sources.from(fileTree(srcRoot) { include("**/*.kt") })
+        sourceSetNames.set(
+          provider {
+            srcRoot.asFile
+              .listFiles()
+              .orEmpty()
+              .filter { it.isDirectory }
+              .joinToString(",") { it.name }
+          }
+        )
+        report.set(layout.buildDirectory.file("reports/plugin-isolation.txt"))
+      }
       tasks
         .matching {
           it.name.startsWith("compile")
-            && it.name.contains("Kotlin")
+            &&
+            it.name.contains("Kotlin")
         }
         .configureEach { dependsOn(verify) }
 
@@ -81,7 +81,7 @@ class TesseraPluginConvention : Plugin<Project> {
         if (bad.isNotEmpty()) {
           throw GradleException(
             "Plugin `$name` can only depend on :core-api, but declared:\n" +
-              bad.joinToString("\n") { (c, d) -> "  • $c: ${d.group ?: ""}:${d.name}" },
+              bad.joinToString("\n") { (c, d) -> "  • $c: ${d.group ?: ""}:${d.name}" }
           )
         }
       }
@@ -89,8 +89,10 @@ class TesseraPluginConvention : Plugin<Project> {
 
   private fun isBadConfigurationName(name: String): Boolean =
     !name.contains("Test", ignoreCase = true)
-      && listOf("commonMain", "jvmMain", "androidMain")
+      &&
+      listOf("commonMain", "jvmMain", "androidMain")
         .any { name.startsWith(it) }
-      && listOf("Implementation", "Api", "CompileOnly", "RuntimeOnly")
+      &&
+      listOf("Implementation", "Api", "CompileOnly", "RuntimeOnly")
         .any { name.endsWith(it) }
 }

@@ -16,24 +16,21 @@ import org.gradle.api.tasks.TaskAction
 object PluginSourceRules {
   val allowedSourceSets = setOf("commonMain", "commonTest")
 
-  val forbidden: List<Pair<Regex, String>> =
-    listOf(
-      Regex("""\b(java|javax|android|sun|jdk)\.[a-z]""") to
-        "Java/Android platform APIs (files, network, processes, reflection)",
-      Regex(
-        """\bkotlin\.(io\.(path|File|readBytes|writeText)|concurrent|system|reflect\.(full|jvm))"""
-      ) to
-        "files, threads, process termination, or full Kotlin reflection",
-      Regex("""\b(io\.ktor|okhttp3|coil3)\.""") to
-        "network and image loading — use ctx.http and Cover instead",
-      Regex("""\bdev\.akkraizen\.tessera\.(core|protocol|sdk)\b""") to
-        "internal app modules — plugin can only access core-api",
-      Regex("""\bLocalUriHandler\b""") to
-        "opening links — use rememberOpenLink() from core-api",
-      Regex("""\bLocalClipboard(Manager)?\b""") to "clipboard access",
-      Regex("""\bnewSingleThreadContext\b|\bnewFixedThreadPoolContext\b""") to
-        "custom thread pools",
-    )
+  val forbidden: List<Pair<Regex, String>> = listOf(
+    Regex("""\b(java|javax|android|sun|jdk)\.[a-z]""") to
+      "Java/Android platform APIs (files, network, processes, reflection)",
+    Regex("""\bkotlin\.(io\.(path|File|readBytes|writeText)|concurrent|system|reflect\.(full|jvm))""") to
+      "files, threads, process termination, or full Kotlin reflection",
+    Regex("""\b(io\.ktor|okhttp3|coil3)\.""") to
+      "network and image loading — use ctx.http and Cover instead",
+    Regex("""\bdev\.akkraizen\.tessera\.(core|protocol|sdk)\b""") to
+      "internal app modules — plugin can only access core-api",
+    Regex("""\bLocalUriHandler\b""") to
+      "opening links — use rememberOpenLink() from core-api",
+    Regex("""\bLocalClipboard(Manager)?\b""") to "clipboard access",
+    Regex("""\bnewSingleThreadContext\b|\bnewFixedThreadPoolContext\b""") to
+      "custom thread pools"
+  )
 
   fun check(text: String): List<Pair<Int, String>> {
     val problems = mutableListOf<Pair<Int, String>>()
@@ -81,10 +78,9 @@ abstract class VerifyPluginSourcesTask : DefaultTask() {
   @TaskAction
   fun verify() {
     val problems = mutableListOf<String>()
-    val extra =
-      sourceSetNames.get().split(',').filter {
-        it.isNotBlank() && it !in PluginSourceRules.allowedSourceSets
-      }
+    val extra = sourceSetNames.get().split(',').filter {
+      it.isNotBlank() && it !in PluginSourceRules.allowedSourceSets
+    }
     if (extra.isNotEmpty()) {
       problems +=
         "src/${

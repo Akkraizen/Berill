@@ -32,7 +32,7 @@ fun runTokenCli(args: List<String>): Int {
         |In the app: Settings → Sync → `Access token`.
         |Revoke: token revoke ${info.id}
         """
-          .trimMargin(),
+          .trimMargin()
       )
       0
     }
@@ -51,8 +51,8 @@ fun runTokenCli(args: List<String>): Int {
               t.name,
               date(t.createdAt),
               t.lastUsedAt?.let(::date) ?: "—",
-              if (t.revokedAt != null) "revoked ${date(t.revokedAt)}" else "active",
-            ),
+              if (t.revokedAt != null) "revoked ${date(t.revokedAt)}" else "active"
+            )
           )
         }
       }
@@ -74,16 +74,12 @@ fun runTokenCli(args: List<String>): Int {
   }
 }
 
-private fun option(
-  args: List<String>,
-  name: String,
-): String? {
+private fun option(args: List<String>, name: String): String? {
   val i = args.indexOf(name)
   return if (i >= 0) args.getOrNull(i + 1) else null
 }
 
-private val dateFormat =
-  DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
+private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
 
 private fun date(millis: Long): String = dateFormat.format(Instant.ofEpochMilli(millis))
 
@@ -113,6 +109,6 @@ private fun printUsage() {
         |  token list [<user>]                    list tokens
         |  token revoke <id>                      revoke a token
         """
-      .trimMargin(),
+      .trimMargin()
   )
 }

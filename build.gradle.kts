@@ -1,5 +1,4 @@
 plugins {
-  id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
   alias(libs.plugins.androidApplication) apply false
   alias(libs.plugins.androidMultiplatformLibrary) apply false
   alias(libs.plugins.composeMultiplatform) apply false
@@ -11,7 +10,11 @@ plugins {
   alias(libs.plugins.sqldelight) apply false
 }
 
-allprojects { dependencyLocking { lockAllConfigurations() } }
+allprojects {
+  dependencyLocking {
+    lockAllConfigurations()
+  }
+}
 
 tasks.register("resolveAndLockAll") {
   group = "verification"
@@ -20,7 +23,11 @@ tasks.register("resolveAndLockAll") {
   notCompatibleWithConfigurationCache("iterates over configurations of all modules")
   doLast {
     allprojects.forEach { p ->
-      p.configurations.filter { it.isCanBeResolved }.forEach { c -> runCatching { c.resolve() } }
+      p.configurations
+        .filter { it.isCanBeResolved }
+        .forEach { c ->
+          runCatching { c.resolve() }
+        }
     }
   }
 }

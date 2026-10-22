@@ -23,30 +23,28 @@ class SyncRepository(private val db: Database) {
 
   fun sync(user: String, request: SyncRequest): SyncResponse =
     transaction(db) {
-      var rev =
-        Counters.selectAll()
-          .where { Counters.userId eq user }
-          .forUpdate()
-          .singleOrNull()
-          ?.get(Counters.rev)
-          ?: run {
-            Counters.insert {
-              it[userId] = user
-              it[Counters.rev] = 0L
-            }
-            0L
+      var rev = Counters.selectAll()
+        .where { Counters.userId eq user }
+        .forUpdate()
+        .singleOrNull()
+        ?.get(Counters.rev)
+        ?: run {
+          Counters.insert {
+            it[userId] = user
+            it[Counters.rev] = 0L
           }
+          0L
+        }
 
       for (change in request.changes) {
-        val existing =
-          Records.selectAll()
-            .where {
-              (Records.userId eq user) and
-                (Records.collection eq change.collection) and
-                (Records.recordId eq change.id)
-            }
-            .singleOrNull()
-            ?.let(::toRecord)
+        val existing = Records.selectAll()
+          .where {
+            (Records.userId eq user) and
+              (Records.collection eq change.collection) and
+              (Records.recordId eq change.id)
+          }
+          .singleOrNull()
+          ?.let(::toRecord)
         val merged = existing?.mergeWith(change) ?: change.copy(rev = 0)
         if (merged.sameContentAs(existing)) continue
         rev += 1
@@ -62,17 +60,16 @@ class SyncRepository(private val db: Database) {
       }
       Counters.update({ Counters.userId eq user }) { it[Counters.rev] = rev }
 
-      val page =
-        Records.selectAll()
-          .where { (Records.userId eq user) and (Records.rev greater request.since) }
-          .orderBy(Records.rev, SortOrder.ASC)
-          .limit(PAGE + 1)
-          .map(::toRecord)
+      val page = Records.selectAll()
+        .where { (Records.userId eq user) and (Records.rev greater request.since) }
+        .orderBy(Records.rev, SortOrder.ASC)
+        .limit(PAGE + 1)
+        .map(::toRecord)
       val records = page.take(PAGE)
       SyncResponse(
         records = records,
         cursor = records.lastOrNull()?.rev ?: maxOf(request.since, 0),
-        hasMore = page.size > PAGE,
+        hasMore = page.size > PAGE
       )
     }
 
@@ -83,7 +80,7 @@ class SyncRepository(private val db: Database) {
       fields = json.decodeFromString(JsonObject.serializer(), row[Records.realms]),
       clocks = json.decodeFromString(clocksSerializer, row[Records.clocks]),
       deletedAt = row[Records.deletedAt],
-      rev = row[Records.rev],
+      rev = row[Records.rev]
     )
 
   private companion object {

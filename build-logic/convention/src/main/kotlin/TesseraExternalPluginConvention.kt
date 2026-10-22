@@ -15,6 +15,7 @@ class TesseraExternalPluginConvention : Plugin<Project> {
       with(pluginManager) {
         apply("org.jetbrains.kotlin.multiplatform")
         apply("org.jetbrains.kotlin.plugin.serialization")
+        apply("tessera.localization")
       }
       extensions.configure<KotlinMultiplatformExtension> {
         jvm()
@@ -25,68 +26,67 @@ class TesseraExternalPluginConvention : Plugin<Project> {
       val outDir = layout.buildDirectory.dir("tessera")
       val dexDir = layout.buildDirectory.dir("tessera/dex")
       val sdk = androidSdkDir(rootDir)
-      val d8 =
-        sdk?.let {
-          newestVersionDir(File(it, "build-tools"))?.let { v -> File(v, "lib/d8.jar") }
-        }
-          ?.takeIf { it.isFile }
-      val androidJar =
-        sdk?.let {
-          newestVersionDir(File(it, "platforms"))?.let { p -> File(p, "android.jar") }
-        }
-          ?.takeIf { it.isFile }
+      val d8 = sdk?.let {
+        newestVersionDir(File(it, "build-tools"))?.let { v -> File(v, "lib/d8.jar") }
+      }
+        ?.takeIf { it.isFile }
+      val androidJar = sdk?.let {
+        newestVersionDir(File(it, "platforms"))?.let { p -> File(p, "android.jar") }
+      }
+        ?.takeIf { it.isFile }
 
-      val dex =
-        if (d8 != null && androidJar != null) {
-          val dependencies =
-            objects.fileCollection().from(configurations.named("jvmRuntimeClasspath"))
-          val pluginJar = objects.fileCollection().from(jvmJar)
-          tasks.register("dexTesseraPlugin", JavaExec::class.java) {
-            group = "tessera"
-            description = "Converts plugin classes into classes.dex for Android (d8)"
-            dependsOn(jvmJar)
-            inputs.files(pluginJar, dependencies)
-            outputs.dir(dexDir)
-            classpath(d8)
-            mainClass.set("com.android.tools.r8.D8")
-            argumentProviders.add(
-              CommandLineArgumentProvider {
-                dexDir.get().asFile.apply {
-                  deleteRecursively()
-                  mkdirs()
-                }
-                buildList {
-                  addAll(
-                    listOf(
-                      "--release",
-                      "--min-api",
-                      "26",
-                      "--output",
-                      dexDir.get().asFile.absolutePath
-                    )
+      val dex = if (d8 != null && androidJar != null) {
+        val dependencies = objects.fileCollection().from(configurations.named("jvmRuntimeClasspath"))
+        val pluginJar = objects.fileCollection().from(jvmJar)
+        tasks.register("dexTesseraPlugin", JavaExec::class.java) {
+          group = "tessera"
+          description = "Converts plugin classes into classes.dex for Android (d8)"
+          dependsOn(jvmJar)
+          inputs.files(pluginJar, dependencies)
+          outputs.dir(dexDir)
+          classpath(d8)
+          mainClass.set("com.android.tools.r8.D8")
+          argumentProviders.add(
+            CommandLineArgumentProvider {
+              dexDir.get().asFile.apply {
+                deleteRecursively()
+                mkdirs()
+              }
+              buildList {
+                addAll(
+                  listOf(
+                    "--release",
+                    "--min-api",
+                    "26",
+                    "--output",
+                    dexDir.get().asFile.absolutePath
                   )
-                  addAll(listOf("--lib", androidJar.absolutePath))
-                  dependencies.files
-                    .filter { it.exists() }
-                    .forEach { addAll(listOf("--classpath", it.absolutePath)) }
-                  add(pluginJar.singleFile.absolutePath)
-                }
-              },
-            )
-          }
-        } else {
-          logger.warn(
-            "Tessera: Android SDK (d8) not found — package `$name` will be Windows-only. Specify sdk.dir in local.properties."
+                )
+                addAll(listOf("--lib", androidJar.absolutePath))
+                dependencies.files
+                  .filter { it.exists() }
+                  .forEach { addAll(listOf("--classpath", it.absolutePath)) }
+                add(pluginJar.singleFile.absolutePath)
+              }
+            }
           )
-          null
         }
+      } else {
+        logger.warn(
+          "Tessera: Android SDK (d8) not found — package `$name` will be Windows-only. Specify sdk.dir in local.properties."
+        )
+        null
+      }
 
       tasks.register("packageTesseraPlugin", Zip::class.java) {
         group = "tessera"
         description = "Packages third-party plugin .tplugin"
         archiveFileName.set("${project.name}.tplugin")
         destinationDirectory.set(outDir)
-        from(jvmJar) { rename { "plugin.jar" } }
+
+        from(jvmJar) {
+          rename { "plugin.jar" }
+        }
         from(layout.projectDirectory.file("tessera-plugin.json"))
         if (dex != null) {
           dependsOn(dex)
@@ -98,10 +98,10 @@ class TesseraExternalPluginConvention : Plugin<Project> {
 
 private fun androidSdkDir(root: File): File? {
   val props = File(root, "local.properties")
-  val fromProps =
-    if (props.isFile)
-      Properties().apply { props.inputStream().use(::load) }.getProperty("sdk.dir")
-    else null
+  val fromProps = if (props.isFile)
+    Properties().apply { props.inputStream().use(::load) }.getProperty("sdk.dir")
+  else
+    null
   return listOfNotNull(fromProps, System.getenv("ANDROID_HOME"), System.getenv("ANDROID_SDK_ROOT"))
     .map(::File)
     .firstOrNull { it.isDirectory }
@@ -124,6 +124,6 @@ private fun newestVersionDir(dir: File): File? =
         { f ->
           f.name.filter { it.isDigit() || it == '.' }.split('.').getOrNull(2)?.toIntOrNull()
             ?: -1
-        },
-      ),
+        }
+      )
     )

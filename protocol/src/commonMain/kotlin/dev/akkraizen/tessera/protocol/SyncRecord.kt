@@ -11,7 +11,7 @@ data class SyncRecord(
   val fields: JsonObject = JsonObject(emptyMap()),
   val clocks: Map<String, String> = emptyMap(),
   val deletedAt: String? = null,
-  val rev: Long = 0,
+  val rev: Long = 0
 ) {
   val deleted: Boolean
     get() {
@@ -36,12 +36,8 @@ data class SyncRecord(
     for (key in (clocks.keys + other.clocks.keys)) {
       val mine = clocks[key]
       val theirs = other.clocks[key]
-      val takeTheirs = shouldTakeTheirs(
-        mine = mine,
-        theirs = theirs,
-        myField = fields[key],
-        theirField = other.fields[key],
-      )
+      val takeTheirs =
+        shouldTakeTheirs(mine = mine, theirs = theirs, myField = fields[key], theirField = other.fields[key])
 
       if (takeTheirs) {
         other.fields[key]?.let { mergedFields[key] = it }
@@ -59,7 +55,7 @@ data class SyncRecord(
       fields = JsonObject(mergedFields),
       clocks = mergedClocks,
       deletedAt = del,
-      rev = maxOf(rev, other.rev),
+      rev = maxOf(rev, other.rev)
     )
   }
 
@@ -67,7 +63,7 @@ data class SyncRecord(
     mine: String?,
     theirs: String?,
     myField: JsonElement?,
-    theirField: JsonElement?,
+    theirField: JsonElement?
   ): Boolean {
     if (theirs == null)
       return false
@@ -76,8 +72,12 @@ data class SyncRecord(
       return true
 
     return theirs > mine
-      || (theirs == mine
-        && (theirField?.toString().orEmpty() > myField?.toString().orEmpty()))
+      ||
+      (
+        theirs == mine
+          &&
+          (theirField?.toString().orEmpty() > myField?.toString().orEmpty())
+      )
   }
 
   fun sameContentAs(other: SyncRecord?): Boolean =

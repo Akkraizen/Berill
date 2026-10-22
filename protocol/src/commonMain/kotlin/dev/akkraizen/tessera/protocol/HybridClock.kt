@@ -31,8 +31,11 @@ class HybridClock(private val node: String, private val wallClock: () -> Long) {
   }
 
   companion object {
-    fun encode(wall: Long, counter: Int, node: String): String =
-      wall.toString().padStart(15, '0') + "-" + counter.toString().padStart(5, '0') + "-" + node
+    fun encode(
+      wall: Long,
+      counter: Int,
+      node: String
+    ): String = wall.toString().padStart(15, '0') + "-" + counter.toString().padStart(5, '0') + "-" + node
 
     fun decode(stamp: String): Pair<Long, Int>? {
       val parts = stamp.split("-")

@@ -51,6 +51,6 @@ object ServerDatabase {
       url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:5432/tessera",
       user = System.getenv("DATABASE_USER") ?: "tessera",
       password = System.getenv("DATABASE_PASSWORD")
-        ?: throw IllegalStateException("No database password."),
+        ?: throw IllegalStateException("No database password.")
     )
 }
