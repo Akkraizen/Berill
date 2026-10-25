@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Berill · состояние</title>
+<style>
+  :root { --bg:#f6f8f1; --card:#fff; --fg:#1b1f17; --muted:#5d6457; --line:#dfe4d6; --ok:#2e7d32; --warn:#b26a00; --bad:#c62828; --accent:#3a6b35; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12140f; --card:#1c2018; --fg:#e3e8dc; --muted:#a1a998; --line:#30362a; --ok:#81c784; --warn:#ffb74d; --bad:#ef9a9a; --accent:#9ccc8f; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .muted { color:var(--muted); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:16px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .stat b { display:block; font-size:22px; }
+  form { display:flex; gap:8px; flex-wrap:wrap; }
+  input { flex:1 1 220px; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit; }
+  button { padding:10px 16px; border-radius:10px; border:0; background:var(--accent); color:var(--card); font:inherit; cursor:pointer; }
+  button.link { background:none; color:var(--muted); padding:0; text-decoration:underline; }
+  .device { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .device:first-child { border-top:0; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  .err { color:var(--bad); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Berill · состояние сервера</h1>
+  <div class="muted" id="sub">Введите токен синхронизации. Он хранится только в этом браузере.</div>
+
+  <div class="card" id="login">
+    <form id="form">
+      <input id="token" type="password" autocomplete="current-password" placeholder="Токен (tsr_…)">
+      <button type="submit">Показать</button>
+    </form>
+    <div class="err" id="error"></div>
+  </div>
+
+  <div id="view" hidden>
+    <div class="card stats" id="stats"></div>
+    <div class="card"><b>Устройства</b><div id="devices"></div></div>
+    <p><button class="link" id="logout">Забыть токен</button></p>
+  </div>
+</main>
+<script>
+  const KEY = 'berill.status.token';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const store = { get() { try { return localStorage.getItem(KEY); } catch { return null; } },
+                  set(v) { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch {} } };
+
+  function ago(ms) {
+    const s = Math.max(0, (Date.now() - ms) / 1000);
+    if (s < 90) return 'только что';
+    const m = s / 60; if (m < 90) return Math.round(m) + ' мин назад';
+    const h = m / 60; if (h < 36) return Math.round(h) + ' ч назад';
+    return Math.round(h / 24) + ' дн назад';
+  }
+  function freshness(ms) {
+    const h = (Date.now() - ms) / 3600000;
+    return h < 24 ? 'ok' : h < 72 ? 'warn' : 'bad';
+  }
+  const fmt = (ms) => new Date(ms).toLocaleString('ru-RU');
+
+  async function load(token) {
+    $('error').textContent = '';
+    const r = await fetch('/api/status', { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401) { store.set(null); throw new Error('Токен не подошёл'); }
+    if (!r.ok) throw new Error('Сервер ответил ' + r.status);
+    const s = await r.json();
+    $('sub').textContent = 'Сервер ' + s.serverVersion + ' · пользователь ' + s.user;
+    $('stats').innerHTML =
+      '<div class="stat"><b>' + s.records + '</b><span class="muted">записей</span></div>' +
+      '<div class="stat"><b>' + s.deleted + '</b><span class="muted">удалено (надгробия)</span></div>' +
+      '<div class="stat"><b>' + s.devices.length + '</b><span class="muted">устройств</span></div>';
+    $('devices').innerHTML = s.devices.length ? s.devices.map((d) =>
+      '<div class="device"><div><b>' + esc(d.name || d.deviceId) + '</b><div class="muted">' +
+      esc([d.platform, d.version && ('версия ' + d.version), 'id ' + d.deviceId].filter(Boolean).join(' · ')) +
+      '</div></div><div style="text-align:right"><span class="' + freshness(d.lastSync) + '">' + ago(d.lastSync) +
+      '</span><div class="muted">' + fmt(d.lastSync) + '</div></div></div>').join('')
+      : '<p class="muted">Устройства ещё не синхронизировались.</p>';
+    $('login').hidden = true;
+    $('view').hidden = false;
+  }
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const t = $('token').value.trim();
+    if (!t) return;
+    try { await load(t); store.set(t); } catch (err) { $('error').textContent = err.message; }
+  });
+  $('logout').addEventListener('click', () => { store.set(null); location.reload(); });
+  const saved = store.get();
+  if (saved) load(saved).catch((err) => { $('error').textContent = err.message; });
+</script>
+</body>
+</html>

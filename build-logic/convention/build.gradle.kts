@@ -9,13 +9,13 @@ dependencies {
 
 gradlePlugin {
   plugins {
-    register("tesseraPlugin") {
-      id = "tessera.plugin"
-      implementationClass = "TesseraPluginConvention"
+    register("berillPlugin") {
+      id = "berill.plugin"
+      implementationClass = "BerillPluginConvention"
     }
-    register("tesseraExternalPlugin") {
-      id = "tessera.external-plugin"
-      implementationClass = "TesseraExternalPluginConvention"
+    register("berillExternalPlugin") {
+      id = "berill.external-plugin"
+      implementationClass = "BerillExternalPluginConvention"
     }
   }
 }

@@ -1,0 +1,9 @@
+<resources>
+    <color name="startup_background">#F7FBF1</color>
+    <color name="startup_primary">#2E6B30</color>
+    <color name="startup_secondary">#52634F</color>
+    <color name="startup_tertiary">#39656B</color>
+    <color name="startup_primary_container">#B1F2A8</color>
+    <color name="startup_secondary_container">#D5E8CF</color>
+    <color name="startup_tertiary_container">#BCEBF1</color>
+</resources>

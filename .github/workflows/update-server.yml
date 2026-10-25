@@ -1,0 +1,54 @@
+name: Update server
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'update-server/**'
+      - 'protocol/**'
+      - 'deploy/**'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'version.properties'
+      - 'scripts/deploy/deploy-service.sh'
+      - '.github/actions/ssh/**'
+      - '.github/workflows/service.yml'
+      - '.github/workflows/update-server.yml'
+  pull_request:
+    paths:
+      - 'update-server/**'
+      - 'protocol/**'
+      - 'deploy/**'
+      - 'gradle/**'
+      - 'version.properties'
+      - '.github/workflows/service.yml'
+      - '.github/workflows/update-server.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Deploy an already published berill-updates tag (rollback), e.g. 1.0.0-d8fe57f. Empty: build the current commit.'
+        required: false
+        default: ''
+      deploy:
+        description: 'Deploy to the server after the build'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: update-server-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  updates:
+    uses: ./.github/workflows/service.yml
+    secrets: inherit
+    with:
+      service: updates
+      image: berill-updates
+      dockerfile: update-server/Dockerfile
+      image_tag: ${{ inputs.image_tag || '' }}
+      deploy: ${{ github.event_name == 'push' || inputs.deploy == true }}

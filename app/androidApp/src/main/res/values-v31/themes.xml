@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Berill.Launch" parent="Theme.Berill">
+        <item name="android:windowBackground">@drawable/startup_background</item>
+        <item name="android:windowDisablePreview">false</item>
+        <item name="android:windowSplashScreenBackground">@color/startup_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/startup_logo</item>
+    </style>
+</resources>

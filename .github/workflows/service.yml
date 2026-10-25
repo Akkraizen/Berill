@@ -1,0 +1,145 @@
+name: Service
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: 'Compose service: sync or updates'
+        type: string
+        required: true
+      image:
+        description: 'Image name without registry and owner, e.g. berill-sync'
+        type: string
+        required: true
+      dockerfile:
+        type: string
+        required: true
+      image_tag:
+        description: 'Deploy this existing tag instead of building'
+        type: string
+        default: ''
+      deploy:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    if: ${{ inputs.image_tag == '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Image name and tag
+        id: meta
+        env:
+          IMAGE_NAME: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          owner=${GITHUB_REPOSITORY_OWNER,,}
+          {
+            echo "image=ghcr.io/$owner/$IMAGE_NAME"
+            echo "version=$version"
+            echo "tag=$version-${GITHUB_SHA::7}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Build image (runs the module tests)
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          DOCKERFILE: ${{ inputs.dockerfile }}
+        run: |
+          docker build \
+            --file "$DOCKERFILE" \
+            --build-arg "VERSION=$VERSION" \
+            --build-arg "REVISION=$GITHUB_SHA" \
+            --build-arg "SOURCE=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --tag "$IMAGE:$TAG" \
+            .
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$TAG"
+          if [ "$GITHUB_REF_NAME" = "$DEFAULT_BRANCH" ]; then
+            for extra in "$VERSION" latest; do
+              docker tag "$IMAGE:$TAG" "$IMAGE:$extra"
+              docker push "$IMAGE:$extra"
+            done
+          fi
+          docker logout ghcr.io
+          echo "### Image \`$IMAGE:$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: image
+    if: >-
+      ${{ always()
+        && inputs.deploy
+        && github.event_name != 'pull_request'
+        && github.ref_name == github.event.repository.default_branch
+        && (needs.image.result == 'success' || (needs.image.result == 'skipped' && inputs.image_tag != '')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: ${{ inputs.service }}
+    permissions:
+      contents: read
+      packages: read
+    concurrency:
+      group: deploy-${{ inputs.service }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/ssh
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          user: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          port: ${{ vars.DEPLOY_PORT || '22' }}
+      - name: Deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SERVICE: ${{ inputs.service }}
+          IMAGE_NAME: ${{ inputs.image }}
+          TAG: ${{ inputs.image_tag || needs.image.outputs.tag }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/berill' }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/$IMAGE_NAME:$TAG"
+          ssh deploy "mkdir -p '$DEPLOY_PATH/backup'"
+          scp deploy/docker-compose.yml "deploy:$DEPLOY_PATH/docker-compose.yml"
+          scp deploy/backup/backup.sh "deploy:$DEPLOY_PATH/backup/backup.sh"
+          echo "$GH_TOKEN" | ssh deploy "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin" > /dev/null
+          status=0
+          ssh deploy "DEPLOY_PATH='$DEPLOY_PATH' bash -s -- '$SERVICE' '$image'" < scripts/deploy/deploy-service.sh || status=$?
+          ssh deploy "docker logout ghcr.io" > /dev/null || true
+          if [ "$status" -ne 0 ]; then exit "$status"; fi
+          echo "### Deployed $SERVICE: \`$image\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check public address
+        env:
+          URL: ${{ inputs.service == 'sync' && vars.SYNC_URL || vars.UPDATES_URL }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "Public address is not configured, skipping"
+            exit 0
+          fi
+          curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "$URL/health"

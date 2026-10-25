@@ -1,0 +1,49 @@
+{
+  "id": "counters",
+  "version": "1.0.0",
+  "name": {
+    "ru": "Счётчики",
+    "en": "Counters"
+  },
+  "description": {
+    "ru": "Пример стороннего плагина: счётчики чего угодно (стаканы воды, страницы, подходы)",
+    "en": "Sample third-party plugin: tally counters for anything"
+  },
+  "author": "Berill sample",
+  "entry": "com.example.berill.counters.CountersPlugin",
+  "icon": "timer",
+  "pages": [
+    {
+      "id": "counters",
+      "title": {
+        "ru": "Счётчики",
+        "en": "Counters"
+      },
+      "icon": "timer"
+    },
+    {
+      "id": "about",
+      "title": {
+        "ru": "О плагине",
+        "en": "About"
+      },
+      "icon": "info"
+    }
+  ],
+  "homeCards": [
+    {
+      "id": "total",
+      "title": {
+        "ru": "Счётчики",
+        "en": "Counters"
+      }
+    }
+  ],
+  "hasSettings": true,
+  "collections": [
+    "counters_items"
+  ],
+  "permissions": {
+    "network": []
+  }
+}

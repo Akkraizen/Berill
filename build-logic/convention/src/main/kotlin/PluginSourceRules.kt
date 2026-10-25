@@ -23,7 +23,7 @@ object PluginSourceRules {
       "files, threads, process termination, or full Kotlin reflection",
     Regex("""\b(io\.ktor|okhttp3|coil3)\.""") to
       "network and image loading — use ctx.http and Cover instead",
-    Regex("""\bdev\.akkraizen\.tessera\.(core|protocol|sdk)\b""") to
+    Regex("""\bdev\.akkraizen\.berill\.(core|protocol|sdk)\b""") to
       "internal app modules — plugin can only access core-api",
     Regex("""\bLocalUriHandler\b""") to
       "opening links — use rememberOpenLink() from core-api",

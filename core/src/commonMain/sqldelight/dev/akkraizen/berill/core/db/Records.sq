@@ -1,0 +1,49 @@
+CREATE TABLE record (
+    collection TEXT NOT NULL,
+    id TEXT NOT NULL,
+    fields TEXT NOT NULL,
+    clocks TEXT NOT NULL,
+    deleted_at TEXT,
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    dirty INTEGER NOT NULL DEFAULT 0,
+    version INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (collection, id)
+);
+
+CREATE INDEX record_dirty ON record(dirty);
+
+CREATE TABLE meta (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+selectByCollection:
+SELECT * FROM record WHERE collection = ? AND is_deleted = 0;
+
+selectOne:
+SELECT * FROM record WHERE collection = ? AND id = ?;
+
+selectAll:
+SELECT * FROM record;
+
+selectDirty:
+SELECT * FROM record WHERE dirty = 1;
+
+countAll:
+SELECT COUNT(*) FROM record;
+
+countByCollection:
+SELECT collection, COUNT(*) AS total FROM record WHERE is_deleted = 0 GROUP BY collection;
+
+upsert:
+INSERT OR REPLACE INTO record(collection, id, fields, clocks, deleted_at, is_deleted, dirty, version)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+markClean:
+UPDATE record SET dirty = 0 WHERE collection = ? AND id = ? AND version = ?;
+
+getMeta:
+SELECT value FROM meta WHERE key = ?;
+
+setMeta:
+INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?);

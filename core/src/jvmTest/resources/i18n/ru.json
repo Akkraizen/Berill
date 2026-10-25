@@ -1,0 +1,19 @@
+{
+  "locale": "ru",
+  "nativeName": "Русский",
+  "pluralRule": "russian",
+  "messages": {
+    "hello": "Привет",
+    "greet": "Привет, {name}!",
+    "weekdays": [
+      "Пн",
+      "Вт"
+    ],
+    "tasks": {
+      "one": "{n} задача",
+      "few": "{n} задачи",
+      "many": "{n} задач",
+      "other": "{n} задач"
+    }
+  }
+}

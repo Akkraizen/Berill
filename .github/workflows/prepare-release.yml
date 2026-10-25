@@ -1,0 +1,71 @@
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version MAJOR.MINOR.PATCH, e.g. 1.1.0. Equal to version.properties: tag it without a bump'
+        required: true
+      deploy_servers:
+        description: 'Also build and deploy the sync and update servers'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Bump version, commit and tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Version must be MAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$VERSION" > /dev/null; then
+            echo "::error::Tag v$VERSION already exists" >&2
+            exit 1
+          fi
+          current=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          code=$(sed -n 's/^versionCode=//p' version.properties | tr -d '\r')
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ "$current" = "$VERSION" ]; then
+            echo "Releasing the current version $VERSION (versionCode $code) without a bump"
+          elif [ "$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n1)" = "$VERSION" ]; then
+            code=$((code + 1))
+            printf 'versionName=%s\nversionCode=%s\n' "$VERSION" "$code" > version.properties
+            git commit -am "chore: release $VERSION"
+          else
+            echo "::error::$VERSION must not be lower than $current" >&2
+            exit 1
+          fi
+          git tag -a "v$VERSION" -m "Berill $VERSION"
+          git push origin "HEAD:$GITHUB_REF_NAME" "v$VERSION"
+          echo "### Tagged v$VERSION (versionCode $code)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Start builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          DEPLOY_SERVERS: ${{ inputs.deploy_servers }}
+        run: |
+          set -euo pipefail
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "v$VERSION"
+          if [ "$DEPLOY_SERVERS" = "true" ]; then
+            gh workflow run sync-server.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
+            gh workflow run update-server.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
+          fi

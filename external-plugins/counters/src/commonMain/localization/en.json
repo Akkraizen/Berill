@@ -1,0 +1,23 @@
+{
+  "locale": "en",
+  "nativeName": "English",
+  "pluralRule": "one-other",
+  "messages": {
+    "countersPlugin.about": "How it works",
+    "countersPlugin.about.2": "This is a **third-party plugin**: it runs in a separate process and sees only its own `counters_items` collection.\n\nAny attempt to open files, the network or other data fails — the app enforces this, not the plugin.",
+    "countersPlugin.details": "The counter was deleted",
+    "countersPlugin.details.2": "Title",
+    "countersPlugin.details.3": "Step",
+    "countersPlugin.details.4": "Reset",
+    "countersPlugin.details.5": "Counter reset",
+    "countersPlugin.details.6": "Delete",
+    "countersPlugin.homeCard": "Counters",
+    "countersPlugin.homeCard.2": "Total",
+    "countersPlugin.list": "New counter",
+    "countersPlugin.list.2": "Title",
+    "countersPlugin.list.3": "Add",
+    "countersPlugin.list.4": "No counters yet",
+    "countersPlugin.list.5": "Edit",
+    "countersPlugin.settings": "Show the total on Home"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "locale": "fr",
+  "nativeName": "Français",
+  "pluralRule": "zero-one-other",
+  "messages": {
+    "hello": "Bonjour",
+    "greet": "Bonjour, {name} !",
+    "frenchOnly": "Français",
+    "tasks": {
+      "one": "{n} tâche",
+      "other": "{n} tâches"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "locale": "fr-CA",
+  "nativeName": "Français canadien",
+  "pluralRule": "zero-one-other",
+  "messages": {
+    "hello": "Allô"
+  }
+}

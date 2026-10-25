@@ -1,4 +1,4 @@
-rootProject.name = "Tessera"
+rootProject.name = "Berill"
 
 pluginManagement {
   includeBuild("build-logic")
@@ -40,6 +40,7 @@ include(":core-api")
 include(":core")
 include(":plugin-sdk")
 include(":server")
+include(":update-server")
 include(":plugins:habits")
 include(":plugins:planner")
 include(":plugins:books")

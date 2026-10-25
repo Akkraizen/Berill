@@ -1,0 +1,52 @@
+name: SSH to deploy host
+description: Configures the "deploy" SSH host alias from deployment secrets.
+inputs:
+  host:
+    description: Server address
+    required: true
+  user:
+    description: SSH user
+    required: true
+  key:
+    description: Private SSH key
+    required: true
+  known-hosts:
+    description: Lines for known_hosts (ssh-keyscan output checked by you)
+    required: true
+  port:
+    description: SSH port
+    required: false
+    default: '22'
+runs:
+  using: composite
+  steps:
+    - name: Configure SSH
+      shell: bash
+      env:
+        HOST: ${{ inputs.host }}
+        USER_NAME: ${{ inputs.user }}
+        KEY: ${{ inputs.key }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+        PORT: ${{ inputs.port }}
+      run: |
+        set -euo pipefail
+        if [ -z "$HOST" ] || [ -z "$USER_NAME" ] || [ -z "$KEY" ] || [ -z "$KNOWN_HOSTS" ]; then
+          echo "::error::Set DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS in the deployment environment (sync or updates)." >&2
+          exit 1
+        fi
+        install -m 700 -d ~/.ssh
+        printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        cat > ~/.ssh/config <<CONFIG
+        Host deploy
+          HostName $HOST
+          User $USER_NAME
+          Port ${PORT:-22}
+          IdentityFile ~/.ssh/deploy_key
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          ServerAliveInterval 30
+        CONFIG
+        chmod 600 ~/.ssh/config

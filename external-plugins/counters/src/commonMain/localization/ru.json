@@ -1,0 +1,23 @@
+{
+  "locale": "ru",
+  "nativeName": "Русский",
+  "pluralRule": "russian",
+  "messages": {
+    "countersPlugin.about": "Как это устроено",
+    "countersPlugin.about.2": "Это **сторонний плагин**: он работает в отдельном процессе и видит только свою коллекцию `counters_items`.\n\nПопытка открыть файл, сеть или чужие данные завершится ошибкой — это проверяет приложение, а не плагин.",
+    "countersPlugin.details": "Счётчик удалён",
+    "countersPlugin.details.2": "Название",
+    "countersPlugin.details.3": "Шаг",
+    "countersPlugin.details.4": "Сбросить",
+    "countersPlugin.details.5": "Счётчик сброшен",
+    "countersPlugin.details.6": "Удалить",
+    "countersPlugin.homeCard": "Счётчиков",
+    "countersPlugin.homeCard.2": "Сумма",
+    "countersPlugin.list": "Новый счётчик",
+    "countersPlugin.list.2": "Название",
+    "countersPlugin.list.3": "Добавить",
+    "countersPlugin.list.4": "Счётчиков пока нет",
+    "countersPlugin.list.5": "Настроить",
+    "countersPlugin.settings": "Показывать сумму на главной"
+  }
+}

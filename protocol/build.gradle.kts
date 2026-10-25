@@ -10,7 +10,7 @@ kotlin {
   jvm()
 
   android {
-    namespace = "dev.akkraizen.tessera.protocol"
+    namespace = "dev.akkraizen.berill.protocol"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     minSdk = libs.versions.android.minSdk.get().toInt()
 

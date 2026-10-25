@@ -1,0 +1,72 @@
+name: Publish update
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Published release tag, e.g. v1.1.0'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-update
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: updates
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Download release files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag must look like v1.2.3, got $TAG" >&2
+            exit 1
+          fi
+          mkdir -p dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern "Berill-$version-android.apk" \
+            --pattern "Berill-$version-Setup.exe" \
+            --pattern SHA256SUMS.txt
+          (cd dist && sha256sum --check --ignore-missing SHA256SUMS.txt)
+          test -f "dist/Berill-$version-android.apk"
+          test -f "dist/Berill-$version-Setup.exe"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/ssh
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          user: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          port: ${{ vars.DEPLOY_PORT || '22' }}
+      - name: Upload to the update server
+        env:
+          VERSION: ${{ steps.files.outputs.version }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/berill' }}
+          KEEP: ${{ vars.RELEASES_KEEP || '3' }}
+        run: |
+          set -euo pipefail
+          ssh deploy "rm -rf '$DEPLOY_PATH/releases/.incoming' && mkdir -p '$DEPLOY_PATH/releases/.incoming'"
+          scp "dist/Berill-$VERSION-android.apk" "dist/Berill-$VERSION-Setup.exe" "deploy:$DEPLOY_PATH/releases/.incoming/"
+          ssh deploy "KEEP='$KEEP' bash -s -- '$DEPLOY_PATH/releases'" < scripts/deploy/publish-release.sh
+          echo "### Update $VERSION published" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check download
+        if: vars.UPDATES_URL != ''
+        env:
+          UPDATES_URL: ${{ vars.UPDATES_URL }}
+          VERSION: ${{ steps.files.outputs.version }}
+        run: curl -fsS -o /dev/null "$UPDATES_URL/download/Berill-$VERSION-android.apk"

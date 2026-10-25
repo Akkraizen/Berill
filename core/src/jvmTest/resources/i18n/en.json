@@ -1,0 +1,24 @@
+{
+  "locale": "en",
+  "nativeName": "English",
+  "pluralRule": "one-other",
+  "messages": {
+    "hello": "Hello",
+    "greet": "Hello, {name}!",
+    "braces": "{{name}}: {name}",
+    "empty": "",
+    "englishOnly": "English fallback",
+    "weekdays": [
+      "Mon",
+      "Tue"
+    ],
+    "tasks": {
+      "one": "{n} task",
+      "other": "{n} tasks"
+    },
+    "fallbackTasks": {
+      "one": "{n} item",
+      "other": "{n} items"
+    }
+  }
+}

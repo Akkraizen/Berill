@@ -1,0 +1,66 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-berill}
+      POSTGRES_USER: ${DATABASE_USER:-berill}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - berill-db:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sync:
+    image: ${SYNC_IMAGE:-berill-sync:local}
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/${DATABASE_NAME:-berill}
+      DATABASE_USER: ${DATABASE_USER:-berill}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      HUB_TOKENS: ${HUB_TOKENS:-}
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${SYNC_PORT:-8080}:8080"
+
+  updates:
+    image: ${UPDATES_IMAGE:-berill-updates:local}
+    build:
+      context: ..
+      dockerfile: update-server/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ${RELEASES_PATH:-./releases}:/app/releases:ro
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${UPDATES_PORT:-8081}:8080"
+
+  backup:
+    image: postgres:17
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: [ "/bin/sh", "/backup.sh" ]
+    environment:
+      PGHOST: db
+      PGDATABASE: ${DATABASE_NAME:-berill}
+      PGUSER: ${DATABASE_USER:-berill}
+      PGPASSWORD: ${DATABASE_PASSWORD}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_HOUR: ${BACKUP_HOUR:-3}
+      TZ: ${TZ:-Europe/Moscow}
+    volumes:
+      - ./backup/backup.sh:/backup.sh:ro
+      - ${BACKUP_PATH:-./backups}:/backups
+
+volumes:
+  berill-db:
+    name: ${DATABASE_VOLUME:-berill-db}

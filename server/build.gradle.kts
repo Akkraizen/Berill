@@ -1,20 +1,21 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.kotlinJvm)
   alias(libs.plugins.ktor)
   alias(libs.plugins.kotlinSerialization)
 }
 
-group = "dev.akkraizen.tessera"
-
-version = "1.0.0"
+group = "dev.akkraizen.berill"
 
 application {
-  mainClass = "dev.akkraizen.tessera.server.ApplicationKt"
+  mainClass = "dev.akkraizen.berill.server.ApplicationKt"
 }
 
 ktor {
   fatJar {
-    archiveFileName.set("tessera-server.jar")
+    archiveFileName.set("berill-server.jar")
   }
 }
 
@@ -34,4 +35,21 @@ dependencies {
   implementation(libs.hikari)
   testImplementation(libs.ktor.serverTestHost)
   testImplementation(libs.kotlin.testJunit)
+}
+
+val generateServerVersion = tasks.register("generateServerVersion") {
+  val versionFile = rootProject.file("version.properties")
+  val outDir = layout.buildDirectory.dir("generated/version-resource")
+  inputs.files(versionFile).optional()
+  outputs.dir(outDir)
+  doLast {
+    val props = Properties()
+    if (versionFile.isFile) versionFile.inputStream().use { props.load(it) }
+    val out = outDir.get().asFile
+    out.mkdirs()
+    File(out, "berill-server-version.txt").writeText(props.getProperty("versionName") ?: "dev")
+  }
+}
+sourceSets.main {
+  resources.srcDir(generateServerVersion)
 }
