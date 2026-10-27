@@ -15,8 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dev.akkraizen.berill.api.BerillPlugin
-import dev.akkraizen.berill.api.Deadline
-import dev.akkraizen.berill.api.DeadlineSource
 import dev.akkraizen.berill.api.HomeCard
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.all
@@ -24,13 +22,12 @@ import dev.akkraizen.berill.api.boolean
 import dev.akkraizen.berill.api.observeBoolean
 import dev.akkraizen.berill.api.set
 import dev.akkraizen.berill.api.ui.cards.SectionCard
-import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.today
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
+import dev.akkraizen.berill.plugins.planner.data.PlannerData
+import dev.akkraizen.berill.plugins.planner.data.SHOW_DEADLINES
+import dev.akkraizen.berill.plugins.planner.i18n.PlannerText
+import dev.akkraizen.berill.plugins.planner.ui.DayCard
+import dev.akkraizen.berill.plugins.planner.ui.PlannerScreen
 
 object PlannerPlugin : BerillPlugin {
   const val TASKS = "planner"
@@ -84,36 +81,4 @@ object PlannerPlugin : BerillPlugin {
         DayCard(data, today(), all, deadlines, compact = false, showHeader = false)
       }
     )
-}
-
-internal const val SHOW_DEADLINES = "showDeadlines"
-
-internal class PlannerData(val ctx: PluginContext) {
-  val tasks = ctx.data.collection(PlannerPlugin.TASKS, PlannerTask.serializer())
-  val weeks = ctx.data.collection(PlannerPlugin.WEEKS, WeekNotes.serializer())
-
-  fun addDayTask(date: String, text: String) {
-    if (text.isBlank()) return
-    tasks.save(ctx.data.newId(), PlannerTask(text = normalizeInput(text), date = date, order = nowMillis()))
-  }
-
-  fun edit(id: String, transform: (PlannerTask) -> PlannerTask) {
-    val current = tasks.get(id) ?: return
-    tasks.save(id, transform(current))
-  }
-
-  fun addGoal(week: String, text: String) {
-    if (text.isBlank()) return
-    tasks.save(ctx.data.newId(), PlannerTask(text = text.trim(), week = week, order = nowMillis()))
-  }
-
-  @OptIn(ExperimentalCoroutinesApi::class)
-  fun deadlines(): Flow<List<Deadline>> =
-    ctx.settings.observeBoolean(SHOW_DEADLINES, true).flatMapLatest { show ->
-      val sources = if (show) ctx.capabilities.all<DeadlineSource>() else emptyList()
-      if (sources.isEmpty())
-        flowOf(emptyList())
-      else
-        combine(sources.map { it.deadlines() }) { lists -> lists.flatMap { it } }
-    }
 }

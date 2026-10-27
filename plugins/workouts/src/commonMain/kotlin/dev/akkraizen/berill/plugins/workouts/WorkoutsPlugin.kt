@@ -1,7 +1,5 @@
 package dev.akkraizen.berill.plugins.workouts
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -9,26 +7,24 @@ import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.api.HomeCard
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.PluginPage
 import dev.akkraizen.berill.api.PluginPermissions
 import dev.akkraizen.berill.api.QuickAction
-import dev.akkraizen.berill.api.ui.cards.Stat
-import dev.akkraizen.berill.api.ui.cards.StatTiles
-import dev.akkraizen.berill.api.ui.dayMonth
-import dev.akkraizen.berill.api.ui.mondayOfWeek
-import dev.akkraizen.berill.api.ui.nowMillis
-import dev.akkraizen.berill.api.ui.toDateOrNull
-import dev.akkraizen.berill.api.ui.today
+import dev.akkraizen.berill.plugins.workouts.data.EXERCISE_DB_HOST
+import dev.akkraizen.berill.plugins.workouts.data.startWorkout
+import dev.akkraizen.berill.plugins.workouts.i18n.CatalogText
+import dev.akkraizen.berill.plugins.workouts.i18n.WorkoutsText
+import dev.akkraizen.berill.plugins.workouts.ui.CalculatorPage
+import dev.akkraizen.berill.plugins.workouts.ui.CatalogPage
+import dev.akkraizen.berill.plugins.workouts.ui.CyclePage
+import dev.akkraizen.berill.plugins.workouts.ui.JournalPage
+import dev.akkraizen.berill.plugins.workouts.ui.ProgramPage
+import dev.akkraizen.berill.plugins.workouts.ui.WorkoutsHomeCard
+import dev.akkraizen.berill.plugins.workouts.ui.WorkoutsSettings
 
 object WorkoutsPlugin : BerillPlugin {
   const val PROGRAMS = "workout_programs"
@@ -93,46 +89,4 @@ object WorkoutsPlugin : BerillPlugin {
         startWorkout(ctx, WorkoutsText.workoutTitle(), null, emptyList())
       }
     )
-}
-
-internal fun programs(ctx: PluginContext) = ctx.data.collection(WorkoutsPlugin.PROGRAMS, Program.serializer())
-
-internal fun cycles(ctx: PluginContext) = linkedCycles(ctx)
-
-internal fun logs(ctx: PluginContext) = ctx.data.collection(WorkoutsPlugin.LOGS, WorkoutLog.serializer())
-
-internal fun startWorkout(ctx: PluginContext, title: String, source: String?, exercises: List<LoggedExercise>) {
-  val id = ctx.data.newId()
-  logs(ctx)
-    .save(id, WorkoutLog(today().toString(), title, source, exercises, createdAt = nowMillis()))
-  ctx.nav.openPlugin(WorkoutsPlugin.id, WorkoutsPlugin.LOG_ROUTE + id, WorkoutsPlugin.PAGE_JOURNAL)
-}
-
-@Composable
-private fun WorkoutsHomeCard(ctx: PluginContext) {
-  val collection = remember(ctx) { logs(ctx) }
-  val all by remember(collection) { collection.observe() }.collectAsState(emptyList())
-  val monday = today().mondayOfWeek()
-  val thisWeek = all.count { log -> log.value.date.toDateOrNull()?.let { it >= monday } == true }
-  val last = all.maxByOrNull { it.value.date + it.value.createdAt.toString().padStart(15, '0') }?.value
-  StatTiles(
-    listOf(
-      Stat(WorkoutsText.thisWeek(), "$thisWeek", icon = Icons.Outlined.FitnessCenter),
-      Stat(
-        WorkoutsText.lastWorkout(),
-        last?.date?.toDateOrNull()?.dayMonth() ?: "—",
-        sub = last?.title,
-        icon = Icons.Outlined.EventNote
-      )
-    ),
-    minTileWidth = 140.dp
-  )
-  if (all.isEmpty())
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      Text(
-        WorkoutsText.noLogs(),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-      )
-    }
 }
