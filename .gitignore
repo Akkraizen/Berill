@@ -18,21 +18,18 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 
-# Deployment secrets and server data
 .env
 *.env
 !.env.example
 deploy/backups/
 deploy/releases/
 
-# Signing keys
 *.jks
 *.keystore
 *.p12
 *.pfx
 keystore.properties
 
-# Release outputs (Android Studio "Generate Signed App Bundle/APK", release scripts)
 app/androidApp/release/
 *.apk
 *.aab
@@ -41,10 +38,8 @@ app/androidApp/release/
 dist/
 SHA256SUMS.txt
 
-# Logs and JVM crash dumps
 *.log
 hs_err_pid*
 replay_pid*
 
-# Local backups
 .git.empty-backup/

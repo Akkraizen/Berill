@@ -109,8 +109,42 @@ jobs:
           $path = Join-Path $env:RUNNER_TEMP 'berill-release.jks'
           if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
 
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select a version tag when running this workflow manually.' }
+          ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME
+      - name: Build macOS app
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:desktopApp:test :app:desktopApp:packageReleaseDmg --no-configuration-cache --console=plain
+          version=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          mkdir -p dist
+          cp app/desktopApp/build/compose/binaries/main-release/dmg/*.dmg "dist/Berill-$version-macos.dmg"
+          (cd dist && shasum -a 256 "Berill-$version-macos.dmg" > SHA256SUMS-macos.txt)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-files
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
   draft:
-    needs: build
+    needs: [build, macos]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -124,9 +158,19 @@ jobs:
         with:
           name: release-files
           path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: macos-files
+          path: dist
       - name: Verify release checksums
         working-directory: dist
-        run: sha256sum --check SHA256SUMS.txt
+        run: |
+          set -euo pipefail
+          sha256sum --check SHA256SUMS.txt SHA256SUMS-macos.txt
+          cat SHA256SUMS.txt SHA256SUMS-macos.txt | sort -k 2 > SHA256SUMS.merged
+          mv SHA256SUMS.merged SHA256SUMS.txt
+          rm SHA256SUMS-macos.txt
+          sha256sum --check SHA256SUMS.txt
       - name: Create or update release draft
         env:
           GH_TOKEN: ${{ github.token }}

@@ -42,6 +42,8 @@ jobs:
             --pattern "Berill-$version-android.apk" \
             --pattern "Berill-$version-Setup.exe" \
             --pattern SHA256SUMS.txt
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern "Berill-$version-macos.dmg" || echo "No macOS build in $TAG"
           (cd dist && sha256sum --check --ignore-missing SHA256SUMS.txt)
           test -f "dist/Berill-$version-android.apk"
           test -f "dist/Berill-$version-Setup.exe"
@@ -61,7 +63,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh deploy "rm -rf '$DEPLOY_PATH/releases/.incoming' && mkdir -p '$DEPLOY_PATH/releases/.incoming'"
-          scp "dist/Berill-$VERSION-android.apk" "dist/Berill-$VERSION-Setup.exe" "deploy:$DEPLOY_PATH/releases/.incoming/"
+          files=("dist/Berill-$VERSION-android.apk" "dist/Berill-$VERSION-Setup.exe")
+          if [ -f "dist/Berill-$VERSION-macos.dmg" ]; then files+=("dist/Berill-$VERSION-macos.dmg"); fi
+          scp "${files[@]}" "deploy:$DEPLOY_PATH/releases/.incoming/"
           ssh deploy "KEEP='$KEEP' bash -s -- '$DEPLOY_PATH/releases'" < scripts/deploy/publish-release.sh
           echo "### Update $VERSION published" >> "$GITHUB_STEP_SUMMARY"
       - name: Check download

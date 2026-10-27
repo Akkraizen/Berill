@@ -1,0 +1,65 @@
+name: macOS
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'core-api/**'
+      - 'plugin-sdk/**'
+      - 'plugins/**'
+      - 'protocol/**'
+      - 'build-logic/**'
+      - 'gradle/**'
+      - 'scripts/macos/**'
+      - 'version.properties'
+      - '.github/workflows/macos.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'core-api/**'
+      - 'plugin-sdk/**'
+      - 'plugins/**'
+      - 'protocol/**'
+      - 'build-logic/**'
+      - 'gradle/**'
+      - '.github/workflows/macos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Test and build the macOS app
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:desktopApp:test :app:desktopApp:packageReleaseDmg --no-configuration-cache --console=plain
+          version=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          mkdir -p "$RUNNER_TEMP/macos"
+          cp app/desktopApp/build/compose/binaries/main-release/dmg/*.dmg "$RUNNER_TEMP/macos/Berill-$version-macos.dmg"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-dmg
+          path: ${{ runner.temp }}/macos/
+          if-no-files-found: error
+          retention-days: 14
