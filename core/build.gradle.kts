@@ -58,6 +58,9 @@ kotlin {
       implementation(libs.sqldelight.sqliteDriver)
       implementation(libs.jna)
     }
+    commonTest.dependencies {
+      implementation(libs.kotlin.test)
+    }
     jvmTest.dependencies {
       implementation(libs.kotlin.test)
     }

@@ -1,5 +1,6 @@
 package dev.akkraizen.berill.sdk.protocol
 
+import kotlin.jvm.JvmInline
 import kotlinx.serialization.Serializable
 
 @Serializable
