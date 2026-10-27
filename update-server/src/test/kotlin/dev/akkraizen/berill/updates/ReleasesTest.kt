@@ -14,6 +14,7 @@ class ReleasesTest {
       "Berill-1.2.0-android.apk",
       "Berill-1.10.0-android.apk",
       "Berill-1.10.0-Setup.exe",
+      "Berill-1.10.0-macos.dmg",
       "Berill-1.9.9-Setup.exe",
       "notes.txt"
     ).forEach { File(dir, it).writeText("x") }
@@ -23,17 +24,20 @@ class ReleasesTest {
     assertEquals("1.10.0", latest.version)
     assertEquals("/download/Berill-1.10.0-android.apk", latest.android)
     assertEquals("/download/Berill-1.10.0-Setup.exe", latest.windows)
+    assertEquals("/download/Berill-1.10.0-macos.dmg", latest.macos)
   }
 
   @Test
   fun refusesUnexpectedFileNames() {
     val dir = Files.createTempDirectory("releases").toFile()
     File(dir, "Berill-1.0.0-android.apk").writeText("x")
+    File(dir, "Berill-1.0.0-macos.dmg").writeText("x")
     val releases = Releases(dir)
 
     assertNull(releases.file("../secret"))
     assertNull(releases.file("notes.txt"))
     assertEquals("Berill-1.0.0-android.apk", releases.file("Berill-1.0.0-android.apk")?.name)
+    assertEquals("Berill-1.0.0-macos.dmg", releases.file("Berill-1.0.0-macos.dmg")?.name)
   }
 
   @Test

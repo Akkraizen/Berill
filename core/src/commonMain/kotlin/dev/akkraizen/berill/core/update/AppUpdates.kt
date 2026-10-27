@@ -64,7 +64,11 @@ class AppUpdates(private val store: LocalStore) {
         else -> {
           val latest: LatestRelease = response.body()
           if (compareVersions(latest.version, BuildInfo.VERSION_NAME) > 0) {
-            val path = if (clientPlatform == "android") latest.android else latest.windows
+            val path = when (clientPlatform) {
+              "android" -> latest.android
+              "macos" -> latest.macos
+              else -> latest.windows
+            }
             AppLog.info(TAG, "update available: ${latest.version}")
             UpdateCheck.Available(AppUpdate(latest.version, path?.let { "$url$it" }))
           } else {

@@ -22,7 +22,7 @@ compose.desktop {
     mainClass = "dev.akkraizen.berill.MainKt"
 
     nativeDistributions {
-      targetFormats(TargetFormat.Msi, TargetFormat.Exe)
+      targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Dmg)
       packageName = "Berill"
       packageVersion = rootProject.extra["appVersionName"] as String
       modules("java.sql", "java.naming", "jdk.unsupported", "jdk.crypto.ec")
@@ -33,6 +33,13 @@ compose.desktop {
         iconFile.set(rootProject.file("scripts/windows-installer/assets/Berill.ico"))
         menuGroup = "Berill"
         shortcut = true
+      }
+      macOS {
+        bundleID = "dev.akkraizen.berill"
+        dockName = "Berill"
+        appCategory = "public.app-category.productivity"
+        minimumSystemVersion = "12.0"
+        iconFile.set(rootProject.file("scripts/macos/Berill.icns"))
       }
     }
 

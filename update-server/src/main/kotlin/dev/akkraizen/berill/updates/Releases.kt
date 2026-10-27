@@ -14,7 +14,8 @@ class Releases(val directory: File) {
     return LatestRelease(
       version = version,
       android = names.firstOrNull { it.endsWith("-android.apk") }?.let { "/download/$it" },
-      windows = names.firstOrNull { it.endsWith("-Setup.exe") }?.let { "/download/$it" }
+      windows = names.firstOrNull { it.endsWith("-Setup.exe") }?.let { "/download/$it" },
+      macos = names.firstOrNull { it.endsWith("-macos.dmg") }?.let { "/download/$it" }
     )
   }
 
@@ -24,7 +25,7 @@ class Releases(val directory: File) {
   }
 
   companion object {
-    private val NAME = Regex("""Berill-(\d+(?:\.\d+){1,3})-(android\.apk|Setup\.exe)""")
+    private val NAME = Regex("""Berill-(\d+(?:\.\d+){1,3})-(android\.apk|Setup\.exe|macos\.dmg)""")
 
     fun fromEnv() = Releases(File(System.getenv("RELEASES_DIR") ?: "/app/releases"))
   }

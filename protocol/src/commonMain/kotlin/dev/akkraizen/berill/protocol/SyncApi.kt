@@ -26,7 +26,8 @@ data class SyncResponse(
 data class LatestRelease(
   val version: String,
   val android: String? = null,
-  val windows: String? = null
+  val windows: String? = null,
+  val macos: String? = null
 )
 
 @Serializable
