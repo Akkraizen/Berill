@@ -2,6 +2,7 @@ package dev.akkraizen.berill.updates
 
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import java.io.File
@@ -45,6 +46,38 @@ class UpdateRoutesTest {
     assertEquals("file:Berill-1.2.0-android.apk", ok.bodyAsText())
     assertEquals(HttpStatusCode.NotFound, client.get("/download/notes.txt").status)
     assertEquals(HttpStatusCode.NotFound, client.get("/download/..%2Fnotes.txt").status)
+  }
+
+  @Test
+  fun latestDownloadRedirectsToNewestFileOfPlatform() = testApplication {
+    application {
+      updatesModule(
+        releasesWith("Berill-1.1.0-Setup.exe", "Berill-1.2.0-Setup.exe", "Berill-1.2.0-macos.dmg", "Berill-1.2.0-android.apk")
+      )
+    }
+    val noRedirects = createClient { followRedirects = false }
+
+    val windows = noRedirects.get("/download/latest/windows")
+    assertEquals(HttpStatusCode.Found, windows.status)
+    assertEquals("/download/Berill-1.2.0-Setup.exe", windows.headers[HttpHeaders.Location])
+    assertEquals("/download/Berill-1.2.0-macos.dmg", noRedirects.get("/download/latest/macos").headers[HttpHeaders.Location])
+    assertEquals("/download/Berill-1.2.0-android.apk", noRedirects.get("/download/latest/android").headers[HttpHeaders.Location])
+    assertEquals(HttpStatusCode.NotFound, noRedirects.get("/download/latest/linux").status)
+  }
+
+  @Test
+  fun latestDownloadIsMissingWhenPlatformHasNoFile() = testApplication {
+    application { updatesModule(releasesWith("Berill-1.2.0-android.apk")) }
+    val noRedirects = createClient { followRedirects = false }
+
+    assertEquals(HttpStatusCode.NotFound, noRedirects.get("/download/latest/macos").status)
+  }
+
+  @Test
+  fun latestReleaseCanBeReadFromBrowsers() = testApplication {
+    application { updatesModule(releasesWith("Berill-1.2.0-android.apk")) }
+
+    assertEquals("*", client.get("/api/release").headers[HttpHeaders.AccessControlAllowOrigin])
   }
 
   @Test

@@ -48,7 +48,7 @@ how to operate the services afterwards. Building and publishing app versions is 
 | --- | --- | --- |
 | Desktop and Android apps | `app/`, `core/`, `core-api/`, `plugins/` | Clients. They work with a local SQLite database, synchronize through `sync`, and check `updates` for new versions. |
 | Sync server | `server/` | Ktor + PostgreSQL: `/api/sync`, `/api/status`, the `/status` page, `/health`, access tokens. |
-| Update server | `update-server/` | Separate Ktor application without a database: `/api/release` (latest version), `/download/<file>`, `/health`. No token required. |
+| Update server | `update-server/` | Separate Ktor application without a database: `/api/release` (latest version, readable from browsers), `/download/<file>`, `/download/latest/<windows\|macos\|android>` (redirect to the newest file, used by the landing page), `/health`. No token required. |
 | Protocol | `protocol/` | Shared request and response models, version comparison. |
 | Deployment | `deploy/` | `docker-compose.yml`, the `.env` template, the backup script, Gradle settings for Docker builds. |
 | Landing page | separate `berill.space` project | Static Vue + Vite site. |
