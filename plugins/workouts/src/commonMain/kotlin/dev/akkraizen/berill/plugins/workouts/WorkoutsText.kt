@@ -168,7 +168,6 @@ internal object WorkoutsText {
   val weekTonnage = pluginI18n.tr("workouts.weekTonnage")
   val workoutsStat = pluginI18n.tr("workouts.workoutsStat")
   val lastWorkout = pluginI18n.tr("workouts.lastWorkout")
-  val never = pluginI18n.tr("workouts.never")
 
   fun fromCycle(
     cycle: String,

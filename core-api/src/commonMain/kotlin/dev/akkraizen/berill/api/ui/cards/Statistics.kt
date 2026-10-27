@@ -9,9 +9,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,8 +39,8 @@ fun StatTiles(stats: List<Stat>, minTileWidth: Dp = 160.dp) {
     val cols = (maxWidth / minTileWidth).toInt().coerceIn(1, minOf(4, stats.size))
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
       stats.chunked(cols).forEach { row ->
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-          row.forEach { StatTile(it, Modifier.weight(1f)) }
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          row.forEach { StatTile(it, Modifier.weight(1f).fillMaxHeight()) }
           repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
         }
       }

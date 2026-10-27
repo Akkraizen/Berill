@@ -120,7 +120,7 @@ private fun WorkoutsHomeCard(ctx: PluginContext) {
       Stat(WorkoutsText.thisWeek(), "$thisWeek", icon = Icons.Outlined.FitnessCenter),
       Stat(
         WorkoutsText.lastWorkout(),
-        last?.date?.toDateOrNull()?.dayMonth() ?: WorkoutsText.never(),
+        last?.date?.toDateOrNull()?.dayMonth() ?: "—",
         sub = last?.title,
         icon = Icons.Outlined.EventNote
       )
