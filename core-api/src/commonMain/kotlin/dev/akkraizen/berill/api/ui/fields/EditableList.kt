@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.*
 import dev.akkraizen.berill.api.ui.interaction.BerillChip
@@ -66,7 +67,7 @@ fun EditableList(
     BerillTextField(
       text,
       { text = it },
-      placeholder = { Text(placeholder) },
+      placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       modifier = Modifier.weight(1f),
       onSubmit = ::add

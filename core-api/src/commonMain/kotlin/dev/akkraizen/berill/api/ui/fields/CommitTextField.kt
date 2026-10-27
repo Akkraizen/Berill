@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
@@ -75,7 +76,7 @@ fun CommitTextField(
     onValueChange = { state.text = it },
     label = { Text(label) },
     placeholder = if (placeholder != null) {
-      { Text(placeholder) }
+      { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) }
     } else
       null,
     singleLine = singleLine,

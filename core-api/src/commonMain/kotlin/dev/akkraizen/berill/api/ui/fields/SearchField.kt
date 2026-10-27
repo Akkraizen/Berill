@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import dev.akkraizen.berill.api.ui.*
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 
@@ -20,7 +21,7 @@ fun SearchField(
   BerillTextField(
     value,
     onChange,
-    placeholder = { Text(placeholder) },
+    placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     singleLine = true,
     shape = MaterialTheme.shapes.extraLarge,
     modifier = modifier.fillMaxWidth()

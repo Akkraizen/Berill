@@ -11,23 +11,23 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.akkraizen.berill.api.ui.animation.BerillMotion
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.color
@@ -37,11 +37,11 @@ fun StatTiles(stats: List<Stat>, minTileWidth: Dp = 160.dp) {
   if (stats.isEmpty()) return
   BoxWithConstraints(Modifier.fillMaxWidth()) {
     val cols = (maxWidth / minTileWidth).toInt().coerceIn(1, minOf(4, stats.size))
+    val showIcons = (maxWidth - 10.dp * (cols - 1)) / cols >= 150.dp
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
       stats.chunked(cols).forEach { row ->
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-          row.forEach { StatTile(it, Modifier.weight(1f).fillMaxHeight()) }
-          repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+          row.forEach { StatTile(it, Modifier.weight(1f).fillMaxHeight(), showIcon = showIcons) }
         }
       }
     }
@@ -49,7 +49,7 @@ fun StatTiles(stats: List<Stat>, minTileWidth: Dp = 160.dp) {
 }
 
 @Composable
-fun StatTile(stat: Stat, modifier: Modifier = Modifier) {
+fun StatTile(stat: Stat, modifier: Modifier = Modifier, showIcon: Boolean = true) {
   Surface(
     modifier,
     shape = MaterialTheme.shapes.large,
@@ -60,13 +60,13 @@ fun StatTile(stat: Stat, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        if (stat.icon != null)
+        if (showIcon && stat.icon != null)
           Ic(stat.icon, size = 16.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
           stat.label,
           style = MaterialTheme.typography.labelLarge,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
-          maxLines = 1,
+          maxLines = 2,
           overflow = TextOverflow.Ellipsis
         )
       }
@@ -86,11 +86,13 @@ fun StatTile(stat: Stat, modifier: Modifier = Modifier) {
         },
         label = "stat"
       ) { value ->
-        Text(
+        val style = MaterialTheme.typography.headlineSmall
+        BasicText(
           value,
-          style = MaterialTheme.typography.headlineSmall,
-          color = stat.tone.color(),
-          fontWeight = FontWeight.SemiBold
+          style = style.copy(color = stat.tone.color(), fontWeight = FontWeight.SemiBold),
+          maxLines = 1,
+          softWrap = false,
+          autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = style.fontSize, stepSize = 1.sp)
         )
       }
       if (stat.sub != null)

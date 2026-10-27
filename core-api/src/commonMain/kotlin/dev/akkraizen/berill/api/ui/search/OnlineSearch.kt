@@ -40,6 +40,7 @@ import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.color
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.layout.FieldWithActions
 import dev.akkraizen.berill.api.ui.media.Cover
 import dev.akkraizen.berill.api.ui.state.rememberDraft
 import kotlinx.coroutines.CancellationException
@@ -110,25 +111,29 @@ fun OnlineSearchPanel(
         }
       }
     ) {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillTextField(
-          query,
-          { query = it },
-          placeholder = { Text(placeholder) },
-          singleLine = true,
-          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-          modifier = Modifier.weight(1f),
-          onSubmit = ::runSearch
-        )
-        Button(onClick = ::runSearch, enabled = !loading && query.isNotBlank()) {
-          if (loading) {
-            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-          } else {
-            Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+      FieldWithActions(
+        field = {
+          BerillTextField(
+            query,
+            { query = it },
+            placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            modifier = Modifier.fillMaxWidth(),
+            onSubmit = ::runSearch
+          )
+        },
+        actions = {
+          Button(onClick = ::runSearch, enabled = !loading && query.isNotBlank()) {
+            if (loading) {
+              CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+              Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            Text(UiText.find(), modifier = Modifier.padding(start = 8.dp))
           }
-          Text(UiText.find(), modifier = Modifier.padding(start = 8.dp))
         }
-      }
+      )
       extra?.invoke()
       message?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
       BoxWithConstraints(Modifier.fillMaxWidth()) {
