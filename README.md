@@ -102,6 +102,7 @@ On Windows and macOS:
 | `app/androidApp`            | Android entry point and resources.                                                                    |
 | `app/desktopApp`            | Desktop entry point, window management, tray, and Windows and macOS integration.                      |
 | `server`                    | Ktor synchronization server backed by PostgreSQL and Exposed.                                         |
+| `mcp-server`                | MCP server that gives AI assistants access to Berill data as a separate sync device.                  |
 | `update-server`             | Ktor update server that serves the latest app version and its installers.                             |
 | `deploy`                    | Docker Compose stack, `.env` template, and backup script for production.                              |
 | `scripts`                   | Deployment, release, Windows installer, and dependency-lock scripts.                                  |
@@ -349,6 +350,7 @@ The build files define the current tool versions and platform configuration.
 | [docs/RELEASES.md](docs/RELEASES.md) | Versioning, Android signing, release workflow, publishing updates. |
 | [docs/EXTERNAL_PLUGINS.md](docs/EXTERNAL_PLUGINS.md) | Writing, packaging, and installing third-party plugins. |
 | [docs/MACOS.md](docs/MACOS.md) | Building, testing, and distributing the macOS app. |
+| [docs/MCP.md](docs/MCP.md) | Connecting Claude and other AI assistants through the MCP server. |
 | [scripts/windows-installer/README.md](scripts/windows-installer/README.md) | Building the Windows installer locally. |
 
 Website: [berill.space](https://berill.space). Downloads: [latest release](https://github.com/Akkraizen/Berill/releases/latest).

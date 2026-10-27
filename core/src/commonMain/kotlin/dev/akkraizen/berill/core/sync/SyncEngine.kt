@@ -273,9 +273,24 @@ class SyncEngine(
     record.collection == Collections.SETTINGS && record.id == SyncEncryption.RECORD_ID
 
   fun resetCursor() {
-    scope.launch {
-      mutex.withLock { store.setMeta(KEY_CURSOR, "0") }
-      syncNow()
+    scope.launch { syncFromStart() }
+  }
+
+  suspend fun syncFromStart() {
+    mutex.withLock {
+      store.setMeta(KEY_CURSOR, "0")
+      syncLocked()
+    }
+  }
+
+  suspend fun disconnect() {
+    mutex.withLock {
+      AppLog.info(TAG, "server disconnected")
+      store.setMeta(KEY_URL, "")
+      vault.write(VAULT_TOKEN, null)
+      store.setMeta(KEY_CURSOR, "0")
+      store.setMeta(KEY_DATASET, "")
+      _state.value = SyncState.NotConfigured
     }
   }
 
