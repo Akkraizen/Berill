@@ -39,6 +39,7 @@ import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import dev.akkraizen.berill.api.i18n.Tr
+import dev.akkraizen.berill.desktop.DesktopOs
 import dev.akkraizen.berill.desktop.ui.BerillIcon
 
 @Composable
@@ -57,7 +58,7 @@ fun FrameWindowScope.WindowTitleBar(title: String, state: WindowState, onClose: 
     Modifier.fillMaxWidth()
       .height(44.dp)
       .background(MaterialTheme.colorScheme.surface)
-      .padding(start = 12.dp, end = 6.dp),
+      .padding(start = if (DesktopOs.isMac) MAC_TRAFFIC_LIGHTS_WIDTH else 12.dp, end = 6.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
@@ -95,7 +96,7 @@ fun FrameWindowScope.WindowTitleBar(title: String, state: WindowState, onClose: 
           overflow = TextOverflow.Ellipsis
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+    if (!DesktopOs.isMac) Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
       CaptionButton(Icons.Outlined.Remove, Tr("windowChrome.WindowTitleBar")()) {
         state.isMinimized = true
       }
@@ -108,6 +109,8 @@ fun FrameWindowScope.WindowTitleBar(title: String, state: WindowState, onClose: 
     }
   }
 }
+
+private val MAC_TRAFFIC_LIGHTS_WIDTH = 78.dp
 
 @Composable
 private fun CaptionButton(icon: ImageVector, description: String, danger: Boolean = false, onClick: () -> Unit) {

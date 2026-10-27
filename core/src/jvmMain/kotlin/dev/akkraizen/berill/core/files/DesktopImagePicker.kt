@@ -237,7 +237,7 @@ internal fun DesktopImagePickerPanel(
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
       Text(
-        I18n.text("imagePicker.desktopHint"),
+        I18n.text("imagePicker.desktopHint", "shortcut" to pasteShortcutLabel),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )

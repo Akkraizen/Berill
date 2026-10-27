@@ -39,11 +39,23 @@ class ImagePickerTest {
     val press = KeyEvent.KEY_PRESSED
     val release = KeyEvent.KEY_RELEASED
     val v = KeyEvent.VK_V
-    assertTrue(isImagePasteKey(event(press, control, v)))
-    assertTrue(!isImagePasteKey(event(release, control, v)))
-    assertTrue(!isImagePasteKey(event(press, 0, v)))
-    assertTrue(!isImagePasteKey(event(press, control or alt, v)))
-    assertTrue(!isImagePasteKey(event(press, control, KeyEvent.VK_C)))
+    assertTrue(isImagePasteKey(event(press, control, v), mac = false))
+    assertTrue(!isImagePasteKey(event(release, control, v), mac = false))
+    assertTrue(!isImagePasteKey(event(press, 0, v), mac = false))
+    assertTrue(!isImagePasteKey(event(press, control or alt, v), mac = false))
+    assertTrue(!isImagePasteKey(event(press, control, KeyEvent.VK_C), mac = false))
+  }
+
+  @Test
+  fun recognizesCommandPasteOnMac() {
+    val component = Canvas()
+    fun event(id: Int, modifiers: Int, code: Int) =
+      KeyEvent(component, id, 0, modifiers, code, KeyEvent.CHAR_UNDEFINED)
+    val press = KeyEvent.KEY_PRESSED
+    val v = KeyEvent.VK_V
+    assertTrue(isImagePasteKey(event(press, InputEvent.META_DOWN_MASK, v), mac = true))
+    assertTrue(!isImagePasteKey(event(press, InputEvent.CTRL_DOWN_MASK, v), mac = true))
+    assertTrue(!isImagePasteKey(event(press, InputEvent.META_DOWN_MASK, v), mac = false))
   }
 
   @Test

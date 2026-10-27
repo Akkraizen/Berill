@@ -42,6 +42,12 @@ internal fun clipboardImageSources(contents: Transferable?): List<DesktopImageSo
 
 internal data class DesktopImagePreview(val source: DesktopImageSource, val bitmap: ImageBitmap)
 
-internal fun isImagePasteKey(event: KeyEvent): Boolean =
-  event.id == KeyEvent.KEY_PRESSED && event.isControlDown &&
-    !event.isAltDown && !event.isMetaDown && event.keyCode == KeyEvent.VK_V
+internal val isMacOs: Boolean = System.getProperty("os.name").orEmpty().startsWith("Mac")
+
+internal fun isImagePasteKey(event: KeyEvent, mac: Boolean = isMacOs): Boolean {
+  if (event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_V || event.isAltDown) return false
+  return if (mac) event.isMetaDown && !event.isControlDown else event.isControlDown && !event.isMetaDown
+}
+
+internal val pasteShortcutLabel: String
+  get() = if (isMacOs) "⌘V" else "Ctrl+V"

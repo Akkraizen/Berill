@@ -19,7 +19,10 @@ fun createDesktopCore(plugins: List<BerillPlugin>, desktop: DesktopIntegration? 
   val logs = File(dir, "logs")
   installFileLog(logs)
   AppLog.openLocation = { runCatching { Desktop.getDesktop().open(logs) } }
-  logStartup("Windows/JVM ${System.getProperty("java.version")}, data: ${dir.absolutePath}")
+  logStartup(
+    "${System.getProperty("os.name")} ${System.getProperty("os.version")}/JVM ${System.getProperty("java.version")}, " +
+      "data: ${dir.absolutePath}"
+  )
   val driver =
     JdbcSqliteDriver("jdbc:sqlite:${File(dir, "berill.db").absolutePath}", Properties(), BerillDatabase.Schema)
   return BerillCore(

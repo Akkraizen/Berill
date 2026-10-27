@@ -27,8 +27,11 @@ import dev.akkraizen.berill.core.files.DesktopImagePicker
 import dev.akkraizen.berill.core.ui.startup.BerillStartup
 import dev.akkraizen.berill.core.ui.theme.Appearance
 import dev.akkraizen.berill.desktop.windows.BACKGROUND_FLAG
+import dev.akkraizen.berill.core.platform.DesktopIntegration
+import dev.akkraizen.berill.desktop.DesktopOs
 import dev.akkraizen.berill.desktop.SingleInstance
-import dev.akkraizen.berill.desktop.windows.WindowsIntegration
+import dev.akkraizen.berill.desktop.createDesktopIntegration
+import dev.akkraizen.berill.desktop.macos.MacAppHandlers
 import dev.akkraizen.berill.desktop.ui.BerillIcon
 import dev.akkraizen.berill.desktop.ui.tray.BerillTray
 import dev.akkraizen.berill.desktop.ui.window.DesktopWindowEffects
@@ -46,9 +49,10 @@ fun main(args: Array<String>) {
   if (args.firstOrNull() == PLUGIN_RUNNER_FLAG)
     return runPluginRunner()
   val background = BACKGROUND_FLAG in args
+  if (DesktopOs.isMac) System.setProperty("apple.awt.application.appearance", "system")
   val dir = File(System.getProperty("user.home"), ".berill")
   val instance = SingleInstance.acquire(dir, notify = !background) ?: return
-  val desktop = WindowsIntegration(dir, onHotkey = instance::activate)
+  val desktop = createDesktopIntegration(dir, onHotkey = instance::activate)
   val preload =
     if (background) CoroutineScope(Dispatchers.IO).async { createDesktopCore(BerillPlugins, desktop) } else null
   app(instance, desktop, background, preload)
@@ -56,7 +60,7 @@ fun main(args: Array<String>) {
 
 private fun app(
   instance: SingleInstance,
-  desktop: WindowsIntegration,
+  desktop: DesktopIntegration,
   background: Boolean,
   preload: Deferred<BerillCore>?
 ) =
@@ -81,6 +85,7 @@ private fun app(
       state.isMinimized = false
       windowVisible = true
     }
+    if (DesktopOs.isMac) MacAppHandlers(onReopen = restoreWindow, onQuit = { persistentWindow.save() })
     val activations by instance.activations.collectAsState()
     LaunchedEffect(activations) {
       if (activations > 0)
@@ -98,7 +103,7 @@ private fun app(
       title = "Berill ${BuildInfo.VERSION_NAME}",
       icon = BerillIcon,
       state = state,
-      undecorated = true,
+      undecorated = !DesktopOs.isMac,
       onPreviewKeyEvent = { e ->
         when {
           e.type != KeyEventType.KeyDown -> false
@@ -127,7 +132,7 @@ private fun app(
           },
           overlay = { DesktopImagePicker.Content() }
         )
-        if (state.placement == WindowPlacement.Floating)
+        if (!DesktopOs.isMac && state.placement == WindowPlacement.Floating)
           WindowResizeEdges()
       }
     }

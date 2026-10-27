@@ -1,5 +1,6 @@
 package dev.akkraizen.berill.core.secure
 
+import dev.akkraizen.berill.core.log.AppLog
 import dev.akkraizen.berill.core.previousVaultEntropy
 import com.sun.jna.Memory
 import com.sun.jna.Native
@@ -13,7 +14,9 @@ import java.nio.file.attribute.PosixFilePermissions
 import java.util.Base64
 
 class DesktopVault(private val dir: File) : SecretVault {
-  private val windows = System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)
+  private val os = System.getProperty("os.name").orEmpty()
+  private val windows = os.startsWith("Windows", ignoreCase = true)
+  private val mac = os.startsWith("Mac", ignoreCase = true)
 
   init {
     dir.mkdirs()
@@ -29,6 +32,11 @@ class DesktopVault(private val dir: File) : SecretVault {
   }
 
   override fun read(name: String): String? {
+    if (mac) {
+      runCatching { MacKeychain.read(file(name).name) }
+        .onSuccess { stored -> if (stored != null) return stored }
+        .onFailure { AppLog.warn(TAG, "keychain read failed, using the file store", it) }
+    }
     val f = file(name)
     if (!f.isFile) return null
     val bytes = runCatching { Base64.getDecoder().decode(f.readText().trim()) }.getOrNull() ?: return null
@@ -37,6 +45,15 @@ class DesktopVault(private val dir: File) : SecretVault {
   }
 
   override fun write(name: String, value: String?) {
+    if (mac) {
+      val saved = runCatching { MacKeychain.write(file(name).name, value) }
+        .onFailure { AppLog.warn(TAG, "keychain write failed, using the file store", it) }
+        .isSuccess
+      if (saved) {
+        file(name).delete()
+        return
+      }
+    }
     val f = file(name)
     if (value.isNullOrEmpty()) {
       f.delete()
@@ -51,6 +68,8 @@ class DesktopVault(private val dir: File) : SecretVault {
       }
   }
 }
+
+private const val TAG = "vault"
 
 internal object Dpapi {
   @Structure.FieldOrder("cbData", "pbData")
