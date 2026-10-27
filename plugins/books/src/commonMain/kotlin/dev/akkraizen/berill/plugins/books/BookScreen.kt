@@ -29,6 +29,7 @@ import dev.akkraizen.berill.api.ui.fields.CommitTextField
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.fields.IntField
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.media.Cover
@@ -108,18 +109,16 @@ internal fun BookScreen(ctx: PluginContext, id: String) {
                 Modifier.weight(1f)
               )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FieldsRow {
               DateField(
                 b.started,
                 { v -> update { it.copy(started = v) } },
-                BooksText.started(),
-                Modifier.weight(1f)
+                BooksText.started()
               )
               DateField(
                 b.finished,
                 { v -> update { it.copy(finished = v) } },
-                BooksText.finished(),
-                Modifier.weight(1f)
+                BooksText.finished()
               )
             }
             CommitTextField(

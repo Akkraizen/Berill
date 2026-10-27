@@ -2,7 +2,7 @@ package dev.akkraizen.berill.core.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -56,7 +56,7 @@ internal fun SyncSettings(core: BerillCore) {
     visualTransformation = PasswordVisualTransformation(),
     modifier = Modifier.fillMaxWidth()
   )
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+  FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Button(onClick = { sync.configure(url, token) }) { Text(CoreText.save()) }
     FilledTonalButton(onClick = { scope.launch { sync.syncNow() } }) { Text(CoreText.syncNow()) }
   }

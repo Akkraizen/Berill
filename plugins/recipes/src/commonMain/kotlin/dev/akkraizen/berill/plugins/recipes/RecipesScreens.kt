@@ -51,6 +51,7 @@ import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldWithActions
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.media.Cover
@@ -84,22 +85,26 @@ internal fun RecipesGallery(ctx: PluginContext) {
 
   PluginList {
     item {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SearchField(query, { query = it }, RecipesText.searchPlaceholder(), Modifier.weight(1f))
-        BerillChip(
-          selected = favoritesOnly,
-          onClick = { favoritesOnly = !favoritesOnly },
-          label = { Text(RecipesText.favorites()) },
-          leadingIcon = {
-            Ic(if (favoritesOnly) BerillIcons.Star else BerillIcons.StarOutline, size = 18.dp)
+      FieldWithActions(
+        field = {
+          SearchField(query, { query = it }, RecipesText.searchPlaceholder())
+        },
+        actions = {
+          BerillChip(
+            selected = favoritesOnly,
+            onClick = { favoritesOnly = !favoritesOnly },
+            label = { Text(RecipesText.favorites()) },
+            leadingIcon = {
+              Ic(if (favoritesOnly) BerillIcons.Star else BerillIcons.StarOutline, size = 18.dp)
+            }
+          )
+          FilledTonalButton(onClick = { adding = true }) {
+            Ic(BerillIcons.Add, size = 18.dp)
+            Spacer(Modifier.width(8.dp))
+            Text(RecipesText.recipe())
           }
-        )
-        FilledTonalButton(onClick = { adding = true }) {
-          Ic(BerillIcons.Add, size = 18.dp)
-          Spacer(Modifier.width(8.dp))
-          Text(RecipesText.recipe())
         }
-      }
+      )
     }
     item {
       ChoiceChips(

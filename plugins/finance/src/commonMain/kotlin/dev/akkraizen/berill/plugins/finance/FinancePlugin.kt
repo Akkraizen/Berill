@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.api.HomeCard
@@ -79,7 +80,7 @@ private fun FinanceHomeCard(ctx: PluginContext) {
       Stat(FinanceText.expenses(), formatRub(s.expense), tone = Tone.Bad, icon = kindIcon(EXPENSE)),
       Stat(FinanceText.onAccounts(), formatRub(savings), tone = Tone.Info, icon = Icons.Outlined.AccountBalance)
     ),
-    minTileWidth = 100.dp
+    minTileWidth = 120.dp
   )
   var amount by rememberDraft("finance/quick/amount")
   val categories = rememberCategories(ctx)
@@ -95,7 +96,7 @@ private fun FinanceHomeCard(ctx: PluginContext) {
     BerillTextField(
       amount,
       { amount = it },
-      placeholder = { Text(FinanceText.quickExpense()) },
+      placeholder = { Text(FinanceText.quickExpense(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
       modifier = Modifier.weight(1f),

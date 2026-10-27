@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -159,7 +160,11 @@ internal fun HabitsStatsScreen(data: HabitsData) {
       return@PluginList
     }
     item {
-      Row(verticalAlignment = Alignment.CenterVertically) {
+      FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically
+      ) {
         Text(HabitsText.periodForPercent(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         ChoiceChips(PERIODS, period, { if (it == 365) HabitsText.year() else HabitsText.days(it)() }, { period = it })
       }

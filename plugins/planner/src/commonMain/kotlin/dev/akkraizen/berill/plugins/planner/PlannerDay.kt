@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Deadline
 import dev.akkraizen.berill.api.Item
@@ -124,7 +125,11 @@ internal fun DayCard(
           input,
           { input = it },
           placeholder = {
-            Text(if (compact) PlannerText.taskShort() else PlannerText.newTaskHint())
+            Text(
+              if (compact) PlannerText.taskShort() else PlannerText.newTaskHint(),
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
           },
           singleLine = true,
           modifier = Modifier.weight(1f),

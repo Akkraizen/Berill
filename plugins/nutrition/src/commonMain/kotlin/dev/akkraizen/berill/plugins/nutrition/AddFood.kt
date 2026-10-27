@@ -46,6 +46,7 @@ import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldWithActions
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.media.Cover
@@ -129,25 +130,29 @@ private fun SearchCard(ctx: PluginContext, onPick: (Product) -> Unit) {
   }
 
   SectionCard(NutritionText.searchTitle(), Icons.Outlined.Search) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      BerillTextField(
-        query,
-        { query = it },
-        placeholder = { Text(NutritionText.searchPlaceholder()) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        modifier = Modifier.weight(1f),
-        onSubmit = ::search
-      )
-      Button(onClick = ::search, enabled = !loading && query.isNotBlank()) {
-        if (loading) {
-          CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-        } else {
-          Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+    FieldWithActions(
+      field = {
+        BerillTextField(
+          query,
+          { query = it },
+          placeholder = { Text(NutritionText.searchPlaceholder(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          singleLine = true,
+          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+          modifier = Modifier.fillMaxWidth(),
+          onSubmit = ::search
+        )
+      },
+      actions = {
+        Button(onClick = ::search, enabled = !loading && query.isNotBlank()) {
+          if (loading) {
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+          } else {
+            Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+          }
+          Text(UiText.find(), modifier = Modifier.padding(start = 8.dp))
         }
-        Text(UiText.find(), modifier = Modifier.padding(start = 8.dp))
       }
-    }
+    )
     message?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     if (results.isNotEmpty()) {
       Text(
@@ -224,23 +229,27 @@ private fun BarcodeCard(ctx: PluginContext, onPick: (Product) -> Unit) {
   }
 
   SectionCard(NutritionText.barcodeTitle(), Icons.Outlined.QrCodeScanner) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      BerillTextField(
-        code,
-        { code = it.filter(Char::isDigit).take(14) },
-        label = { Text(NutritionText.barcode()) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Search),
-        modifier = Modifier.weight(1f),
-        onSubmit = ::search
-      )
-      FilledTonalButton(onClick = ::search, enabled = !loading && code.length >= 6) {
-        if (loading)
-          CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-        else
-          Text(UiText.find())
+    FieldWithActions(
+      field = {
+        BerillTextField(
+          code,
+          { code = it.filter(Char::isDigit).take(14) },
+          label = { Text(NutritionText.barcode()) },
+          singleLine = true,
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Search),
+          modifier = Modifier.fillMaxWidth(),
+          onSubmit = ::search
+        )
+      },
+      actions = {
+        FilledTonalButton(onClick = ::search, enabled = !loading && code.length >= 6) {
+          if (loading)
+            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+          else
+            Text(UiText.find())
+        }
       }
-    }
+    )
     message?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
   }
 }

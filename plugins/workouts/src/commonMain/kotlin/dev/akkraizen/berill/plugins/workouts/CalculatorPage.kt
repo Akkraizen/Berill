@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.cards.SectionCard
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
+import dev.akkraizen.berill.api.ui.layout.FieldWithActions
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.parseAmount
@@ -82,39 +84,43 @@ private fun OneRepMaxCard(ctx: PluginContext, prefs: WorkoutPrefs) {
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FieldsRow {
       BerillTextField(
         weight,
         { weight = it.take(7) },
         label = { Text(WorkoutsText.liftedWeight()) },
         singleLine = true,
         isError = weight.isNotBlank() && w == null,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier.fillMaxWidth()
       )
       BerillTextField(
         reps,
         { reps = it.filter(Char::isDigit).take(2) },
         label = { Text(WorkoutsText.liftedReps()) },
         singleLine = true,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier.fillMaxWidth()
       )
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      BerillTextField(
-        exercise,
-        { exercise = it },
-        label = { Text(WorkoutsText.exercise()) },
-        singleLine = true,
-        modifier = Modifier.weight(1f),
-        onSubmit = { if (exercise.isNotBlank() && max != null) setMax(ctx, exercise, roundTo(max, 0.5)) }
-      )
-      IconButton(onClick = { picking = true }) {
-        Icon(Icons.Outlined.MenuBook, contentDescription = CatalogText.addFromCatalog())
+    FieldWithActions(
+      field = {
+        BerillTextField(
+          exercise,
+          { exercise = it },
+          label = { Text(WorkoutsText.exercise()) },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth(),
+          onSubmit = { if (exercise.isNotBlank() && max != null) setMax(ctx, exercise, roundTo(max, 0.5)) }
+        )
+      },
+      actions = {
+        IconButton(onClick = { picking = true }) {
+          Icon(Icons.Outlined.MenuBook, contentDescription = CatalogText.addFromCatalog())
+        }
+        FilledTonalButton(enabled = exercise.isNotBlank() && max != null, onClick = { max?.let { setMax(ctx, exercise, roundTo(it, 0.5)) } }) {
+          Text(WorkoutsText.saveAsMax())
+        }
       }
-      FilledTonalButton(enabled = exercise.isNotBlank() && max != null, onClick = { max?.let { setMax(ctx, exercise, roundTo(it, 0.5)) } }) {
-        Text(WorkoutsText.saveAsMax())
-      }
-    }
+    )
     if (max != null) {
       Text(
         WorkoutsText.estimatedMax(formatKg(roundTo(max, 0.5)))(),
@@ -157,14 +163,14 @@ private fun PlatesCard(prefs: WorkoutPrefs) {
   val b = parseAmount(bar)
 
   SectionCard(WorkoutsText.plates(), Icons.Outlined.FitnessCenter) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FieldsRow {
       BerillTextField(
         target,
         { target = it.take(7) },
         label = { Text(WorkoutsText.targetWeight()) },
         singleLine = true,
         isError = target.isNotBlank() && t == null,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier.fillMaxWidth()
       )
       BerillTextField(
         bar,
@@ -172,7 +178,7 @@ private fun PlatesCard(prefs: WorkoutPrefs) {
         label = { Text(WorkoutsText.barWeight()) },
         singleLine = true,
         isError = bar.isNotBlank() && b == null,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier.fillMaxWidth()
       )
     }
     if (t != null && b != null) {

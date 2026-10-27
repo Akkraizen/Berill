@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.cards.SectionCard
@@ -307,11 +308,11 @@ private fun OverrideDialog(
         if (planned.durationSeconds != null) {
           BerillTextField(duration, { duration = it.take(8) },
             label = { Text(WorkoutsText.durationInput()) }, singleLine = true, isError = !validDuration,
-            placeholder = { Text(formatDuration(planned.durationSeconds)) })
+            placeholder = { Text(formatDuration(planned.durationSeconds), maxLines = 1, overflow = TextOverflow.Ellipsis) })
           if (planned.durationPerSet) {
             BerillTextField(sets, { sets = it.filter(Char::isDigit).take(2) },
               label = { Text(WorkoutsText.sets()) }, singleLine = true,
-              placeholder = { Text("${planned.sets}") })
+              placeholder = { Text("${planned.sets}", maxLines = 1, overflow = TextOverflow.Ellipsis) })
           }
         } else {
           BerillTextField(
@@ -319,14 +320,14 @@ private fun OverrideDialog(
             { sets = it.filter(Char::isDigit).take(2) },
             label = { Text(WorkoutsText.sets()) },
             singleLine = true,
-            placeholder = { Text("${planned.sets}") }
+            placeholder = { Text("${planned.sets}", maxLines = 1, overflow = TextOverflow.Ellipsis) }
           )
           BerillTextField(
             reps,
             { reps = it.take(12) },
             label = { Text(WorkoutsText.reps()) },
             singleLine = true,
-            placeholder = { Text(planned.reps) }
+            placeholder = { Text(planned.reps, maxLines = 1, overflow = TextOverflow.Ellipsis) }
           )
           ChoiceChips(
             listOf(false, true), byPercent,

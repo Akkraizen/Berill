@@ -112,7 +112,7 @@ internal fun HabitsScreen(data: HabitsData) {
       )
     }
     item {
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FilledTonalButton(onClick = { data.ctx.nav.open(HabitsPlugin.STATS) }) {
           Ic(Icons.Outlined.Insights, size = 18.dp)
           Spacer(Modifier.width(8.dp))

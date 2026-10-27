@@ -45,6 +45,8 @@ import dev.akkraizen.berill.api.ui.interaction.BerillChip
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.interactive
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldWithActions
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.KanbanBoard
 import dev.akkraizen.berill.api.ui.layout.KanbanColumn
 import dev.akkraizen.berill.api.ui.layout.PluginList
@@ -79,29 +81,30 @@ internal fun ProjectsBoard(ctx: PluginContext) {
 
   PluginList {
     item {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        BerillTextField(
-          idea,
-          {
-            idea = it
-            error = null
-          },
-          placeholder = { Text(ProjectsText.newIdea()) },
-          leadingIcon = { Ic(Icons.Outlined.Lightbulb) },
-          singleLine = true,
-          isError = error != null,
-          supportingText = if (error != null) {
-            { Text(error ?: "") }
-          } else
-            null,
-          modifier = Modifier.weight(1f),
-          onSubmit = { addIdea() }
-        )
-        Button(onClick = { addIdea() }) { Text(ProjectsText.add()) }
-      }
+      FieldWithActions(
+        field = {
+          BerillTextField(
+            idea,
+            {
+              idea = it
+              error = null
+            },
+            placeholder = { Text(ProjectsText.newIdea(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            leadingIcon = { Ic(Icons.Outlined.Lightbulb) },
+            singleLine = true,
+            isError = error != null,
+            supportingText = if (error != null) {
+              { Text(error ?: "") }
+            } else
+              null,
+            modifier = Modifier.fillMaxWidth(),
+            onSubmit = { addIdea() }
+          )
+        },
+        actions = {
+          Button(onClick = { addIdea() }) { Text(ProjectsText.add()) }
+        }
+      )
     }
     item {
       val byStatus = all.groupBy { it.value.normalizedStatus }
@@ -251,7 +254,7 @@ internal fun ProjectScreen(ctx: PluginContext, id: String) {
               BerillTextField(
                 newTask,
                 { newTask = it },
-                placeholder = { Text(ProjectsText.newTask()) },
+                placeholder = { Text(ProjectsText.newTask(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
                 onSubmit = { if (newTask.isNotBlank()) addTask() }
@@ -302,18 +305,16 @@ internal fun ProjectScreen(ctx: PluginContext, id: String) {
               { v -> update { it.copy(site = v.trim().ifEmpty { null }) } },
               ProjectsText.siteLabel()
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FieldsRow {
               DateField(
                 p.started,
                 { v -> update { it.copy(started = v) } },
-                ProjectsText.started(),
-                Modifier.weight(1f)
+                ProjectsText.started()
               )
               DateField(
                 p.finished,
                 { v -> update { it.copy(finished = v) } },
-                ProjectsText.finished(),
-                Modifier.weight(1f)
+                ProjectsText.finished()
               )
             }
           }

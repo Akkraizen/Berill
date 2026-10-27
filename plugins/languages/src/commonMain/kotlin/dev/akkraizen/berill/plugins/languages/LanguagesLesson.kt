@@ -1,14 +1,10 @@
 package dev.akkraizen.berill.plugins.languages
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.cards.SectionCard
 import dev.akkraizen.berill.api.ui.dialogs.DeleteButton
@@ -17,6 +13,7 @@ import dev.akkraizen.berill.api.ui.fields.BodyEditor
 import dev.akkraizen.berill.api.ui.fields.CommitTextField
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 
 @Composable
@@ -47,18 +44,16 @@ internal fun LessonScreen(ctx: PluginContext, id: String) {
       }
     }
     item {
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      FieldsRow(weights = listOf(2f, 1f)) {
         CommitTextField(
           l.title,
           { v -> update { it.copy(title = v.trim()) } },
-          LanguagesText.name(),
-          Modifier.weight(2f)
+          LanguagesText.name()
         )
         DateField(
           l.date,
           { v -> update { it.copy(date = v) } },
-          LanguagesText.date(),
-          Modifier.weight(1f)
+          LanguagesText.date()
         )
       }
     }

@@ -1,6 +1,5 @@
 package dev.akkraizen.berill.plugins.study
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +40,7 @@ import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.feedback.color
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.plusDays
@@ -259,15 +259,15 @@ private fun NewTaskForm(
     { subject = it.takeIf { s -> s != NO_SUBJECT } },
     Modifier.fillMaxWidth()
   )
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    DropdownField(StudyText.type(), types, type, { it }, { type = it }, Modifier.weight(1f))
+  FieldsRow(minItemWidth = 170.dp) {
+    DropdownField(StudyText.type(), types, type, { it }, { type = it })
     BerillTextField(
       deadline,
       { deadline = it },
       label = { Text(StudyText.deadline()) },
       singleLine = true,
       isError = deadline.isNotBlank() && deadline.toDateOrNull() == null,
-      modifier = Modifier.weight(1f),
+      modifier = Modifier.fillMaxWidth(),
       onSubmit = { submit() }
     )
   }

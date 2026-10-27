@@ -44,6 +44,7 @@ import dev.akkraizen.berill.api.ui.feedback.ProgressLine
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.KanbanBoard
 import dev.akkraizen.berill.api.ui.layout.KanbanColumn
 import dev.akkraizen.berill.api.ui.layout.PluginList
@@ -251,14 +252,14 @@ private fun AddTitleDialog(initialMedia: String, onDismiss: () -> Unit, onAdd: (
           { status = it },
           icon = { ICONS[it] }
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FieldsRow {
           BerillTextField(
             year,
             { year = it.filter(Char::isDigit).take(4) },
             label = { Text(WatchingText.year()) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth()
           )
           if (media != MOVIE)
             BerillTextField(
@@ -267,7 +268,7 @@ private fun AddTitleDialog(initialMedia: String, onDismiss: () -> Unit, onAdd: (
               label = { Text(WatchingText.episodes()) },
               singleLine = true,
               keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-              modifier = Modifier.weight(1f)
+              modifier = Modifier.fillMaxWidth()
             )
         }
       }

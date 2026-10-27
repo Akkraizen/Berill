@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.ui.BerillIcons
 import dev.akkraizen.berill.api.ui.cards.SectionCard
@@ -44,7 +45,7 @@ internal fun GoalsCard(data: PlannerData, weekId: String, goals: List<Item<Plann
       BerillTextField(
         input,
         { input = it },
-        placeholder = { Text(PlannerText.weekGoal()) },
+        placeholder = { Text(PlannerText.weekGoal(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         modifier = Modifier.weight(1f),
         onSubmit = {

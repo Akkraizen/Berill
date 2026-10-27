@@ -31,6 +31,7 @@ import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.minusDays
 import dev.akkraizen.berill.api.ui.parseAmount
@@ -123,7 +124,7 @@ private fun WeighInCard(ctx: PluginContext) {
     value = ""
   }
   SectionCard(NutritionText.weighIn(), Icons.Outlined.MonitorWeight) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FieldsRow {
       BerillTextField(
         value,
         { value = it.take(6) },
@@ -131,10 +132,10 @@ private fun WeighInCard(ctx: PluginContext) {
         singleLine = true,
         isError = value.isNotBlank() && kg == null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.fillMaxWidth(),
         onSubmit = ::submit
       )
-      DateField(date ?: today().toString(), { date = it }, NutritionText.date(), Modifier.weight(1f))
+      DateField(date ?: today().toString(), { date = it }, NutritionText.date())
     }
     FilledTonalButton(onClick = ::submit, enabled = kg != null) { Text(NutritionText.save()) }
   }

@@ -27,6 +27,7 @@ import dev.akkraizen.berill.api.ui.fields.CommitTextField
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.fields.IntField
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.media.Cover
@@ -151,18 +152,16 @@ internal fun TitleScreen(ctx: PluginContext, id: String) {
               { v -> update { it.copy(genre = v.trim().ifEmpty { null }) } },
               WatchingText.genres()
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FieldsRow {
               DateField(
                 t.started,
                 { v -> update { it.copy(started = v) } },
-                WatchingText.started(),
-                Modifier.weight(1f)
+                WatchingText.started()
               )
               DateField(
                 t.finished,
                 { v -> update { it.copy(finished = v) } },
-                WatchingText.finished(),
-                Modifier.weight(1f)
+                WatchingText.finished()
               )
             }
             CommitTextField(

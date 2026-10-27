@@ -201,7 +201,7 @@ private fun ImagePickerDialog(
         BerillTextField(
           query,
           { query = it },
-          placeholder = { Text(CatalogText.imageSearchHint()) },
+          placeholder = { Text(CatalogText.imageSearchHint(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           leadingIcon = { Ic(Icons.Outlined.Search) },
           singleLine = true,
           modifier = Modifier.fillMaxWidth(),

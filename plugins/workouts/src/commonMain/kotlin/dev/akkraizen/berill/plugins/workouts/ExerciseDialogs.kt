@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.display.Ic
@@ -105,7 +106,7 @@ internal fun ExercisePickerDialog(ctx: PluginContext, onDismiss: () -> Unit, onP
         BerillTextField(
           query,
           { query = it },
-          placeholder = { Text(CatalogText.searchPlaceholder()) },
+          placeholder = { Text(CatalogText.searchPlaceholder(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           leadingIcon = { Ic(Icons.Outlined.Search) },
           singleLine = true,
           modifier = Modifier.fillMaxWidth(),

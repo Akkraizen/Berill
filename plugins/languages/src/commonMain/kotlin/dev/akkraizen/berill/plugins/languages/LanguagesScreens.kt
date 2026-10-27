@@ -93,7 +93,7 @@ internal fun LanguagesHome(ctx: PluginContext) {
       item {
         SectionCard(LanguagesText.title(), Icons.Outlined.Translate) {
           EmptyHint(LanguagesText.emptyLanguages())
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FilledTonalButton(onClick = { addingLanguage = true }) {
               Ic(BerillIcons.Add, size = 18.dp)
               Spacer(Modifier.width(8.dp))
@@ -289,7 +289,7 @@ private fun Trainer(
       }
     }
   ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
       OutlinedButton(onClick = { reverse = !reverse }) {
         Text(if (reverse) "RU" else lang.flag)
         Ic(BerillIcons.Forward, size = 16.dp, modifier = Modifier.padding(horizontal = 6.dp))

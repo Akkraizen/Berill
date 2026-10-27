@@ -35,6 +35,7 @@ import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.layout.FieldWithActions
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
@@ -101,24 +102,28 @@ private fun CatalogList(ctx: PluginContext) {
 
   PluginList {
     item {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillTextField(
-          query,
-          { query = it },
-          placeholder = { Text(CatalogText.searchPlaceholder()) },
-          leadingIcon = { Ic(Icons.Outlined.Search) },
-          singleLine = true,
-          modifier = Modifier.weight(1f),
-          onSubmit = {
-            found.singleOrNull()?.let { ctx.nav.open(WorkoutsPlugin.EXERCISE_ROUTE + it.id) }
+      FieldWithActions(
+        field = {
+          BerillTextField(
+            query,
+            { query = it },
+            placeholder = { Text(CatalogText.searchPlaceholder(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            leadingIcon = { Ic(Icons.Outlined.Search) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            onSubmit = {
+              found.singleOrNull()?.let { ctx.nav.open(WorkoutsPlugin.EXERCISE_ROUTE + it.id) }
+            }
+          )
+        },
+        actions = {
+          FilledTonalButton(onClick = { creating = true }) {
+            Ic(BerillIcons.Add, size = 18.dp)
+            Spacer(Modifier.width(6.dp))
+            Text(CatalogText.newExercise())
           }
-        )
-        FilledTonalButton(onClick = { creating = true }) {
-          Ic(BerillIcons.Add, size = 18.dp)
-          Spacer(Modifier.width(6.dp))
-          Text(CatalogText.newExercise())
         }
-      }
+      )
     }
     item {
       ChoiceChips(

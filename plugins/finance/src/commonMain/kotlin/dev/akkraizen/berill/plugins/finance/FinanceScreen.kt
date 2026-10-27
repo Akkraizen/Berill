@@ -1,7 +1,5 @@
 package dev.akkraizen.berill.plugins.finance
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -37,6 +35,7 @@ import dev.akkraizen.berill.api.ui.feedback.color
 import dev.akkraizen.berill.api.ui.fields.MonthSwitcher
 import dev.akkraizen.berill.api.ui.formatRub
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.parseAmount
@@ -220,7 +219,7 @@ private fun AddOperationForm(
       error = null
     }
   )
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+  FieldsRow {
     BerillTextField(
       amount,
       {
@@ -230,7 +229,7 @@ private fun AddOperationForm(
       label = { Text(FinanceText.amount()) },
       singleLine = true,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-      modifier = Modifier.weight(1f),
+      modifier = Modifier.fillMaxWidth(),
       onSubmit = { submit() }
     )
     BerillTextField(
@@ -239,7 +238,7 @@ private fun AddOperationForm(
       label = { Text(FinanceText.date()) },
       singleLine = true,
       isError = date.toDateOrNull() == null,
-      modifier = Modifier.weight(1f),
+      modifier = Modifier.fillMaxWidth(),
       onSubmit = { submit() }
     )
   }

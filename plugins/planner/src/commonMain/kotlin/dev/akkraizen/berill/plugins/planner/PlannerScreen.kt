@@ -73,33 +73,39 @@ internal fun PlannerScreen(ctx: PluginContext) {
 
   PluginList {
     item {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { weekOffset-- }) {
-          Icon(BerillIcons.Prev, contentDescription = PlannerText.previousWeek())
-        }
-        Column(
-          Modifier.interactive(bleed = 6.dp) {
-            weekOffset = 0
-            selectedIndex = now.weekdayIndex
+      FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          IconButton(onClick = { weekOffset-- }) {
+            Icon(BerillIcons.Prev, contentDescription = PlannerText.previousWeek())
           }
-        ) {
-          Text(
-            if (isCurrentWeek)
-              PlannerText.thisWeek()
-            else
-              PlannerText.weekNumber(monday.isoWeek().second)(),
-            style = MaterialTheme.typography.titleLarge
-          )
-          Text(
-            "${monday.dayMonthShort()} – ${days.last().dayMonthShort()}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+          Column(
+            Modifier.interactive(bleed = 6.dp) {
+              weekOffset = 0
+              selectedIndex = now.weekdayIndex
+            }
+          ) {
+            Text(
+              if (isCurrentWeek)
+                PlannerText.thisWeek()
+              else
+                PlannerText.weekNumber(monday.isoWeek().second)(),
+              style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+              "${monday.dayMonthShort()} – ${days.last().dayMonthShort()}",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+          IconButton(onClick = { weekOffset++ }) {
+            Icon(BerillIcons.Next, contentDescription = PlannerText.nextWeek())
+          }
         }
-        IconButton(onClick = { weekOffset++ }) {
-          Icon(BerillIcons.Next, contentDescription = PlannerText.nextWeek())
-        }
-        Box(Modifier.weight(1f))
         ChoiceChips(
           listOf(false, true),
           weekView,

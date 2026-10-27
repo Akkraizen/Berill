@@ -23,6 +23,7 @@ import dev.akkraizen.berill.api.ui.fields.BodyEditor
 import dev.akkraizen.berill.api.ui.fields.CommitTextField
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
@@ -107,18 +108,16 @@ internal fun TaskScreen(ctx: PluginContext, id: String) {
               { v -> update { it.copy(type = v) } },
               Modifier.fillMaxWidth()
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FieldsRow {
               DateField(
                 t.deadline,
                 { v -> update { it.copy(deadline = v) } },
-                StudyText.deadline(),
-                Modifier.weight(1f)
+                StudyText.deadline()
               )
               CommitTextField(
                 t.grade ?: "",
                 { v -> update { it.copy(grade = v.trim().ifEmpty { null }) } },
-                StudyText.gradeLabel(),
-                Modifier.weight(1f)
+                StudyText.gradeLabel()
               )
             }
           }

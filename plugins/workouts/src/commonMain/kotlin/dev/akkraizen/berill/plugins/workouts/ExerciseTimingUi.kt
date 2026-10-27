@@ -74,7 +74,7 @@ internal fun DurationField(
     label = { Text(label) },
     leadingIcon = { Ic(if (allowZero) Icons.Outlined.SelfImprovement else Icons.Outlined.Timer) },
     textStyle = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
-    isError = !valid(state.text), placeholder = { Text("0:45") }, singleLine = true,
+    isError = !valid(state.text), placeholder = { Text("0:45", maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true,
     shape = MaterialTheme.shapes.medium
   )
 }

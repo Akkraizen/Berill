@@ -61,7 +61,7 @@ internal fun NotesList(core: BerillCore, openedId: String?) {
         BerillTextField(
           query,
           { query = it },
-          placeholder = { Text(CoreText.search()) },
+          placeholder = { Text(CoreText.search(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           shape = MaterialTheme.shapes.extraLarge,
           modifier = Modifier.fillMaxWidth()

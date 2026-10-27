@@ -2,6 +2,7 @@ package dev.akkraizen.berill.plugins.workouts
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ import dev.akkraizen.berill.api.ui.fields.BodyEditor
 import dev.akkraizen.berill.api.ui.fields.CommitTextField
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.FieldsRow
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.rememberTimerSignal
@@ -129,13 +131,12 @@ internal fun WorkoutScreen(ctx: PluginContext, id: String) {
     }
     item {
       SectionCard {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-          CommitTextField(w.title, { v -> update { it.copy(title = v) } }, WorkoutsText.name(), Modifier.weight(2f))
+        FieldsRow(weights = listOf(2f, 1f)) {
+          CommitTextField(w.title, { v -> update { it.copy(title = v) } }, WorkoutsText.name())
           DateField(
             w.date,
             { v -> if (v != null) update { it.copy(date = v) } },
-            WorkoutsText.date(),
-            Modifier.weight(1f)
+            WorkoutsText.date()
           )
         }
         Text(
@@ -207,7 +208,7 @@ internal fun WorkoutScreen(ctx: PluginContext, id: String) {
       }
     }
     item {
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(
           onClick = {
             update {
