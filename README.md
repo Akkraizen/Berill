@@ -1,7 +1,7 @@
 # Berill
 
-Berill is a local-first personal workspace for **Android and Windows**. It brings notes, planning,
-habits, personal collections, workouts, and nutrition into one application, with optional
+Berill is a local-first personal workspace for **Android, Windows, and macOS**. It brings notes,
+planning, habits, personal collections, workouts, and nutrition into one application, with optional
 synchronization through a self-hosted server.
 
 The clients share Kotlin Multiplatform business logic and a Compose Multiplatform interface.
@@ -74,12 +74,13 @@ missing. Editing a program does not rewrite workouts already recorded in the jou
 
 ## Platforms and desktop behavior
 
-The Android application requires **Android 8.0 / API 26 or newer**. The desktop client targets
-Windows.
+The Android application requires **Android 8.0 / API 26 or newer**. The desktop client runs on
+Windows and **macOS 12 or newer**; see [docs/MACOS.md](docs/MACOS.md) for what differs on macOS.
 
-On Windows:
+On Windows and macOS:
 
-- Closing the main window hides it in the system tray when tray support is available.
+- Closing the main window hides it in the system tray (the menu bar on macOS) when tray support is
+  available. On macOS, clicking the Dock icon brings the window back and ⌘Q quits.
 - The tray menu restores the application or exits it completely.
 - Window position, normal size, and maximized state are restored between launches.
 - Saved bounds are adjusted when a previously used monitor is unavailable.
@@ -99,7 +100,7 @@ On Windows:
 | `external-plugins/counters` | Example external plugin.                                                                              |
 | `app/shared`                | Composition root registering the built-in plugins.                                                    |
 | `app/androidApp`            | Android entry point and resources.                                                                    |
-| `app/desktopApp`            | Desktop entry point, window management, and tray components.                                          |
+| `app/desktopApp`            | Desktop entry point, window management, tray, and Windows and macOS integration.                      |
 | `server`                    | Ktor synchronization server backed by PostgreSQL and Exposed.                                         |
 | `update-server`             | Ktor update server that serves the latest app version and its installers.                             |
 | `deploy`                    | Docker Compose stack, `.env` template, and backup script for production.                              |
@@ -120,6 +121,7 @@ Use these tools for the configured build:
 | Gradle                    | Use the checked-in wrapper; no separate Gradle installation is needed.    |
 | Android SDK               | Platform 37.0 and Build Tools 37.0.0 for Android builds.                  |
 | Android device / emulator | API 26 or newer.                                                          |
+| macOS builds              | A Mac for packaging the DMG; see `docs/MACOS.md`.                         |
 | Sync-server deployment    | PostgreSQL; Docker Compose is supported by the supplied deployment files. |
 
 Dependency versions are maintained in `gradle/libs.versions.toml`; the Gradle version is maintained
@@ -245,19 +247,20 @@ is rejected.
 
 ## Data storage and migration
 
-On Windows, application data is stored under `%USERPROFILE%\.berill`:
+On Windows, application data is stored under `%USERPROFILE%\.berill` (`~/.berill` on macOS):
 
 - `berill.db`: the local SQLite database.
 - `window.properties`: saved window geometry and maximized state.
-- `secrets/`: desktop secret-storage files.
+- `secrets/`: desktop secret-storage files. On macOS, secrets are kept in the login keychain.
 - `plugins/`: installed external plugin files.
 
 Back up local data while Berill is fully closed through the tray menu. Back up the server database
 volume separately when operating a sync server. Synchronization replicates changes, including
 deletions; maintain independent backups for recovery.
 
-The Android application ID is `dev.akkraizen.berill`. An installation using a different application
-ID is a separate application; transfer its data through configured synchronization where applicable.
+The Android application ID and the macOS bundle identifier are `dev.akkraizen.berill`. An
+installation using a different application ID is a separate application; transfer its data through
+configured synchronization where applicable.
 
 The desktop migration code can copy data from the previous installation name using a consistent
 SQLite snapshot. It preserves the original files and does not overwrite an existing Berill database.
@@ -345,6 +348,7 @@ The build files define the current tool versions and platform configuration.
 | [docs/DEPLOY.md](docs/DEPLOY.md) | Production stack, server and GitHub setup, deployment, backups, maintenance. |
 | [docs/RELEASES.md](docs/RELEASES.md) | Versioning, Android signing, release workflow, publishing updates. |
 | [docs/EXTERNAL_PLUGINS.md](docs/EXTERNAL_PLUGINS.md) | Writing, packaging, and installing third-party plugins. |
+| [docs/MACOS.md](docs/MACOS.md) | Building, testing, and distributing the macOS app. |
 | [scripts/windows-installer/README.md](scripts/windows-installer/README.md) | Building the Windows installer locally. |
 
 Website: [berill.space](https://berill.space). Downloads: [latest release](https://github.com/Akkraizen/Berill/releases/latest).

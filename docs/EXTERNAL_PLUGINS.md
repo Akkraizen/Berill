@@ -4,7 +4,8 @@ An external plugin is a Berill section written by someone other than the Berill 
 a separate process** and sees only what the app gives it: its own data, its own settings, and HTTPS
 access to the hosts listed in its manifest. Files, other sections, network access outside the
 manifest, threads, and reflection are unavailable (Windows: bytecode verification and a class filter;
-Android: an isolated process without permissions).
+Android: an isolated process without permissions). External plugins work on Windows, macOS, and
+Android.
 
 ## Contents
 
@@ -128,3 +129,4 @@ and the SDK.
 - [README](../README.md) — features, project structure, development setup.
 - [DEPLOY.md](DEPLOY.md) — server setup, deployment, and maintenance.
 - [RELEASES.md](RELEASES.md) — versioning, signing, and building releases.
+- [MACOS.md](MACOS.md) — macOS builds.

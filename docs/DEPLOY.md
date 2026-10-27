@@ -127,8 +127,9 @@ page can be served by either server; the examples below put it on server 2.
 | **Sync server** (`sync-server.yml`) | Push to `master` touching `server/`, `protocol/`, `deploy/`, `gradle/`, `version.properties`; pull requests; manual | `berill-sync` image built with tests, pushed to GHCR as `<version>-<commit>`, `<version>`, `latest`, then deployed to server 1 (environment `sync`). Run manually with `image_tag` to roll back. |
 | **Update server** (`update-server.yml`) | Same, for `update-server/` | `berill-updates` image, deployed to server 2 (environment `updates`). |
 | `service.yml` | Called by the two workflows above | Shared logic: build, publish the image, copy `deploy/docker-compose.yml` and `backup.sh`, run `deploy-service.sh`, check the public URL. |
-| **Release** (`release.yml`) | `v*` tag, or manually for a tag | Tests, signed APK and AAB, Windows installer, `SHA256SUMS.txt`, a draft GitHub release. |
-| **Publish update** (`publish-update.yml`) | GitHub release published; manually for a tag | Downloads the APK and installer from the release, verifies SHA-256, uploads them to `releases/` on server 2, checks the download through `UPDATES_URL`. |
+| **Release** (`release.yml`) | `v*` tag, or manually for a tag | Tests, signed APK and AAB, Windows installer, macOS DMG, `SHA256SUMS.txt`, a draft GitHub release. |
+| **Publish update** (`publish-update.yml`) | GitHub release published; manually for a tag | Downloads the APK, the Windows installer, and the DMG (if present) from the release, verifies SHA-256, uploads them to `releases/` on server 2, checks the download through `UPDATES_URL`. |
+| **macOS** (`macos.yml`) | Push to `master` touching app code; pull requests; manual | Desktop tests and the macOS DMG as an artifact. See [MACOS.md](MACOS.md). |
 | **Prepare release** (`prepare-release.yml`) | Manual, with a version | Bumps `versionName` and `versionCode` (or keeps them when the version equals the current one), commits, tags, triggers **Release** and, with `deploy_servers`, both server workflows. |
 
 ## Server setup
@@ -341,9 +342,9 @@ Done once.
 
 1. **Actions → Prepare release → Run workflow**, version `1.1.0`. The workflow bumps the version,
    tags `v1.1.0`, and starts the app and server builds.
-2. **Release** creates a draft release with `Berill-1.1.0-Setup.exe`, the APK, the AAB, and
-   `SHA256SUMS.txt`. Check the files and click **Publish release**.
-3. **Publish update** uploads the installer and APK to server 2. The apps show "New version
+2. **Release** creates a draft release with `Berill-1.1.0-Setup.exe`, `Berill-1.1.0-macos.dmg`, the
+   APK, the AAB, and `SHA256SUMS.txt`. Check the files and click **Publish release**.
+3. **Publish update** uploads the installer, the DMG, and the APK to server 2. The apps show "New version
    available" within 6 hours, or immediately after **Check for updates** in settings.
 
 Without **Prepare release**: edit `version.properties`, commit, then run
@@ -401,7 +402,7 @@ Backups are stored on the same disk as the database. Copy `backups/` off server 
 | `updates` does not answer `/health` | Check `docker compose logs updates` and that `UPDATES_PORT` is free. |
 | `port is already allocated` | An old server in another folder is still running; run `docker compose down` there (without `-v`). |
 | App: "Server responded 401" | The token was revoked or mistyped; create a new one. |
-| No update is offered | Wrong update server address in settings, no `Berill-<version>-android.apk` / `-Setup.exe` in `releases/` on server 2, or the version is not newer than the installed one. |
+| No update is offered | Wrong update server address in settings, no `Berill-<version>-android.apk` / `-Setup.exe` / `-macos.dmg` in `releases/` on server 2, or the version is not newer than the installed one. |
 | Prepare release: `push declined` | Branch protection blocks GitHub Actions (see [GitHub setup](#github-setup), step 3). |
 
 ## Related documents
@@ -409,3 +410,4 @@ Backups are stored on the same disk as the database. Copy `backups/` off server 
 - [README](../README.md) — features, project structure, development setup.
 - [RELEASES.md](RELEASES.md) — versioning, signing, and building releases.
 - [EXTERNAL_PLUGINS.md](EXTERNAL_PLUGINS.md) — writing third-party plugins.
+- [MACOS.md](MACOS.md) — macOS builds.

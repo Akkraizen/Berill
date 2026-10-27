@@ -1,7 +1,7 @@
 # Releases
 
 How Berill versions are numbered, how Android signing is configured, and how the release workflow
-builds and publishes the Windows and Android packages. Server deployment and the one-time server
+builds and publishes the Windows, macOS, and Android packages. Server deployment and the one-time server
 setup are covered in [DEPLOY.md](DEPLOY.md).
 
 ## Contents
@@ -13,7 +13,7 @@ setup are covered in [DEPLOY.md](DEPLOY.md).
 - [Creating a release](#creating-a-release)
 - [What the workflow does](#what-the-workflow-does)
 - [Publishing](#publishing)
-- [Windows code signing](#windows-code-signing)
+- [Code signing](#code-signing)
 - [Related documents](#related-documents)
 
 ## Versioning
@@ -131,9 +131,11 @@ the default branch for manual runs to be available.
 3. Signed APK and AAB are built and their signatures verified.
 4. The Windows MSI and the `Berill-<version>-Setup.exe` installer are built. The MSI version must
    match `version.properties`.
-5. Checksums are computed after all files are built and verified again before the draft is created.
-6. A **draft** GitHub release is created with:
+5. In parallel, a macOS runner runs the desktop tests and builds `Berill-<version>-macos.dmg`.
+6. Checksums are computed after all files are built and verified again before the draft is created.
+7. A **draft** GitHub release is created with:
    - `Berill-<version>-Setup.exe`;
+   - `Berill-<version>-macos.dmg`;
    - `Berill-<version>-android.apk`;
    - `Berill-<version>-android.aab`;
    - `SHA256SUMS.txt`.
@@ -150,20 +152,26 @@ upgrade over the previous version with data preserved, then click **Publish rele
 Re-running the workflow updates files only on a draft; overwriting a published release is not
 allowed.
 
-Publishing triggers **Publish update**, which uploads the installer and APK to the update server.
+Publishing triggers **Publish update**, which uploads the Windows installer, the APK, and the DMG to
+the update server.
 The apps then offer the new version within 6 hours, or immediately after **Check for updates** in
 settings. See [DEPLOY.md](DEPLOY.md#shipping-a-new-version).
 
-## Windows code signing
+## Code signing
 
 The Windows installer is not signed with a code signing certificate yet, so Windows SmartScreen shows
 a warning on first launch. The publisher fields in Inno Setup and Gradle do not replace a signature.
 Adding Windows code signing is a separate step once a certificate or a cloud signing service is
 available. When it is added, sign the files first and compute SHA-256 afterwards.
 
+The macOS DMG is not signed with a Developer ID certificate or notarized either, so Gatekeeper asks
+for confirmation on first launch. Signing and notarization need the Apple Developer Program; see
+[MACOS.md](MACOS.md#distribution).
+
 ## Related documents
 
 - [README](../README.md) — features, project structure, development setup.
 - [DEPLOY.md](DEPLOY.md) — server setup, deployment, and maintenance.
 - [EXTERNAL_PLUGINS.md](EXTERNAL_PLUGINS.md) — writing third-party plugins.
+- [MACOS.md](MACOS.md) — macOS builds.
 - [Windows installer](../scripts/windows-installer/README.md) — building the installer locally.
