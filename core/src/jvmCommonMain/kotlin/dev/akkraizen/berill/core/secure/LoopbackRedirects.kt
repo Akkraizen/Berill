@@ -1,15 +1,15 @@
 package dev.akkraizen.berill.core.secure
 
 import dev.akkraizen.berill.api.OAuthRedirects
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketTimeoutException
 import java.net.URLDecoder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -19,7 +19,7 @@ class LoopbackRedirects(
 ) : OAuthRedirects {
   override suspend fun receive(open: (redirectUri: String) -> Unit): Map<String, String> =
     withContext(Dispatchers.IO) {
-      ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { server ->
+      ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { server ->
         server.soTimeout = 500
         withContext(openContext) { open("http://127.0.0.1:${server.localPort}") }
         await(server, System.currentTimeMillis() + timeoutMillis)
@@ -42,9 +42,14 @@ class LoopbackRedirects(
 
   private fun answer(s: Socket): Map<String, String> {
     s.soTimeout = 5_000
-    val line = s.getInputStream().bufferedReader().readLine().orEmpty()
+    val reader = s.getInputStream().bufferedReader()
+    val line = reader.readLine().orEmpty()
+    while (true) {
+      val header = reader.readLine()
+      if (header.isNullOrEmpty()) break
+    }
     val target = line.split(' ').getOrNull(1).orEmpty()
-    val params = parse(target.substringAfter('?', ""))
+    val params = parse(target.substringAfter('?', "").substringBefore('#'))
     val body = if (params.isEmpty()) "" else PAGE
     val status = if (params.isEmpty()) "404 Not Found" else "200 OK"
     val bytes = body.toByteArray(Charsets.UTF_8)
@@ -59,7 +64,8 @@ class LoopbackRedirects(
   }
 
   private fun parse(query: String): Map<String, String> =
-    query.split('&')
+    if (query.isEmpty()) emptyMap()
+    else query.split('&')
       .filter { it.isNotEmpty() }
       .associate {
         val key = URLDecoder.decode(it.substringBefore('='), "UTF-8")
@@ -68,10 +74,11 @@ class LoopbackRedirects(
       }
 
   private companion object {
-    const val PAGE = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Berill</title></head>" +
-      "<body style=\"font-family:sans-serif;background:#111614;color:#e1e3df;display:flex;" +
-      "align-items:center;justify-content:center;height:100vh;margin:0\">" +
-      "<div style=\"text-align:center\"><h2>Berill</h2><p>Можно вернуться в приложение.</p>" +
-      "<p style=\"opacity:.7\">You can return to the app.</p></div></body></html>"
+    const val PAGE =
+      "<!doctype html><html><head><meta charset=\"utf-8\"><title>Berill</title></head>" +
+        "<body style=\"font-family:sans-serif;background:#111614;color:#e1e3df;display:flex;" +
+        "align-items:center;justify-content:center;height:100vh;margin:0\">" +
+        "<div style=\"text-align:center\"><h2>Berill</h2><p>Можно вернуться в приложение.</p>" +
+        "<p style=\"opacity:.7\">You can return to the app.</p></div></body></html>"
   }
 }
