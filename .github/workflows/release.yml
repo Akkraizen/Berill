@@ -17,6 +17,9 @@ jobs:
   build:
     runs-on: windows-2025
     timeout-minutes: 90
+    env:
+      BERILL_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      BERILL_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
     outputs:
       version: ${{ steps.version.outputs.name }}
     defaults:
@@ -112,6 +115,9 @@ jobs:
   macos:
     runs-on: macos-15
     timeout-minutes: 60
+    env:
+      BERILL_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      BERILL_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v7
         with:

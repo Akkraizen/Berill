@@ -40,7 +40,7 @@ Online catalog searches and remote images require an internet connection.
 | Module    | Purpose                                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------------------------|
 | Habits    | Daily tracking, streaks, and statistics.                                                                  |
-| Planner   | Daily tasks and weekly goals.                                                                             |
+| Planner   | Daily tasks, weekly goals, and a calendar with two-way Google Calendar sync.                              |
 | Books     | Reading journal and Google Books search.                                                                  |
 | Watching  | Anime, movies, and series, with Shikimori and Kinopoisk integrations.                                     |
 | Finance   | Income, expenses, and savings accounts.                                                                   |
@@ -351,6 +351,7 @@ The build files define the current tool versions and platform configuration.
 | [docs/EXTERNAL_PLUGINS.md](docs/EXTERNAL_PLUGINS.md) | Writing, packaging, and installing third-party plugins. |
 | [docs/MACOS.md](docs/MACOS.md) | Building, testing, and distributing the macOS app. |
 | [docs/MCP.md](docs/MCP.md) | Connecting Claude and other AI assistants through the MCP server. |
+| [docs/GOOGLE_CALENDAR.md](docs/GOOGLE_CALENDAR.md) | Setting up Google Cloud and syncing the planner calendar with Google Calendar. |
 | [scripts/windows-installer/README.md](scripts/windows-installer/README.md) | Building the Windows installer locally. |
 
 Website: [berill.space](https://berill.space). Downloads: [latest release](https://github.com/Akkraizen/Berill/releases/latest).

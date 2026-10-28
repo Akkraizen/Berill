@@ -57,6 +57,8 @@ Open **Settings → Secrets and variables → Actions** and add:
 | `ANDROID_KEYSTORE_PASSWORD` | Keystore password. |
 | `ANDROID_KEY_ALIAS` | Key alias set when the key was created. |
 | `ANDROID_KEY_PASSWORD` | Key password. |
+| `GOOGLE_CLIENT_ID` | Optional. Client ID of the Google OAuth desktop client, see [GOOGLE_CALENDAR.md](GOOGLE_CALENDAR.md). |
+| `GOOGLE_CLIENT_SECRET` | Optional. Client secret of the same client. Without both, Google sign-in is hidden in the build. |
 
 Copy the Base64 value to the clipboard:
 
