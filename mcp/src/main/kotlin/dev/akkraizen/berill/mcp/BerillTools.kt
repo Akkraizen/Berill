@@ -162,7 +162,7 @@ class BerillTools(private val core: BerillCore) {
 
   suspend fun syncNow(): JsonElement {
     if (core.sync.serverUrl() == null || core.sync.token() == null)
-      throw ToolException("Sync is not configured. Run `berill-mcp login` first.")
+      throw ToolException("Sync is not configured. Set it up in Berill settings, or run `berill-mcp login` for the standalone server.")
     core.sync.syncNow()
     return syncStatus()
   }

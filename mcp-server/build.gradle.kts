@@ -13,7 +13,7 @@ application {
 
 dependencies {
   implementation(project(":app:shared"))
-  implementation(libs.mcp.server)
+  implementation(project(":mcp"))
   implementation(libs.sqldelight.sqliteDriver)
   implementation(libs.kotlinx.coroutinesCore)
   implementation(libs.kotlinx.serializationJson)

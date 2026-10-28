@@ -12,6 +12,9 @@
 -keep class org.sqlite.** { *; }
 
 -keep class io.ktor.** { *; }
+-keep class io.modelcontextprotocol.** { *; }
+-keep class dev.akkraizen.berill.mcp.** { *; }
+-dontwarn io.github.oshai.kotlinlogging.**
 -dontwarn io.ktor.**
 -dontwarn okhttp3.**
 -dontwarn okio.**

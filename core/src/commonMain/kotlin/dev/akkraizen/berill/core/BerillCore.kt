@@ -22,6 +22,7 @@ import dev.akkraizen.berill.core.nav.Destination
 import dev.akkraizen.berill.core.nav.Tab
 import dev.akkraizen.berill.core.notes.NotesRepository
 import dev.akkraizen.berill.core.platform.DesktopIntegration
+import dev.akkraizen.berill.core.platform.McpAccess
 import dev.akkraizen.berill.core.plugin.CollectionRegistry
 import dev.akkraizen.berill.core.plugin.PluginHost
 import dev.akkraizen.berill.core.secure.MemoryVault
@@ -50,7 +51,8 @@ class BerillCore(
   val vault: SecretVault = MemoryVault(),
   val desktop: DesktopIntegration? = null,
   oauth: OAuthRedirects = NoOAuthRedirects,
-  private val appearanceCache: AppearanceCache? = null
+  private val appearanceCache: AppearanceCache? = null,
+  mcpFactory: ((BerillCore) -> McpAccess)? = null
 ) {
   private val db = BerillDatabase(driver)
 
@@ -82,6 +84,8 @@ class BerillCore(
   val sync = SyncEngine(store, deviceId, scope, encryption, vault)
 
   val updates = AppUpdates(store)
+
+  val mcp: McpAccess? = mcpFactory?.invoke(this)
 
   private val _onboarded = MutableStateFlow(store.meta(ONBOARDING_KEY) == "1")
 
@@ -125,5 +129,6 @@ class BerillCore(
     sync.start()
     updates.start(scope)
     desktop?.start()
+    mcp?.start()
   }
 }

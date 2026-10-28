@@ -104,7 +104,8 @@ On Windows and macOS:
 | `app/androidApp`            | Android entry point and resources.                                                                    |
 | `app/desktopApp`            | Desktop entry point, window management, tray, and Windows and macOS integration.                      |
 | `server`                    | Ktor synchronization server backed by PostgreSQL and Exposed.                                         |
-| `mcp-server`                | MCP server that gives AI assistants access to Berill data as a separate sync device.                  |
+| `mcp`                       | MCP tools, the server embedded in the desktop app, and the `--mcp` stdio bridge.                      |
+| `mcp-server`                | Standalone MCP server that gives AI assistants access to Berill data as a separate sync device.       |
 | `update-server`             | Ktor update server that serves the latest app version and its installers.                             |
 | `deploy`                    | Docker Compose stack, `.env` template, and backup script for production.                              |
 | `scripts`                   | Deployment, release, Windows installer, and dependency-lock scripts.                                  |

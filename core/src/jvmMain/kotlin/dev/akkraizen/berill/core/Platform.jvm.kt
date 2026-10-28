@@ -9,6 +9,7 @@ import dev.akkraizen.berill.core.files.DesktopFileAccess
 import dev.akkraizen.berill.core.log.AppLog
 import dev.akkraizen.berill.core.log.installFileLog
 import dev.akkraizen.berill.core.platform.DesktopIntegration
+import dev.akkraizen.berill.core.platform.McpAccess
 import dev.akkraizen.berill.core.secure.DesktopVault
 import dev.akkraizen.berill.core.secure.LoopbackRedirects
 import dev.akkraizen.berill.core.ui.theme.desktopAppearanceCache
@@ -16,7 +17,11 @@ import java.awt.Desktop
 import java.io.File
 import java.util.Properties
 
-fun createDesktopCore(plugins: List<BerillPlugin>, desktop: DesktopIntegration? = null): BerillCore {
+fun createDesktopCore(
+  plugins: List<BerillPlugin>,
+  desktop: DesktopIntegration? = null,
+  mcp: ((BerillCore) -> McpAccess)? = null
+): BerillCore {
   val dir = desktopDataDirectory(File(System.getProperty("user.home")))
   val logs = File(dir, "logs")
   installFileLog(logs)
@@ -36,7 +41,8 @@ fun createDesktopCore(plugins: List<BerillPlugin>, desktop: DesktopIntegration? 
     vault = DesktopVault(File(dir, "secrets")),
     desktop = desktop,
     oauth = LoopbackRedirects(),
-    appearanceCache = desktopAppearanceCache()
+    appearanceCache = desktopAppearanceCache(),
+    mcpFactory = mcp
   )
     .also { it.start() }
 }

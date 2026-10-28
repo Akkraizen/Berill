@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
   implementation(project(":app:shared"))
+  implementation(project(":mcp"))
 
   implementation(compose.desktop.currentOs)
   implementation(libs.kotlinx.coroutinesSwing)
@@ -25,7 +26,7 @@ compose.desktop {
       targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Dmg)
       packageName = "Berill"
       packageVersion = rootProject.extra["appVersionName"] as String
-      modules("java.sql", "java.naming", "jdk.unsupported", "jdk.crypto.ec")
+      modules("java.sql", "java.naming", "java.net.http", "jdk.unsupported", "jdk.crypto.ec")
       vendor = "Akkraizen"
       copyright = "© 2026 Akkraizen"
       windows {

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +57,7 @@ internal enum class SettingsPage(val icon: ImageVector, private val tr: Tr, priv
   External(Icons.Outlined.Shield, ExternalText.sectionTitle, Tr("core.settings.externalHint")),
   Data(Icons.Outlined.Storage, CoreText.dataOnDevice, Tr("core.settings.dataHint")),
   Desktop(Icons.Outlined.Computer, DesktopText.desktopTitle, Tr("core.settings.desktopHint")),
+  Assistants(Icons.Outlined.SmartToy, McpText.title, Tr("core.settings.mcpHint")),
   About(Icons.Outlined.Info, DiagText.about, Tr("core.settings.aboutHint"));
 
   val id: String
@@ -70,7 +72,7 @@ internal enum class SettingsPage(val icon: ImageVector, private val tr: Tr, priv
   companion object {
     fun byId(id: String?): SettingsPage? = entries.firstOrNull { it.id == id }
 
-    fun available(core: BerillCore): List<SettingsPage> = entries.filter { it != Desktop || core.desktop != null }
+    fun available(core: BerillCore): List<SettingsPage> = entries.filter { (it != Desktop || core.desktop != null) && (it != Assistants || core.mcp != null) }
   }
 }
 
@@ -158,6 +160,7 @@ private fun SettingsPageContent(core: BerillCore, page: SettingsPage, showTitle:
       SettingsPage.External -> item { SectionCard { ExternalPluginsSettings(core) } }
       SettingsPage.Data -> item { SectionCard { DataOverview(core) } }
       SettingsPage.Desktop -> core.desktop?.let { desktop -> item { SectionCard { DesktopSettings(desktop) } } }
+      SettingsPage.Assistants -> core.mcp?.let { mcp -> item { SectionCard { McpSettings(mcp) } } }
       SettingsPage.About -> {
         item { SectionCard { AboutApp(core) } }
         item { TextButton(onClick = { core.replayOnboarding() }) { Text(OnboardingText.replay()) } }

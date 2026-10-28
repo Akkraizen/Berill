@@ -438,6 +438,30 @@
       "нормально",
       "хорошо",
       "отлично"
-    ]
+    ],
+    "core.settings.mcpHint": "Доступ Claude и других ассистентов к данным",
+    "core.mcp.title": "AI-ассистенты (MCP)",
+    "core.mcp.hint": "Berill может работать как MCP-сервер: Claude Desktop, Claude Code и другие клиенты на этом компьютере получат доступ к заметкам и разделам. Сервер слушает только этот компьютер (127.0.0.1) и требует токен.",
+    "core.mcp.enable": "Включить MCP-сервер",
+    "core.mcp.enableHint": "Выключен. Ассистенты не видят ваши данные",
+    "core.mcp.writable": "Разрешить изменения",
+    "core.mcp.writableHint": "Ассистент сможет создавать, дополнять и удалять заметки. Без этого — только чтение",
+    "core.mcp.starting": "Запускается…",
+    "core.mcp.running": "Работает: {url}",
+    "core.mcp.failed": "Не удалось запустить: {reason}",
+    "core.mcp.desktopTitle": "Claude Desktop",
+    "core.mcp.desktopHint": "Добавьте в claude_desktop_config.json. Claude запустит Berill с флагом --mcp, а тот подключится к работающему приложению или запустит его в фоне.",
+    "core.mcp.desktopHttpHint": "Добавьте в конфигурацию клиента. Приложение запущено не из установщика, поэтому доступен только HTTP-адрес.",
+    "core.mcp.codeTitle": "Claude Code",
+    "core.mcp.codeHint": "Выполните в терминале.",
+    "core.mcp.token": "Токен доступа",
+    "core.mcp.tokenHint": "Нужен для подключения по HTTP. Мост --mcp берёт его сам.",
+    "core.mcp.showToken": "Показать",
+    "core.mcp.hideToken": "Скрыть",
+    "core.mcp.regenerate": "Сменить токен",
+    "core.mcp.regenerateQuestion": "Сменить токен?",
+    "core.mcp.regenerateText": "Клиенты, подключённые по HTTP со старым токеном, потеряют доступ. Подключения через --mcp продолжат работать.",
+    "core.mcp.copy": "Копировать",
+    "core.mcp.copied": "Скопировано"
   }
 }

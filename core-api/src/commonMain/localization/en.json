@@ -433,6 +433,30 @@
       "okay",
       "good",
       "great"
-    ]
+    ],
+    "core.settings.mcpHint": "Access for Claude and other assistants",
+    "core.mcp.title": "AI assistants (MCP)",
+    "core.mcp.hint": "Berill can work as an MCP server: Claude Desktop, Claude Code, and other clients on this computer get access to your notes and sections. The server listens only on this computer (127.0.0.1) and requires a token.",
+    "core.mcp.enable": "Turn on the MCP server",
+    "core.mcp.enableHint": "Off. Assistants can't see your data",
+    "core.mcp.writable": "Allow changes",
+    "core.mcp.writableHint": "The assistant can create, append to, and delete notes. Otherwise it can only read",
+    "core.mcp.starting": "Starting…",
+    "core.mcp.running": "Running: {url}",
+    "core.mcp.failed": "Couldn't start: {reason}",
+    "core.mcp.desktopTitle": "Claude Desktop",
+    "core.mcp.desktopHint": "Add this to claude_desktop_config.json. Claude starts Berill with --mcp, which connects to the running app or starts it in the background.",
+    "core.mcp.desktopHttpHint": "Add this to your client configuration. The app wasn't started from an installer, so only the HTTP address is available.",
+    "core.mcp.codeTitle": "Claude Code",
+    "core.mcp.codeHint": "Run this in a terminal.",
+    "core.mcp.token": "Access token",
+    "core.mcp.tokenHint": "Needed for HTTP connections. The --mcp bridge reads it by itself.",
+    "core.mcp.showToken": "Show",
+    "core.mcp.hideToken": "Hide",
+    "core.mcp.regenerate": "Change token",
+    "core.mcp.regenerateQuestion": "Change the token?",
+    "core.mcp.regenerateText": "Clients connected over HTTP with the old token lose access. Connections through --mcp keep working.",
+    "core.mcp.copy": "Copy",
+    "core.mcp.copied": "Copied"
   }
 }

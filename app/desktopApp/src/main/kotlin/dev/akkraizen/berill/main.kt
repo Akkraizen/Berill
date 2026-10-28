@@ -25,6 +25,7 @@ import dev.akkraizen.berill.core.createDesktopCore
 import dev.akkraizen.berill.core.external.PLUGIN_RUNNER_FLAG
 import dev.akkraizen.berill.core.external.runPluginRunner
 import dev.akkraizen.berill.core.files.DesktopImagePicker
+import dev.akkraizen.berill.core.secure.DesktopVault
 import dev.akkraizen.berill.core.ui.startup.BerillStartup
 import dev.akkraizen.berill.core.ui.theme.Appearance
 import dev.akkraizen.berill.core.ui.theme.cachedDesktopAppearance
@@ -40,6 +41,8 @@ import dev.akkraizen.berill.desktop.ui.window.DesktopWindowEffects
 import dev.akkraizen.berill.desktop.ui.window.WindowResizeEdges
 import dev.akkraizen.berill.desktop.ui.window.WindowTitleBar
 import dev.akkraizen.berill.desktop.ui.window.rememberPersistentWindowState
+import dev.akkraizen.berill.mcp.EmbeddedMcp
+import dev.akkraizen.berill.mcp.runMcpBridge
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -50,21 +53,38 @@ import kotlinx.coroutines.withContext
 fun main(args: Array<String>) {
   if (args.firstOrNull() == PLUGIN_RUNNER_FLAG)
     return runPluginRunner()
+  val dir = File(System.getProperty("user.home"), ".berill")
+  if (args.firstOrNull() == EmbeddedMcp.BRIDGE_FLAG)
+    return runMcpBridge(dir, DesktopVault(File(dir, "secrets")), appLauncher()?.let { launcher -> { startInBackground(launcher) } })
   val background = BACKGROUND_FLAG in args
   if (DesktopOs.isMac) System.setProperty("apple.awt.application.appearance", "system")
-  val dir = File(System.getProperty("user.home"), ".berill")
   val instance = SingleInstance.acquire(dir, notify = !background) ?: return
   val desktop = createDesktopIntegration(dir, onHotkey = instance::activate)
   val cached = cachedDesktopAppearance()
   I18n.language = cached.appLanguage
   val preload =
-    if (background) CoroutineScope(Dispatchers.IO).async { createDesktopCore(BerillPlugins, desktop) } else null
-  app(instance, desktop, background, preload, cached)
+    if (background) CoroutineScope(Dispatchers.IO).async { createCore(desktop, dir) } else null
+  app(instance, desktop, dir, background, preload, cached)
 }
+
+private fun appLauncher(): String? = System.getProperty("jpackage.app-path")?.takeIf { File(it).isFile }
+
+private fun startInBackground(launcher: String) {
+  ProcessBuilder(launcher, BACKGROUND_FLAG)
+    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+    .redirectError(ProcessBuilder.Redirect.DISCARD)
+    .start()
+    .outputStream
+    .close()
+}
+
+private fun createCore(desktop: DesktopIntegration, dir: File): BerillCore =
+  createDesktopCore(BerillPlugins, desktop) { core -> EmbeddedMcp(core, dir, appLauncher()) }
 
 private fun app(
   instance: SingleInstance,
   desktop: DesktopIntegration,
+  dir: File,
   background: Boolean,
   preload: Deferred<BerillCore>?,
   cached: Appearance
@@ -77,6 +97,7 @@ private fun app(
     var windowVisible by remember { mutableStateOf(!(background && trayAvailable)) }
     val exit: () -> Unit = {
       persistentWindow.save()
+      core?.mcp?.stop()
       exitApplication()
     }
     val closeWindow: () -> Unit = {
@@ -130,7 +151,7 @@ private fun app(
           initialAppearance = cached,
           load = {
             preload?.let { runCatching { it.await() }.getOrNull() }
-              ?: withContext(Dispatchers.IO) { createDesktopCore(BerillPlugins, desktop) }
+              ?: withContext(Dispatchers.IO) { createCore(desktop, dir) }
           },
           onReady = { core = it },
           windowChrome = { title ->
