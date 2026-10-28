@@ -99,7 +99,7 @@ internal fun AnimatedSidebar(model: NavModel, expanded: Boolean, onToggle: () ->
 
           if (entry.children.isNotEmpty()) {
             AnimatedVisibility(
-              visible = entry.open && expanded,
+              visible = entry.expanded && expanded,
               enter = fadeIn(BerillMotion.slowEffects()) + expandVertically(BerillMotion.spatial()),
               exit = fadeOut(BerillMotion.effects()) + shrinkVertically(BerillMotion.spatial()),
               label = "sidebar-pages"
@@ -133,7 +133,7 @@ private fun SidebarLabel(visible: Boolean, content: @Composable () -> Unit) {
 private fun SidebarItem(entry: NavEntry, expanded: Boolean) {
   val colors = MaterialTheme.colorScheme
 
-  val selected = entry.selected || (entry.open && entry.children.isNotEmpty() && !expanded)
+  val selected = entry.selected || (entry.open && entry.children.isNotEmpty() && (!expanded || !entry.expanded))
   val background by
     animateColorAsState(
       if (selected) colors.secondaryContainer else Color.Transparent,
@@ -156,20 +156,23 @@ private fun SidebarItem(entry: NavEntry, expanded: Boolean) {
       .height(52.dp)
       .clip(CircleShape)
       .background(background)
-      .interactive(CircleShape, onClick = entry.onClick)
+      .interactive(CircleShape, onClick = if (expanded && entry.children.isNotEmpty()) entry.onToggle else entry.onClick)
       .padding(start = 20.dp, end = 16.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(entry.icon, contentDescription = if (expanded) null else entry.title, tint = content)
     SidebarLabel(expanded) {
-      Text(
-        entry.title,
-        color = content,
-        style = MaterialTheme.typography.labelLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(start = 12.dp)
-      )
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          entry.title,
+          color = content,
+          style = MaterialTheme.typography.labelLarge,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier.padding(start = 12.dp).weight(1f)
+        )
+        if (entry.children.isNotEmpty()) ExpandChevron(entry.expanded, content)
+      }
     }
   }
 }

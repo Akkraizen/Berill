@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -70,7 +71,15 @@ fun BerillShell(
       val plugins by core.plugins.enabled.collectAsState()
       val current = stack.last()
       PlatformBackHandler(enabled = stack.size > 1) { core.nav.back() }
-      val model = navModel(core, current, plugins)
+      var expandedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
+      val activeSection = (current as? Destination.Plugin)?.id ?: (current as? Destination.PluginSettings)?.id
+      LaunchedEffect(activeSection) {
+        if (activeSection != null && "plugin:$activeSection" !in expandedSections)
+          expandedSections = expandedSections + "plugin:$activeSection"
+      }
+      val model = navModel(core, current, plugins, expandedSections.toSet()) { key ->
+        expandedSections = if (key in expandedSections) expandedSections - key else expandedSections + key
+      }
       val title = titleOf(current, core.plugins.all)
 
       val deep = (current is Destination.Plugin && (current.route != null || stack.size > 2)) ||

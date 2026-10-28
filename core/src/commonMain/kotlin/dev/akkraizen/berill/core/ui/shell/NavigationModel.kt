@@ -20,12 +20,20 @@ internal class NavEntry(
   val selected: Boolean,
   val onClick: () -> Unit,
   val children: List<NavEntry> = emptyList(),
-  val open: Boolean = false
+  val open: Boolean = false,
+  val expanded: Boolean = false,
+  val onToggle: () -> Unit = {}
 )
 
 internal class NavModel(val top: List<NavEntry>, val sections: List<NavEntry>, val bottom: List<NavEntry>)
 
-internal fun navModel(core: BerillCore, current: Destination, plugins: List<BerillPlugin>): NavModel {
+internal fun navModel(
+  core: BerillCore,
+  current: Destination,
+  plugins: List<BerillPlugin>,
+  expandedSections: Set<String> = emptySet(),
+  toggleSection: (String) -> Unit = {}
+): NavModel {
   fun tab(t: Tab) =
     NavEntry(
       "tab:${t.name}",
@@ -41,8 +49,9 @@ internal fun navModel(core: BerillCore, current: Destination, plugins: List<Beri
       val active = inPlugin?.id == p.id || (current as? Destination.PluginSettings)?.id == p.id
       val pages = p.pages
       val page = if (inPlugin != null && inPlugin.id == p.id) resolvePage(p, inPlugin.page) else null
+      val key = "plugin:${p.id}"
       NavEntry(
-        "plugin:${p.id}",
+        key,
         p.title,
         p.icon,
         selected = active && (pages.isEmpty() || current is Destination.PluginSettings),
@@ -56,7 +65,9 @@ internal fun navModel(core: BerillCore, current: Destination, plugins: List<Beri
             onClick = { core.nav.openSection(p.id, pg.id) }
           )
         },
-        open = active
+        open = active,
+        expanded = key in expandedSections,
+        onToggle = { toggleSection(key) }
       )
     },
     bottom = listOf(tab(Tab.Settings))
