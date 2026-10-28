@@ -17,6 +17,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.isTraySupported
+import dev.akkraizen.berill.api.i18n.I18n
 import dev.akkraizen.berill.api.ui.interaction.HotKeys
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.BuildInfo
@@ -26,6 +27,7 @@ import dev.akkraizen.berill.core.external.runPluginRunner
 import dev.akkraizen.berill.core.files.DesktopImagePicker
 import dev.akkraizen.berill.core.ui.startup.BerillStartup
 import dev.akkraizen.berill.core.ui.theme.Appearance
+import dev.akkraizen.berill.core.ui.theme.cachedDesktopAppearance
 import dev.akkraizen.berill.desktop.windows.BACKGROUND_FLAG
 import dev.akkraizen.berill.core.platform.DesktopIntegration
 import dev.akkraizen.berill.desktop.DesktopOs
@@ -53,16 +55,19 @@ fun main(args: Array<String>) {
   val dir = File(System.getProperty("user.home"), ".berill")
   val instance = SingleInstance.acquire(dir, notify = !background) ?: return
   val desktop = createDesktopIntegration(dir, onHotkey = instance::activate)
+  val cached = cachedDesktopAppearance()
+  I18n.language = cached.appLanguage
   val preload =
     if (background) CoroutineScope(Dispatchers.IO).async { createDesktopCore(BerillPlugins, desktop) } else null
-  app(instance, desktop, background, preload)
+  app(instance, desktop, background, preload, cached)
 }
 
 private fun app(
   instance: SingleInstance,
   desktop: DesktopIntegration,
   background: Boolean,
-  preload: Deferred<BerillCore>?
+  preload: Deferred<BerillCore>?,
+  cached: Appearance
 ) =
   application {
     var core by remember { mutableStateOf<BerillCore?>(null) }
@@ -91,7 +96,7 @@ private fun app(
       if (activations > 0)
         restoreWindow()
     }
-    val appearance = core?.appearance?.state?.collectAsState()?.value ?: Appearance()
+    val appearance = core?.appearance?.state?.collectAsState()?.value ?: cached
     BerillTray(
       appearance = appearance,
       onOpen = restoreWindow,
@@ -122,6 +127,7 @@ private fun app(
       }
       Box(Modifier.fillMaxSize()) {
         BerillStartup(
+          initialAppearance = cached,
           load = {
             preload?.let { runCatching { it.await() }.getOrNull() }
               ?: withContext(Dispatchers.IO) { createDesktopCore(BerillPlugins, desktop) }

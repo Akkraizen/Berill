@@ -13,6 +13,7 @@ import dev.akkraizen.berill.core.files.AndroidFileAccess
 import dev.akkraizen.berill.core.log.installFileLog
 import dev.akkraizen.berill.core.secure.AndroidVault
 import dev.akkraizen.berill.core.secure.LoopbackRedirects
+import dev.akkraizen.berill.core.ui.theme.PreferencesAppearanceCache
 import java.io.File
 
 fun createAndroidCore(context: Context, plugins: List<BerillPlugin>): BerillCore {
@@ -29,7 +30,8 @@ fun createAndroidCore(context: Context, plugins: List<BerillPlugin>): BerillCore
       AndroidExternalPlugins(context, File(context.applicationContext.filesDir, "plugins"))
     }.getOrNull(),
     vault = AndroidVault(context.applicationContext),
-    oauth = LoopbackRedirects()
+    oauth = LoopbackRedirects(),
+    appearanceCache = PreferencesAppearanceCache(context)
   )
     .also { it.start() }
 }

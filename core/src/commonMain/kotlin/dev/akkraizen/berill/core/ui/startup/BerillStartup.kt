@@ -31,12 +31,14 @@ import dev.akkraizen.berill.api.i18n.I18n
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.ui.brand.MosaicLogo
 import dev.akkraizen.berill.core.ui.shell.BerillShell
+import dev.akkraizen.berill.core.ui.theme.Appearance
 import dev.akkraizen.berill.core.ui.theme.BerillTheme
 import kotlinx.coroutines.CancellationException
 
 @Composable
 fun BerillStartup(
   load: suspend () -> BerillCore,
+  initialAppearance: Appearance = Appearance(),
   windowChrome: (@Composable (String) -> Unit)? = null,
   overlay: @Composable () -> Unit = {},
   onReady: (BerillCore) -> Unit = {}
@@ -65,7 +67,7 @@ fun BerillStartup(
   if (initialized != null) {
     BerillShell(initialized, windowChrome, overlay)
   } else {
-    BerillTheme {
+    BerillTheme(initialAppearance) {
       Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize()) {
           windowChrome?.invoke("Berill")

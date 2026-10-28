@@ -1,5 +1,7 @@
 package dev.akkraizen.berill
 
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,18 +15,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import dev.akkraizen.berill.api.i18n.I18n
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.files.DocumentPicker
 import dev.akkraizen.berill.core.files.ImagePicker
 import dev.akkraizen.berill.core.ui.startup.BerillStartup
-import dev.akkraizen.berill.core.ui.theme.Appearance
 import dev.akkraizen.berill.core.ui.theme.ThemeMode
+import dev.akkraizen.berill.core.ui.theme.cachedAndroidAppearance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     setTheme(R.style.Theme_Berill)
+    val cached = cachedAndroidAppearance(this)
+    I18n.language = cached.appLanguage
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && cached.mode != ThemeMode.System)
+      window.setBackgroundDrawable(ColorDrawable(if (cached.mode == ThemeMode.Dark) DARK_BACKGROUND else LIGHT_BACKGROUND))
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
     ImagePicker.register(this)
@@ -32,7 +39,7 @@ class MainActivity : ComponentActivity() {
     val app = application as BerillApplication
     setContent {
       var core by remember { mutableStateOf<BerillCore?>(null) }
-      val appearance = core?.appearance?.state?.collectAsState()?.value ?: Appearance()
+      val appearance = core?.appearance?.state?.collectAsState()?.value ?: cached
       val dark = when (appearance.mode) {
         ThemeMode.System -> isSystemInDarkTheme()
         ThemeMode.Light -> false
@@ -46,10 +53,16 @@ class MainActivity : ComponentActivity() {
         }
       }
       BerillStartup(
+        initialAppearance = cached,
         load = { withContext(Dispatchers.IO) { app.core } },
         onReady = { core = it },
         overlay = { ImagePicker.Content() }
       )
     }
+  }
+
+  private companion object {
+    const val DARK_BACKGROUND = 0xFF10140F.toInt()
+    const val LIGHT_BACKGROUND = 0xFFF7FBF1.toInt()
   }
 }

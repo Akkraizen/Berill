@@ -68,6 +68,25 @@ fun parseHexColor(text: String): Color? {
   return Color(0xFF000000 or hex.toLong(16))
 }
 
+interface AppearanceCache {
+  fun read(): Appearance?
+
+  fun write(appearance: Appearance)
+}
+
+fun Appearance.encode(): String = listOf(mode.name, accent, language).joinToString("\n")
+
+fun decodeAppearance(text: String?): Appearance? {
+  val parts = text?.lines()?.map { it.trim() } ?: return null
+  if (parts.size < 3) return null
+  val mode = ThemeMode.entries.firstOrNull { it.name == parts[0] } ?: return null
+  return Appearance(
+    mode,
+    parts[1].ifEmpty { Appearance.ACCENT_DEFAULT },
+    parts[2].ifEmpty { Appearance.LANGUAGE_SYSTEM }
+  )
+}
+
 class AppearanceStore(private val store: LocalStore, scope: CoroutineScope) {
   val state: StateFlow<Appearance> = store
     .observe(Collections.SETTINGS)

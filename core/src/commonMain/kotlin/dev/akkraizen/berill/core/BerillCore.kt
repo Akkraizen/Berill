@@ -28,6 +28,7 @@ import dev.akkraizen.berill.core.secure.MemoryVault
 import dev.akkraizen.berill.core.secure.SecretVault
 import dev.akkraizen.berill.core.sync.SyncEncryption
 import dev.akkraizen.berill.core.sync.SyncEngine
+import dev.akkraizen.berill.core.ui.theme.AppearanceCache
 import dev.akkraizen.berill.core.ui.theme.AppearanceStore
 import dev.akkraizen.berill.core.update.AppUpdates
 import dev.akkraizen.berill.protocol.HybridClock
@@ -46,7 +47,8 @@ class BerillCore(
   externalPlatform: ExternalPluginPlatform? = null,
   val vault: SecretVault = MemoryVault(),
   val desktop: DesktopIntegration? = null,
-  oauth: OAuthRedirects = NoOAuthRedirects
+  oauth: OAuthRedirects = NoOAuthRedirects,
+  private val appearanceCache: AppearanceCache? = null
 ) {
   private val db = BerillDatabase(driver)
 
@@ -101,7 +103,12 @@ class BerillCore(
 
   init {
     I18n.language = appearance.state.value.appLanguage
-    scope.launch { appearance.state.collect { I18n.language = it.appLanguage } }
+    scope.launch {
+      appearance.state.collect {
+        I18n.language = it.appLanguage
+        appearanceCache?.let { cache -> runCatching { cache.write(it) } }
+      }
+    }
   }
 
   fun start() {
