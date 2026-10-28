@@ -209,7 +209,9 @@ private fun TrayMenuAction(
     Text(
       label,
       style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp),
-      color = foreground
+      color = foreground,
+      maxLines = 1,
+      softWrap = false
     )
   }
 }
@@ -226,8 +228,8 @@ internal fun trayMenuSize(): IntSize {
     val actionWidth = labels.maxOf { it.width }.toDp() + 18.dp + 8.dp + 20.dp
     val actionHeight = maxOf(labels.maxOf { it.height }.toDp(), 18.dp) + 18.dp
     IntSize(
-      ceil((actionWidth + 32.dp).value).toInt(),
-      ceil((actionHeight * 2 + 36.dp).value).toInt()
+      ceil((actionWidth + 48.dp).value).toInt().coerceAtLeast(180),
+      ceil((actionHeight * 2 + 44.dp).value).toInt()
     )
   }
 }

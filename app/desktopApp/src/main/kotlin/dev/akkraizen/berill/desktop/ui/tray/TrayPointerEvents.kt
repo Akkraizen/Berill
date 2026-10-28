@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.unit.IntOffset
 import java.awt.EventQueue
+import java.awt.MouseInfo
 import java.awt.SystemTray
 import java.awt.TrayIcon
 import java.awt.event.MouseAdapter
@@ -22,7 +23,8 @@ internal fun TrayPointerEvents(onContextMenu: (IntOffset) -> Unit) {
     val mouseListener = object : MouseAdapter() {
       override fun mouseReleased(event: MouseEvent) {
         if (event.button == MouseEvent.BUTTON3 || event.isPopupTrigger) {
-          currentOnContextMenu(IntOffset(event.x, event.y))
+          val pointer = runCatching { MouseInfo.getPointerInfo()?.location }.getOrNull()
+          currentOnContextMenu(pointer?.let { IntOffset(it.x, it.y) } ?: IntOffset(event.x, event.y))
         }
       }
     }
