@@ -19,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.i18n.I18n
 import dev.akkraizen.berill.api.ui.hhmm
@@ -44,14 +45,14 @@ internal fun SyncSettings(core: BerillCore) {
   BerillTextField(
     url,
     { url = it },
-    label = { Text(CoreText.serverUrl()) },
+    label = { Text(CoreText.serverUrl(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
     singleLine = true,
     modifier = Modifier.fillMaxWidth()
   )
   BerillTextField(
     token,
     { token = it },
-    label = { Text(CoreText.accessToken()) },
+    label = { Text(CoreText.accessToken(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
     singleLine = true,
     visualTransformation = PasswordVisualTransformation(),
     modifier = Modifier.fillMaxWidth()

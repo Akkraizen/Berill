@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
@@ -168,11 +169,11 @@ private fun CreateCycleDialog(onDismiss: () -> Unit, onCreate: (String, Int) -> 
     title = { Text(WorkoutsText.newCycle()) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillTextField(name, { name = it }, label = { Text(WorkoutsText.name()) }, singleLine = true)
+        BerillTextField(name, { name = it }, label = { Text(WorkoutsText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         BerillTextField(
           weeks,
           { weeks = it.filter(Char::isDigit).take(2) },
-          label = { Text(WorkoutsText.weeksCount()) },
+          label = { Text(WorkoutsText.weeksCount(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           isError = weeksValue == null
         )

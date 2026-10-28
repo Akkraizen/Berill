@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
@@ -206,30 +207,30 @@ private fun WordDialog(
           { LanguagesText.sectionLabel(it) },
           { section = it }
         )
-        BerillTextField(word, { word = it }, label = { Text(languageName) }, singleLine = true)
+        BerillTextField(word, { word = it }, label = { Text(languageName, maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         BerillTextField(
           pron,
           { pron = it },
-          label = { Text(LanguagesText.pronunciation()) },
+          label = { Text(LanguagesText.pronunciation(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         BerillTextField(
           translation,
           { translation = it },
-          label = { Text(LanguagesText.translation()) },
+          label = { Text(LanguagesText.translation(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         if (section == WORDS_SECTION)
           BerillTextField(
             pos,
             { pos = it },
-            label = { Text(LanguagesText.partOfSpeech()) },
+            label = { Text(LanguagesText.partOfSpeech(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             singleLine = true
           )
         BerillTextField(
           lesson,
           { lesson = it },
-          label = { Text(LanguagesText.lesson()) },
+          label = { Text(LanguagesText.lesson(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         if (onDelete != null)

@@ -39,7 +39,7 @@ fun EditableList(
     items.forEach { item ->
       BerillChip(
         onClick = null,
-        label = { Text(item) },
+        label = { Text(item, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         trailingIcon = if (items.size > 1) {
           {
             Icon(

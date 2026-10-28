@@ -100,7 +100,7 @@ internal fun RecipesGallery(ctx: PluginContext) {
           BerillChip(
             selected = favoritesOnly,
             onClick = { favoritesOnly = !favoritesOnly },
-            label = { Text(RecipesText.favorites()) },
+            label = { Text(RecipesText.favorites(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             leadingIcon = {
               Ic(if (favoritesOnly) BerillIcons.Star else BerillIcons.StarOutline, size = 18.dp)
             }
@@ -222,7 +222,7 @@ private fun AddRecipeDialog(onDismiss: () -> Unit, onAdd: (Recipe) -> Unit) {
     title = { Text(RecipesText.newRecipe()) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillTextField(title, { title = it }, label = { Text(RecipesText.name()) }, singleLine = true)
+        BerillTextField(title, { title = it }, label = { Text(RecipesText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         DropdownField(
           RecipesText.category(),
           CATEGORY_ICONS.keys.toList(),

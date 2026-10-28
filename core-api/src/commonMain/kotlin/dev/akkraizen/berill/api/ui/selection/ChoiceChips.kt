@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.interaction.BerillChip
@@ -31,7 +32,7 @@ fun <T> ChoiceChips(
       BerillChip(
         selected = option == selected,
         onClick = { onSelect(option) },
-        label = { Text(label(option)) },
+        label = { Text(label(option), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = if (vector != null) {
           { Ic(vector, size = 18.dp) }
         } else

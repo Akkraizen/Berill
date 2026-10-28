@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.RawRecord
@@ -231,7 +232,7 @@ internal fun HabitsTodayCard(data: HabitsData) {
       BerillChip(
         selected = value >= h.value.defaultDuration,
         onClick = { data.toggle(h.id, h.value, now, value) },
-        label = { Text(h.value.label) },
+        label = { Text(h.value.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Ic(habitIcon(h.id, h.value), size = 18.dp) }
       )
     }
@@ -353,7 +354,7 @@ private fun ValueDialog(
       BerillTextField(
         text,
         { text = it.filter(Char::isDigit).take(5) },
-        label = { Text(HabitsText.valueLabel(unitTitle(def.unit), def.defaultDuration)()) },
+        label = { Text(HabitsText.valueLabel(unitTitle(def.unit), def.defaultDuration)(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
       )

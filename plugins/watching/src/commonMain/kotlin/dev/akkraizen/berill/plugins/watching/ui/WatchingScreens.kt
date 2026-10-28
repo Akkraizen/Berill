@@ -247,7 +247,7 @@ private fun AddTitleDialog(initialMedia: String, onDismiss: () -> Unit, onAdd: (
         BerillTextField(
           name,
           { name = it },
-          label = { Text(WatchingText.name()) },
+          label = { Text(WatchingText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         ChoiceChips(
@@ -268,7 +268,7 @@ private fun AddTitleDialog(initialMedia: String, onDismiss: () -> Unit, onAdd: (
           BerillTextField(
             year,
             { year = it.filter(Char::isDigit).take(4) },
-            label = { Text(WatchingText.year()) },
+            label = { Text(WatchingText.year(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -277,7 +277,7 @@ private fun AddTitleDialog(initialMedia: String, onDismiss: () -> Unit, onAdd: (
             BerillTextField(
               episodes,
               { episodes = it.filter(Char::isDigit) },
-              label = { Text(WatchingText.episodes()) },
+              label = { Text(WatchingText.episodes(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
               singleLine = true,
               keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
               modifier = Modifier.fillMaxWidth()

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.BerillIcons
@@ -91,11 +92,11 @@ internal fun ExerciseScreen(ctx: PluginContext, id: String) {
     }
     item {
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillChip(onClick = null, label = { Text(CatalogText.muscleLabel(ex.muscle)) })
-        BerillChip(onClick = null, label = { Text(CatalogText.equipmentLabel(ex.equipment)) })
-        BerillChip(onClick = null, label = { Text(WorkoutsText.modeLabel(ex.mode)) },
+        BerillChip(onClick = null, label = { Text(CatalogText.muscleLabel(ex.muscle), maxLines = 1, overflow = TextOverflow.Ellipsis) })
+        BerillChip(onClick = null, label = { Text(CatalogText.equipmentLabel(ex.equipment), maxLines = 1, overflow = TextOverflow.Ellipsis) })
+        BerillChip(onClick = null, label = { Text(WorkoutsText.modeLabel(ex.mode), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           leadingIcon = { Ic(ex.mode.icon(), size = 18.dp) })
-        if (ex.custom) BerillChip(onClick = null, label = { Text(CatalogText.custom()) })
+        if (ex.custom) BerillChip(onClick = null, label = { Text(CatalogText.custom(), maxLines = 1, overflow = TextOverflow.Ellipsis) })
       }
     }
     item {

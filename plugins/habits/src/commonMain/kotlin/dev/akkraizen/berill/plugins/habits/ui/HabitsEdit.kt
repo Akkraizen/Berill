@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.ui.BerillIcons
@@ -171,7 +172,7 @@ internal fun HabitDialog(
         BerillTextField(
           label,
           { label = it },
-          label = { Text(HabitsText.name()) },
+          label = { Text(HabitsText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         IconPicker(iconKey) { iconKey = it }
@@ -179,14 +180,14 @@ internal fun HabitDialog(
         BerillTextField(
           norm,
           { norm = it.filter(Char::isDigit) },
-          label = { Text(HabitsText.dailyNorm()) },
+          label = { Text(HabitsText.dailyNorm(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         BerillTextField(
           goal,
           { goal = it.filter(Char::isDigit) },
-          label = { Text(HabitsText.monthGoalOptional()) },
+          label = { Text(HabitsText.monthGoalOptional(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )

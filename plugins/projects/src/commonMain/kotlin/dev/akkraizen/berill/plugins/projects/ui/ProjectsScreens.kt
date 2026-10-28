@@ -178,7 +178,7 @@ private fun ProjectCard(item: Item<Project>, onOpen: () -> Unit) {
         p.stack.forEach {
           BerillChip(
             onClick = null,
-            label = { Text(it, style = MaterialTheme.typography.labelSmall) })
+            label = { Text(it, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis) })
         }
       }
     val checks = checklist(p.body)

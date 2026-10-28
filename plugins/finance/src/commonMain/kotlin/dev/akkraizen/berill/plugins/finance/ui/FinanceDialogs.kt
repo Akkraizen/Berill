@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.BerillIcons
 import dev.akkraizen.berill.api.ui.dialogs.ConfirmDialog
@@ -91,7 +92,7 @@ internal fun EditOperationDialog(
         BerillTextField(
           amount,
           { amount = it },
-          label = { Text(FinanceText.amount()) },
+          label = { Text(FinanceText.amount(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
@@ -115,11 +116,11 @@ internal fun EditOperationDialog(
         BerillTextField(
           date,
           { date = it },
-          label = { Text(FinanceText.date()) },
+          label = { Text(FinanceText.date(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           isError = date.toDateOrNull() == null
         )
-        BerillTextField(comment, { comment = it }, label = { Text(FinanceText.comment()) }, singleLine = true)
+        BerillTextField(comment, { comment = it }, label = { Text(FinanceText.comment(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         TextButton(onClick = { askDelete = true }) {
           Ic(BerillIcons.Delete, tint = MaterialTheme.colorScheme.error)
           Spacer(Modifier.width(6.dp))
@@ -167,26 +168,26 @@ internal fun AccountDialog(initial: Account, onDismiss: () -> Unit, onSave: (Acc
     title = { Text(if (onDelete == null) FinanceText.newAccount() else FinanceText.account()) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillTextField(title, { title = it }, label = { Text(FinanceText.name()) }, singleLine = true)
-        BerillTextField(bank, { bank = it }, label = { Text(FinanceText.bank()) }, singleLine = true)
+        BerillTextField(title, { title = it }, label = { Text(FinanceText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
+        BerillTextField(bank, { bank = it }, label = { Text(FinanceText.bank(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         BerillTextField(
           start,
           { start = it },
-          label = { Text(FinanceText.initialBalance()) },
+          label = { Text(FinanceText.initialBalance(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
         BerillTextField(
           goal,
           { goal = it },
-          label = { Text(FinanceText.goal()) },
+          label = { Text(FinanceText.goal(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
         BerillTextField(
           rate,
           { rate = it },
-          label = { Text(FinanceText.rate()) },
+          label = { Text(FinanceText.rate(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )

@@ -78,7 +78,7 @@ internal fun DurationField(
     onCommit = { if (valid(it)) parseDuration(it)?.let(onChange) })
   BerillTextField(
     state.text, { state.text = it }, modifier.fillMaxWidth(),
-    label = { Text(label) },
+    label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     leadingIcon = { Ic(if (allowZero) Icons.Outlined.SelfImprovement else Icons.Outlined.Timer) },
     textStyle = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
     isError = !valid(state.text), placeholder = { Text("0:45", maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true,
@@ -146,7 +146,7 @@ internal fun WorkoutTimerPanel(
         }
         BerillChip(
           onClick = null, selected = true,
-          label = { Text(if (paused) WorkoutsText.pauseTimer() else WorkoutsText.inProgress()) },
+          label = { Text(if (paused) WorkoutsText.pauseTimer() else WorkoutsText.inProgress(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           leadingIcon = {
             Ic(
               if (paused) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,

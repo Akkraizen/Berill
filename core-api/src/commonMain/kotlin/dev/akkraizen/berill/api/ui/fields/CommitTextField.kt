@@ -74,7 +74,7 @@ fun CommitTextField(
   BerillTextField(
     value = state.text,
     onValueChange = { state.text = it },
-    label = { Text(label) },
+    label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     placeholder = if (placeholder != null) {
       { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) }
     } else

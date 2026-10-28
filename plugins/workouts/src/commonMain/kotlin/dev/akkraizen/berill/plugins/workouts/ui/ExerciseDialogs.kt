@@ -65,7 +65,7 @@ internal fun ExerciseDialog(
         BerillTextField(
           name,
           { name = it },
-          label = { Text(CatalogText.name()) },
+          label = { Text(CatalogText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           isError = duplicate,
           supportingText = if (duplicate) {

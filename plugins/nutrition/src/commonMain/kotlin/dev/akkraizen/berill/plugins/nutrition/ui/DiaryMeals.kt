@@ -119,7 +119,7 @@ internal fun EditEntryDialog(
         BerillTextField(
           grams,
           { grams = it.take(7) },
-          label = { Text(NutritionText.grams()) },
+          label = { Text(NutritionText.grams(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           isError = g == null,
           modifier = Modifier.fillMaxWidth()

@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.cards.SectionCard
@@ -95,7 +96,7 @@ private fun OneRepMaxCard(ctx: PluginContext, prefs: WorkoutPrefs) {
       BerillTextField(
         weight,
         { weight = it.take(7) },
-        label = { Text(WorkoutsText.liftedWeight()) },
+        label = { Text(WorkoutsText.liftedWeight(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         isError = weight.isNotBlank() && w == null,
         modifier = Modifier.fillMaxWidth()
@@ -103,7 +104,7 @@ private fun OneRepMaxCard(ctx: PluginContext, prefs: WorkoutPrefs) {
       BerillTextField(
         reps,
         { reps = it.filter(Char::isDigit).take(2) },
-        label = { Text(WorkoutsText.liftedReps()) },
+        label = { Text(WorkoutsText.liftedReps(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth()
       )
@@ -113,7 +114,7 @@ private fun OneRepMaxCard(ctx: PluginContext, prefs: WorkoutPrefs) {
         BerillTextField(
           exercise,
           { exercise = it },
-          label = { Text(WorkoutsText.exercise()) },
+          label = { Text(WorkoutsText.exercise(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           modifier = Modifier.fillMaxWidth(),
           onSubmit = { if (exercise.isNotBlank() && max != null) setMax(ctx, exercise, roundTo(max, 0.5)) }
@@ -174,7 +175,7 @@ private fun PlatesCard(prefs: WorkoutPrefs) {
       BerillTextField(
         target,
         { target = it.take(7) },
-        label = { Text(WorkoutsText.targetWeight()) },
+        label = { Text(WorkoutsText.targetWeight(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         isError = target.isNotBlank() && t == null,
         modifier = Modifier.fillMaxWidth()
@@ -182,7 +183,7 @@ private fun PlatesCard(prefs: WorkoutPrefs) {
       BerillTextField(
         bar,
         { bar = it.take(6) },
-        label = { Text(WorkoutsText.barWeight()) },
+        label = { Text(WorkoutsText.barWeight(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         isError = bar.isNotBlank() && b == null,
         modifier = Modifier.fillMaxWidth()

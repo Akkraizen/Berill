@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
@@ -162,7 +163,7 @@ internal fun LanguagesHome(ctx: PluginContext) {
         )
         BerillChip(
           onClick = { addingLanguage = true },
-          label = { Text(LanguagesText.language()) },
+          label = { Text(LanguagesText.language(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           leadingIcon = { Ic(BerillIcons.Add, size = 18.dp) }
         )
 
@@ -235,7 +236,7 @@ internal fun LanguagesHome(ctx: PluginContext) {
                 rules.forEach { item ->
                   BerillChip(
                     onClick = { ctx.nav.open(LanguagesPlugin.LESSON_ROUTE + item.id) },
-                    label = { Text(item.value.title) },
+                    label = { Text(item.value.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     leadingIcon = { Ic(RULE_ICON, size = 18.dp) }
                   )
                 }

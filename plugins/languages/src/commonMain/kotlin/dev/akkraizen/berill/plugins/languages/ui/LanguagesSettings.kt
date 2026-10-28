@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.BerillIcons
@@ -285,7 +286,7 @@ internal fun LanguageDialog(
         BerillTextField(
           code,
           { code = it },
-          label = { Text(LanguagesText.codeLabel()) },
+          label = { Text(LanguagesText.codeLabel(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           enabled = initial == null,
           isError = code.isNotEmpty() && codeError != null,
@@ -294,23 +295,23 @@ internal fun LanguageDialog(
           } else
             null
         )
-        BerillTextField(name, { name = it }, label = { Text(LanguagesText.selfNameLabel()) }, singleLine = true)
+        BerillTextField(name, { name = it }, label = { Text(LanguagesText.selfNameLabel(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         BerillTextField(
           nativeName,
           { nativeName = it },
-          label = { Text(LanguagesText.nativeNameLabel()) },
+          label = { Text(LanguagesText.nativeNameLabel(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         BerillTextField(
           flag,
           { flag = it.take(4) },
-          label = { Text(LanguagesText.flagLabel(normalized.uppercase().ifEmpty { "FR" })()) },
+          label = { Text(LanguagesText.flagLabel(normalized.uppercase().ifEmpty { "FR" })(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         BerillTextField(
           lessonWord,
           { lessonWord = it },
-          label = { Text(LanguagesText.lessonWordLabel()) },
+          label = { Text(LanguagesText.lessonWordLabel(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
       }

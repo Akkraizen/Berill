@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.i18n.AppLanguage
 import dev.akkraizen.berill.api.ui.BerillIcons
@@ -125,7 +126,7 @@ internal fun AppearanceSettings(core: BerillCore) {
     BerillTextField(
       hex,
       { hex = it.take(7) },
-      label = { Text(CoreText.customColorLabel()) },
+      label = { Text(CoreText.customColorLabel(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       isError = hex.length > 1 && parsed == null,
       modifier = Modifier.weight(1f)

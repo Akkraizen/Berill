@@ -255,7 +255,7 @@ private fun RemoteTextField(node: UiNode.TextField, onAction: (String, String?) 
   BerillTextField(
     value = text,
     onValueChange = { text = it.take(5000) },
-    label = { Text(node.label) },
+    label = { Text(node.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     placeholder = node.placeholder?.let { p -> { Text(p) } },
     singleLine = node.singleLine,
     keyboardOptions = KeyboardOptions(

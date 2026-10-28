@@ -194,13 +194,13 @@ private fun AddBookDialog(onDismiss: () -> Unit, onAdd: (Book) -> Unit) {
         BerillTextField(
           title,
           { title = it },
-          label = { Text(BooksText.name()) },
+          label = { Text(BooksText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         BerillTextField(
           author,
           { author = it },
-          label = { Text(BooksText.author()) },
+          label = { Text(BooksText.author(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true
         )
         ChoiceChips(

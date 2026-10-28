@@ -257,7 +257,7 @@ private fun NewTaskForm(
       title = it
       error = null
     },
-    label = { Text(StudyText.whatToDo()) },
+    label = { Text(StudyText.whatToDo(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
     singleLine = true,
     modifier = Modifier.fillMaxWidth(),
     onSubmit = { submit() }
@@ -275,7 +275,7 @@ private fun NewTaskForm(
     BerillTextField(
       deadline,
       { deadline = it },
-      label = { Text(StudyText.deadline()) },
+      label = { Text(StudyText.deadline(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       isError = deadline.isNotBlank() && deadline.toDateOrNull() == null,
       modifier = Modifier.fillMaxWidth(),

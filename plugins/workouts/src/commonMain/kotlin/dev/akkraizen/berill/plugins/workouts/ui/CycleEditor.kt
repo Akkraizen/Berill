@@ -325,25 +325,25 @@ private fun OverrideDialog(
         )
         if (planned.durationSeconds != null) {
           BerillTextField(duration, { duration = it.take(8) },
-            label = { Text(WorkoutsText.durationInput()) }, singleLine = true, isError = !validDuration,
+            label = { Text(WorkoutsText.durationInput(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true, isError = !validDuration,
             placeholder = { Text(formatDuration(planned.durationSeconds), maxLines = 1, overflow = TextOverflow.Ellipsis) })
           if (planned.durationPerSet) {
             BerillTextField(sets, { sets = it.filter(Char::isDigit).take(2) },
-              label = { Text(WorkoutsText.sets()) }, singleLine = true,
+              label = { Text(WorkoutsText.sets(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true,
               placeholder = { Text("${planned.sets}", maxLines = 1, overflow = TextOverflow.Ellipsis) })
           }
         } else {
           BerillTextField(
             sets,
             { sets = it.filter(Char::isDigit).take(2) },
-            label = { Text(WorkoutsText.sets()) },
+            label = { Text(WorkoutsText.sets(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             singleLine = true,
             placeholder = { Text("${planned.sets}", maxLines = 1, overflow = TextOverflow.Ellipsis) }
           )
           BerillTextField(
             reps,
             { reps = it.take(12) },
-            label = { Text(WorkoutsText.reps()) },
+            label = { Text(WorkoutsText.reps(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             singleLine = true,
             placeholder = { Text(planned.reps, maxLines = 1, overflow = TextOverflow.Ellipsis) }
           )
@@ -355,7 +355,7 @@ private fun OverrideDialog(
           BerillTextField(
             weight,
             { weight = it.take(8) },
-            label = { Text(if (byPercent) WorkoutsText.percentOfMax() else WorkoutsText.weightKg()) },
+            label = { Text(if (byPercent) WorkoutsText.percentOfMax() else WorkoutsText.weightKg(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             singleLine = true,
             isError = !validWeight,
             placeholder = if ((if (byPercent) planned.percent else planned.weight) != null) {

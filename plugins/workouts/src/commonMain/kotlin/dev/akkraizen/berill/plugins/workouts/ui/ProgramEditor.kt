@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.cards.SectionCard
@@ -82,7 +83,7 @@ internal fun NameDialog(title: String, onDismiss: () -> Unit, onCreate: (String)
     onDismissRequest = onDismiss,
     title = { Text(title) },
     text = {
-      BerillTextField(name, { name = it }, label = { Text(WorkoutsText.name()) }, singleLine = true)
+      BerillTextField(name, { name = it }, label = { Text(WorkoutsText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
     },
     confirmButton = {
       TextButton(enabled = name.isNotBlank(), onClick = confirm) { Text(WorkoutsText.create()) }

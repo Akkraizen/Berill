@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
@@ -152,7 +153,7 @@ internal fun NewSubjectDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
       BerillTextField(
         name,
         { name = it },
-        label = { Text(StudyText.subjectName()) },
+        label = { Text(StudyText.subjectName(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true
       )
     },

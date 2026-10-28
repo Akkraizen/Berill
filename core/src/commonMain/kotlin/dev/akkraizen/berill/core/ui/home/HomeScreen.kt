@@ -88,11 +88,11 @@ internal fun HomeScreen(core: BerillCore) {
       FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BerillChip(
           onClick = { core.nav.openNote(null) },
-          label = { Text(CoreText.newNote()) },
+          label = { Text(CoreText.newNote(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           leadingIcon = { Ic(BerillIcons.Add, size = 18.dp) }
         )
         actions.forEach { a ->
-          BerillChip(onClick = a.run, label = { Text(a.label()) }, leadingIcon = { Ic(a.icon, size = 18.dp) })
+          BerillChip(onClick = a.run, label = { Text(a.label(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, leadingIcon = { Ic(a.icon, size = 18.dp) })
         }
       }
     }

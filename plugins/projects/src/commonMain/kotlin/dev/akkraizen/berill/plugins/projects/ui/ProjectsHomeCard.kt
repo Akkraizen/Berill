@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
@@ -56,7 +57,7 @@ internal fun ActiveProjects(ctx: PluginContext) {
         onClick = {
           ctx.nav.openPlugin(ProjectsPlugin.id, ProjectsPlugin.PROJECT_ROUTE + item.id)
         },
-        label = { Text(item.value.title, style = MaterialTheme.typography.labelLarge) }
+        label = { Text(item.value.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) }
       )
     }
   }

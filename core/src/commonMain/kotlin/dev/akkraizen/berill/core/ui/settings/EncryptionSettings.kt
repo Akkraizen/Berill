@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.dialogs.ConfirmDialog
 import dev.akkraizen.berill.api.ui.display.Ic
@@ -161,7 +162,7 @@ private fun PasswordField(value: String, label: String, onChange: (String) -> Un
   BerillTextField(
     value,
     onChange,
-    label = { Text(label) },
+    label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
     singleLine = true,
     visualTransformation = PasswordVisualTransformation(),
     modifier = Modifier.fillMaxWidth()

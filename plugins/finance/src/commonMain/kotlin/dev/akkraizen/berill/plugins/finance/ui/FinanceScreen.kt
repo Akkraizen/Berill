@@ -22,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
@@ -241,7 +242,7 @@ private fun AddOperationForm(
         amount = it
         error = null
       },
-      label = { Text(FinanceText.amount()) },
+      label = { Text(FinanceText.amount(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
       modifier = Modifier.fillMaxWidth(),
@@ -250,7 +251,7 @@ private fun AddOperationForm(
     BerillTextField(
       date,
       { date = it },
-      label = { Text(FinanceText.date()) },
+      label = { Text(FinanceText.date(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       isError = date.toDateOrNull() == null,
       modifier = Modifier.fillMaxWidth(),
@@ -279,7 +280,7 @@ private fun AddOperationForm(
   BerillTextField(
     comment,
     { comment = it },
-    label = { Text(FinanceText.comment()) },
+    label = { Text(FinanceText.comment(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
     singleLine = true,
     modifier = Modifier.fillMaxWidth(),
     onSubmit = { submit() }

@@ -243,7 +243,7 @@ private fun BarcodeCard(ctx: PluginContext, onPick: (Product) -> Unit) {
         BerillTextField(
           code,
           { code = it.filter(Char::isDigit).take(14) },
-          label = { Text(NutritionText.barcode()) },
+          label = { Text(NutritionText.barcode(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Search),
           modifier = Modifier.fillMaxWidth(),
@@ -312,7 +312,7 @@ private fun ManualCard(onPick: (Product) -> Unit) {
     BerillTextField(
       name,
       { name = it },
-      label = { Text(NutritionText.name()) },
+      label = { Text(NutritionText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       modifier = Modifier.fillMaxWidth(),
       onSubmit = ::submit
@@ -320,7 +320,7 @@ private fun ManualCard(onPick: (Product) -> Unit) {
     BerillTextField(
       kcal,
       { kcal = it.take(7) },
-      label = { Text(NutritionText.kcalPer100()) },
+      label = { Text(NutritionText.kcalPer100(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
       isError = kcal.isNotBlank() && k == null,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -371,7 +371,7 @@ private fun PortionDialog(product: Product, onDismiss: () -> Unit, onAdd: (Doubl
         BerillTextField(
           grams,
           { grams = it.take(7) },
-          label = { Text(NutritionText.grams()) },
+          label = { Text(NutritionText.grams(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
           singleLine = true,
           isError = g == null,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -379,10 +379,10 @@ private fun PortionDialog(product: Product, onDismiss: () -> Unit, onAdd: (Doubl
         )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
           product.servingGrams?.let { s ->
-            BerillChip(onClick = { grams = formatNum(s) }, label = { Text(NutritionText.serving(formatNum(s))()) })
+            BerillChip(onClick = { grams = formatNum(s) }, label = { Text(NutritionText.serving(formatNum(s))(), maxLines = 1, overflow = TextOverflow.Ellipsis) })
           }
           listOf(50.0, 100.0, 200.0).forEach { v ->
-            BerillChip(onClick = { grams = formatNum(v) }, label = { Text(formatNum(v)) })
+            BerillChip(onClick = { grams = formatNum(v) }, label = { Text(formatNum(v), maxLines = 1, overflow = TextOverflow.Ellipsis) })
           }
         }
         val p = g ?: 0.0

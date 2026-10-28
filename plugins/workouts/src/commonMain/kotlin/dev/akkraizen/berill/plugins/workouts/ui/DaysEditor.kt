@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.BerillIcons
@@ -265,12 +266,12 @@ private fun ExerciseEditor(
           BerillChip(
             onClick = { edit { it.copy(percent = null) } },
             selected = ex.percent == null,
-            label = { Text(WorkoutsText.byWeight()) }
+            label = { Text(WorkoutsText.byWeight(), maxLines = 1, overflow = TextOverflow.Ellipsis) }
           )
           BerillChip(
             onClick = { edit { it.copy(percent = it.percent ?: 70.0, weight = null) } },
             selected = ex.percent != null,
-            label = { Text(WorkoutsText.byPercent()) }
+            label = { Text(WorkoutsText.byPercent(), maxLines = 1, overflow = TextOverflow.Ellipsis) }
           )
         }
       }
