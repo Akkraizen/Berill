@@ -17,6 +17,7 @@ import dev.akkraizen.berill.plugins.habits.ui.HabitsScreen
 import dev.akkraizen.berill.plugins.habits.ui.HabitsSettings
 import dev.akkraizen.berill.plugins.habits.ui.HabitsStatsScreen
 import dev.akkraizen.berill.plugins.habits.ui.HabitsTodayCard
+import dev.akkraizen.berill.plugins.habits.widgets.habitsWidgets
 
 object HabitsPlugin : BerillPlugin {
   const val HABITS = "habits"
@@ -65,4 +66,6 @@ object HabitsPlugin : BerillPlugin {
         HabitsTodayCard(data)
       }
     )
+
+  override fun widgets(ctx: PluginContext) = habitsWidgets(HabitsData(ctx))
 }

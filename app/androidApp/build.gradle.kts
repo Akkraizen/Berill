@@ -16,6 +16,15 @@ dependencies {
   implementation(project(":app:shared"))
 
   implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.glance.appwidget)
+  implementation(libs.androidx.glance.material3)
+  implementation(libs.androidx.work.runtime)
+
+  testImplementation(libs.junit)
+  testImplementation(libs.kotlin.test)
+  testImplementation(libs.robolectric)
+  testImplementation(libs.androidx.test.core)
+  testImplementation(libs.androidx.glance.testing)
 
   implementation(libs.compose.uiToolingPreview)
   debugImplementation(libs.compose.uiTooling)
@@ -92,5 +101,8 @@ android {
   }
   buildFeatures {
     compose = true
+  }
+  testOptions {
+    unitTests.isIncludeAndroidResources = true
   }
 }

@@ -24,6 +24,7 @@ import dev.akkraizen.berill.plugins.nutrition.ui.NutritionHomeCard
 import dev.akkraizen.berill.plugins.nutrition.ui.StatsPage
 import dev.akkraizen.berill.plugins.nutrition.ui.WeightPage
 import dev.akkraizen.berill.plugins.nutrition.ui.openAdd
+import dev.akkraizen.berill.plugins.nutrition.widgets.nutritionWidgets
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -89,4 +90,6 @@ object NutritionPlugin : BerillPlugin {
         openAdd(ctx, today().toString(), mealByHour(hour))
       }
     )
+
+  override fun widgets(ctx: PluginContext) = nutritionWidgets(ctx)
 }

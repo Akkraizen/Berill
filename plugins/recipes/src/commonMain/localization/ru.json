@@ -50,6 +50,11 @@
     "photos.moveRight": "Переместить вправо",
     "photos.cover": "Обложка",
     "recipes.title": "Рецепты",
-    "recipes.untitled": "Без названия"
+    "recipes.untitled": "Без названия",
+    "recipes.widget.dayTitle": "Рецепт дня",
+    "recipes.widget.dayDescription": "Каждый день новый рецепт, сначала из избранного",
+    "recipes.widget.noRecipes": "Добавьте рецепты в книгу рецептов",
+    "recipes.widget.open": "Открыть",
+    "recipes.widget.another": "Другой"
   }
 }

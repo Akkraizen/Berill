@@ -448,6 +448,19 @@
     "exercise.db_lateral_lunge.name": "Dumbbell lateral lunge",
     "exercise.db_lateral_lunge.description": "Lunge sideways while holding dumbbells.",
     "exercise.cable_pull_through.name": "Cable pull-through",
-    "exercise.cable_pull_through.description": "Hip extension with a rope attached to a low cable."
+    "exercise.cable_pull_through.description": "Hip extension with a rope attached to a low cable.",
+    "workouts.widget.nextTitle": "Next workout",
+    "workouts.widget.nextDescription": "The day from your active cycle or program with a Start button",
+    "workouts.widget.restTitle": "Rest timer",
+    "workouts.widget.restDescription": "Rest between sets, started right from the widget",
+    "workouts.widget.start": "Start",
+    "workouts.widget.continue": "Continue",
+    "workouts.widget.inProgress": "Workout in progress",
+    "workouts.widget.nothingPlanned": "No active cycle or program",
+    "workouts.widget.noExercises": "This day has no exercises",
+    "workouts.widget.resting": "Rest",
+    "workouts.widget.restIdle": "Pick a rest time",
+    "workouts.widget.stop": "Stop",
+    "workouts.widget.progress": "sets: {done} of {total}"
 }
 }

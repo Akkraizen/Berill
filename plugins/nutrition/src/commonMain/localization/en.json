@@ -146,6 +146,14 @@
     "nutrition.weightKg": "Weight, kg",
     "nutrition.yesterday": "Yesterday",
     "nutrition.stats.macros": "Daily protein, fat and carbohydrates",
-    "nutrition.stats.water": "Daily water intake"
+    "nutrition.stats.water": "Daily water intake",
+    "nutrition.widget.caloriesTitle": "Calories and macros",
+    "nutrition.widget.caloriesDescription": "Eaten today, what's left to your target, and macronutrients",
+    "nutrition.widget.waterTitle": "Water",
+    "nutrition.widget.waterDescription": "Water progress with quick “+glass” buttons",
+    "nutrition.widget.weightTitle": "Weight",
+    "nutrition.widget.weightDescription": "A chart of your recent weight entries",
+    "nutrition.widget.noWeight": "No weight entries yet",
+    "nutrition.widget.weightDelta": "{delta} kg over {n} entries"
   }
 }

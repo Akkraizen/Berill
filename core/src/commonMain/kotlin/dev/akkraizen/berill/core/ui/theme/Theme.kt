@@ -95,6 +95,18 @@ private val BerillTypography = Base.copy(
   labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
 )
 
+fun widgetColorSchemes(appearance: Appearance): Pair<ColorScheme, ColorScheme>? {
+  if (appearance.accent == Appearance.ACCENT_DYNAMIC) return null
+  val seed = parseHexColor(appearance.accent)
+  val light = seed?.let { dynamicColorScheme(seedColor = it, isDark = false, style = PaletteStyle.TonalSpot) } ?: Light
+  val dark = seed?.let { dynamicColorScheme(seedColor = it, isDark = true, style = PaletteStyle.TonalSpot) } ?: Dark
+  return when (appearance.mode) {
+    ThemeMode.Light -> light to light
+    ThemeMode.Dark -> dark to dark
+    ThemeMode.System -> light to dark
+  }
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BerillTheme(appearance: Appearance = Appearance(), content: @Composable () -> Unit) {

@@ -100,6 +100,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
 internal const val DAY_ROUTE = "day/"
+internal const val NEW_ROUTE = "new/"
 
 private val HOUR = 56.dp
 private val GUTTER = 48.dp
@@ -154,6 +155,11 @@ internal fun CalendarPage(ctx: PluginContext) {
     }
   }
   var editing by remember { mutableStateOf<Editing?>(null) }
+  LaunchedEffect(route) {
+    val day = route?.takeIf { it.startsWith(NEW_ROUTE) }?.removePrefix(NEW_ROUTE)?.toDateOrNull() ?: return@LaunchedEffect
+    editing = newEvent(day)
+    ctx.nav.back()
+  }
   AnimatedRoute(route) { r ->
     val day = r?.takeIf { it.startsWith(DAY_ROUTE) }?.removePrefix(DAY_ROUTE)?.toDateOrNull()
     if (day != null)

@@ -28,6 +28,8 @@ Online catalog searches and remote images require an internet connection.
 
 - Markdown notes and editing.
 - A home dashboard with cards and quick actions supplied by enabled modules.
+- Android home screen widgets for habits, plans, workouts, nutrition, reading, finances, notes, and
+  more, with a shared widget model ready for other platforms.
 - Daily tasks, weekly goals, habits, streaks, and statistics.
 - Projects and ideas organized on a board, with checklists.
 - Subjects, assignments, and deadlines for study.
@@ -350,6 +352,7 @@ The build files define the current tool versions and platform configuration.
 | [docs/RELEASES.md](docs/RELEASES.md) | Versioning, Android signing, release workflow, publishing updates. |
 | [docs/EXTERNAL_PLUGINS.md](docs/EXTERNAL_PLUGINS.md) | Writing, packaging, and installing third-party plugins. |
 | [docs/MACOS.md](docs/MACOS.md) | Building, testing, and distributing the macOS app. |
+| [docs/WIDGETS.md](docs/WIDGETS.md) | Home screen widgets: the shared model, the Android host, and adding other platforms. |
 | [docs/MCP.md](docs/MCP.md) | Connecting Claude and other AI assistants through the MCP server. |
 | [docs/GOOGLE_CALENDAR.md](docs/GOOGLE_CALENDAR.md) | Setting up Google Cloud and syncing the planner calendar with Google Calendar. |
 | [scripts/windows-installer/README.md](scripts/windows-installer/README.md) | Building the Windows installer locally. |

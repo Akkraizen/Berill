@@ -86,6 +86,8 @@
       "one": "credit"
     },
     "study.zetBadge.2": "{n} {p1}",
-    "study.stats.subjects": "Outstanding tasks by subject"
+    "study.stats.subjects": "Outstanding tasks by subject",
+    "study.widget.deadlinesTitle": "Upcoming deadlines",
+    "study.widget.deadlinesDescription": "Due dates from Study and other modules, soonest first"
   }
 }

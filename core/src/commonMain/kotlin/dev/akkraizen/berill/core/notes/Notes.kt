@@ -29,6 +29,8 @@ class NotesRepository(data: DataAccess, private val now: () -> Long) {
 
   fun get(id: String): Note? = collection.get(id)
 
+  fun all(): List<Item<Note>> = collection.all().sortedByDescending { it.value.updatedAt }
+
   fun findByTitle(title: String): String? {
     val wanted = title.trim()
     return collection

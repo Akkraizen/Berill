@@ -25,6 +25,7 @@ import dev.akkraizen.berill.plugins.workouts.ui.JournalPage
 import dev.akkraizen.berill.plugins.workouts.ui.ProgramPage
 import dev.akkraizen.berill.plugins.workouts.ui.WorkoutsHomeCard
 import dev.akkraizen.berill.plugins.workouts.ui.WorkoutsSettings
+import dev.akkraizen.berill.plugins.workouts.widgets.workoutsWidgets
 
 object WorkoutsPlugin : BerillPlugin {
   const val PROGRAMS = "workout_programs"
@@ -89,4 +90,6 @@ object WorkoutsPlugin : BerillPlugin {
         startWorkout(ctx, WorkoutsText.workoutTitle(), null, emptyList())
       }
     )
+
+  override fun widgets(ctx: PluginContext) = workoutsWidgets(ctx)
 }

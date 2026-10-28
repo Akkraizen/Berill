@@ -211,4 +211,19 @@ internal object WorkoutsText {
   val availablePlates = pluginI18n.tr("workouts.availablePlates")
   val platePlaceholder = pluginI18n.tr("workouts.platePlaceholder")
   val rounding = pluginI18n.tr("workouts.rounding")
+
+  val widgetNextTitle = pluginI18n.tr("workouts.widget.nextTitle")
+  val widgetNextDescription = pluginI18n.tr("workouts.widget.nextDescription")
+  val widgetRestTitle = pluginI18n.tr("workouts.widget.restTitle")
+  val widgetRestDescription = pluginI18n.tr("workouts.widget.restDescription")
+  val widgetStart = pluginI18n.tr("workouts.widget.start")
+  val widgetContinue = pluginI18n.tr("workouts.widget.continue")
+  val widgetInProgress = pluginI18n.tr("workouts.widget.inProgress")
+  val widgetNothingPlanned = pluginI18n.tr("workouts.widget.nothingPlanned")
+  val widgetNoExercises = pluginI18n.tr("workouts.widget.noExercises")
+  val widgetResting = pluginI18n.tr("workouts.widget.resting")
+  val widgetRestIdle = pluginI18n.tr("workouts.widget.restIdle")
+  val widgetStop = pluginI18n.tr("workouts.widget.stop")
+
+  fun widgetProgress(done: Int, total: Int) = pluginI18n.tr("workouts.widget.progress", "done" to done, "total" to total)
 }

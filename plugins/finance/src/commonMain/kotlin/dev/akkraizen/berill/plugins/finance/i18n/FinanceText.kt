@@ -67,4 +67,12 @@ internal object FinanceText {
     pluginI18n.tr("finance.interestHint", "interest" to interest)
 
   val deletedCategoryHint = pluginI18n.tr("finance.deletedCategoryHint")
+
+  val widgetMonthTitle = pluginI18n.tr("finance.widget.monthTitle")
+  val widgetMonthDescription = pluginI18n.tr("finance.widget.monthDescription")
+  val widgetQuickTitle = pluginI18n.tr("finance.widget.quickTitle")
+  val widgetQuickDescription = pluginI18n.tr("finance.widget.quickDescription")
+  val widgetFree = pluginI18n.tr("finance.widget.free")
+  val widgetToday = pluginI18n.tr("finance.widget.today")
+  val widgetOther = pluginI18n.tr("finance.widget.other")
 }

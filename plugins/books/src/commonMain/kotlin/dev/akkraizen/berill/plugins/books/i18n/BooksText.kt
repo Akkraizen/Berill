@@ -70,4 +70,11 @@ internal object BooksText {
   val settingsHint = pluginI18n.tr("books.settingsHint")
   val apiKeyOptional = pluginI18n.tr("books.apiKeyOptional")
   val keyStorageHint = pluginI18n.tr("books.keyStorageHint")
+
+  val widgetReadingTitle = pluginI18n.tr("books.widget.readingTitle")
+  val widgetReadingDescription = pluginI18n.tr("books.widget.readingDescription")
+
+  fun widgetReadingDays(n: Int) = pluginI18n.tr("books.widget.readingDays", "n" to n)
+
+  fun widgetPages(n: Int) = pluginI18n.tr("books.widget.pages", "n" to n)
 }

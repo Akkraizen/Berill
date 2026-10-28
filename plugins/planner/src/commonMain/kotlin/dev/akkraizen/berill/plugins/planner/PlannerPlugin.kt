@@ -34,6 +34,7 @@ import dev.akkraizen.berill.plugins.planner.ui.CalendarPage
 import dev.akkraizen.berill.plugins.planner.ui.DayCard
 import dev.akkraizen.berill.plugins.planner.ui.GoogleCalendarSettings
 import dev.akkraizen.berill.plugins.planner.ui.PlannerScreen
+import dev.akkraizen.berill.plugins.planner.widgets.plannerWidgets
 
 object PlannerPlugin : BerillPlugin {
   const val TASKS = "planner"
@@ -95,4 +96,6 @@ object PlannerPlugin : BerillPlugin {
         DayCard(data, today(), all, deadlines, compact = false, showHeader = false)
       }
     )
+
+  override fun widgets(ctx: PluginContext) = plannerWidgets(ctx)
 }

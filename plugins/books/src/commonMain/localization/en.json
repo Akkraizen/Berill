@@ -46,6 +46,10 @@
     "books.title": "Reading",
     "books.untitled": "Untitled",
     "books.stats.months": "Books finished by month",
-    "books.stats.completed": "Completed"
+    "books.stats.completed": "Completed",
+    "books.widget.readingTitle": "Reading now",
+    "books.widget.readingDescription": "Books you're reading; tap one to open it",
+    "books.widget.readingDays": "day {n}",
+    "books.widget.pages": "{n} pages"
   }
 }

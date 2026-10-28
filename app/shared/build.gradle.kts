@@ -34,5 +34,9 @@ kotlin {
       implementation(project(":plugins:workouts"))
       implementation(project(":plugins:nutrition"))
     }
+    jvmTest.dependencies {
+      implementation(libs.kotlin.test)
+      implementation(libs.sqldelight.sqliteDriver)
+    }
   }
 }

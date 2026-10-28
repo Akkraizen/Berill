@@ -29,6 +29,7 @@ import dev.akkraizen.berill.plugins.study.ui.SubjectScreen
 import dev.akkraizen.berill.plugins.study.ui.TaskScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import dev.akkraizen.berill.plugins.study.widgets.studyWidgets
 
 object StudyPlugin : BerillPlugin {
   const val SUBJECTS = "subjects"
@@ -98,4 +99,6 @@ object StudyPlugin : BerillPlugin {
           }
       }
     )
+
+  override fun widgets(ctx: PluginContext) = studyWidgets(ctx)
 }

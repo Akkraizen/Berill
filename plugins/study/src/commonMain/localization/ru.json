@@ -70,6 +70,8 @@
     "study.whatToDo": "Что сделать",
     "study.zet": "ЗЕТ",
     "study.zetBadge.2": "ЗЕТ {n}",
-    "study.stats.subjects": "Нагрузка по предметам"
+    "study.stats.subjects": "Нагрузка по предметам",
+    "study.widget.deadlinesTitle": "Ближайшие дедлайны",
+    "study.widget.deadlinesDescription": "Сроки из учёбы и других модулей, по возрастанию"
   }
 }

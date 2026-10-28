@@ -82,6 +82,15 @@ class AppNavigator(private val newNoteId: () -> String) {
 
   fun openSettings(section: String) = push(Destination.SettingsSection(section))
 
+  fun showPlugin(pluginId: String, route: String? = null, page: String? = null) {
+    val root = Destination.Plugin(pluginId, page = page)
+    _stack.value = if (route == null) listOf(Destination.Home, root) else listOf(Destination.Home, root, Destination.Plugin(pluginId, route, page))
+  }
+
+  fun showNote(id: String?) {
+    _stack.value = listOf(Destination.Home, Destination.Notes, Destination.Note(id ?: newNoteId()))
+  }
+
   fun openSection(pluginId: String, page: String? = null) {
     _stack.value = listOf(Destination.Home, Destination.Plugin(pluginId, page = page))
   }

@@ -75,6 +75,12 @@
     "languages.untitled": "Без названия",
     "languages.wordOfDay": "Слово дня",
     "languages.wordsAndPhrases": "Слова и фразы",
-    "languages.stats.lessons": "Уроки по месяцам"
+    "languages.stats.lessons": "Уроки по месяцам",
+    "languages.widget.cardTitle": "Карточка слова",
+    "languages.widget.cardDescription": "Повторение слов из словаря прямо на рабочем столе",
+    "languages.widget.cardChoose": "Язык карточек",
+    "languages.widget.noWords": "Добавьте слова с переводом в словарь",
+    "languages.widget.show": "Показать",
+    "languages.widget.next": "Дальше"
   }
 }

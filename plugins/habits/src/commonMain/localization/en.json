@@ -81,6 +81,12 @@
     "habits.year": "Year",
     "habits.stats.trend": "Habit trends",
     "habits.stats.metric": "Metric",
-    "habits.stats.completion": "Overall habit completion"
+    "habits.stats.completion": "Overall habit completion",
+    "habits.widget.todayTitle": "Today's habits",
+    "habits.widget.todayDescription": "Check off habits right from the home screen",
+    "habits.widget.weekTitle": "Habit week",
+    "habits.widget.weekDescription": "A 7-day grid and the streak for each habit",
+    "habits.widget.perfectStreak": "Perfect days in a row: {n}",
+    "habits.widget.streak": "{n} d"
   }
 }

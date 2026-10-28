@@ -73,6 +73,16 @@ internal fun rememberWorkoutPrefs(ctx: PluginContext): WorkoutPrefs {
   )
 }
 
+internal fun workoutPrefs(ctx: PluginContext): WorkoutPrefs {
+  val s = ctx.settings
+  return WorkoutPrefs(
+    bar = s.get(BAR_KEY).asDouble() ?: DEFAULT_BAR,
+    plates = s.get(PLATES_KEY).asPlates() ?: DEFAULT_PLATES,
+    rounding = s.get(ROUNDING_KEY).asDouble() ?: DEFAULT_ROUNDING,
+    maxes = s.get(MAXES_KEY).asMaxes()
+  )
+}
+
 internal fun setBar(ctx: PluginContext, value: Double) = ctx.settings.set(BAR_KEY, JsonPrimitive(value))
 
 internal fun setRounding(ctx: PluginContext, value: Double) = ctx.settings.set(ROUNDING_KEY, JsonPrimitive(value))

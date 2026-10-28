@@ -53,6 +53,13 @@
     "finance.savedToAccounts": "Saved to accounts",
     "finance.savingsAccounts": "Savings accounts — {total}",
     "finance.title": "Finance",
-    "finance.stats.flow": "Daily income and expenses"
+    "finance.stats.flow": "Daily income and expenses",
+    "finance.widget.monthTitle": "Monthly finances",
+    "finance.widget.monthDescription": "Free money, income, expenses, and top categories",
+    "finance.widget.quickTitle": "Quick expense",
+    "finance.widget.quickDescription": "Category buttons open the amount entry",
+    "finance.widget.free": "Free",
+    "finance.widget.today": "Today",
+    "finance.widget.other": "Other expense"
   }
 }

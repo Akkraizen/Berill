@@ -83,6 +83,12 @@
     "habits.year": "Год",
     "habits.stats.trend": "Динамика привычек",
     "habits.stats.metric": "Показатель",
-    "habits.stats.completion": "Выполнение всех привычек"
+    "habits.stats.completion": "Выполнение всех привычек",
+    "habits.widget.todayTitle": "Привычки на сегодня",
+    "habits.widget.todayDescription": "Отмечайте привычки прямо с рабочего стола",
+    "habits.widget.weekTitle": "Неделя привычек",
+    "habits.widget.weekDescription": "Сетка за 7 дней и серии по каждой привычке",
+    "habits.widget.perfectStreak": "Идеальных дней подряд: {n}",
+    "habits.widget.streak": "{n} дн."
   }
 }

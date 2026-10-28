@@ -14,6 +14,7 @@ import dev.akkraizen.berill.plugins.recipes.data.recipes
 import dev.akkraizen.berill.plugins.recipes.i18n.RecipesText
 import dev.akkraizen.berill.plugins.recipes.ui.RecipeScreen
 import dev.akkraizen.berill.plugins.recipes.ui.RecipesGallery
+import dev.akkraizen.berill.plugins.recipes.widgets.recipesWidgets
 
 object RecipesPlugin : BerillPlugin {
   const val RECIPES = "recipes"
@@ -48,4 +49,6 @@ object RecipesPlugin : BerillPlugin {
         RecipesGallery(ctx)
     }
   }
+
+  override fun widgets(ctx: PluginContext) = recipesWidgets(ctx)
 }

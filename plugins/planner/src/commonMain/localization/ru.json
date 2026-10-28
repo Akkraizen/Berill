@@ -97,6 +97,22 @@
     "planner.stats.week": "Задачи на неделю",
     "planner.stats.planned": "Запланировано",
     "planner.stats.done": "Выполнено",
-    "planner.stats.hint": "Задачи сгруппированы по дате плана, а не по времени выполнения."
+    "planner.stats.hint": "Задачи сгруппированы по дате плана, а не по времени выполнения.",
+    "planner.widget.todayTitle": "План на сегодня",
+    "planner.widget.todayDescription": "Задачи и события дня, задачи отмечаются прямо на виджете",
+    "planner.widget.add": "Добавить",
+    "planner.widget.done": "{done} из {total}",
+    "planner.widget.events": "событий: {n}",
+    "planner.widget.calendarTitle": "Календарь",
+    "planner.widget.calendarDescription": "Месяц с отметками событий и события выбранного дня",
+    "planner.widget.agendaTitle": "Расписание",
+    "planner.widget.agendaDescription": "События на две недели вперёд по дням",
+    "planner.widget.previous": "Предыдущий месяц",
+    "planner.widget.next": "Следующий месяц",
+    "planner.widget.tomorrow": "Завтра",
+    "planner.widget.noEvents": "Событий нет",
+    "planner.widget.noUpcoming": "Ближайших событий нет",
+    "planner.widget.openDay": "День",
+    "planner.widget.newEvent": "Событие"
   }
 }

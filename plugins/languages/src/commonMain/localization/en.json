@@ -79,6 +79,12 @@
     "languages.untitled": "Untitled",
     "languages.wordOfDay": "Word of the day",
     "languages.wordsAndPhrases": "Words and phrases",
-    "languages.stats.lessons": "Lessons by month"
+    "languages.stats.lessons": "Lessons by month",
+    "languages.widget.cardTitle": "Word card",
+    "languages.widget.cardDescription": "Review dictionary words right on your home screen",
+    "languages.widget.cardChoose": "Card language",
+    "languages.widget.noWords": "Add words with translations to your dictionary",
+    "languages.widget.show": "Show",
+    "languages.widget.next": "Next"
   }
 }

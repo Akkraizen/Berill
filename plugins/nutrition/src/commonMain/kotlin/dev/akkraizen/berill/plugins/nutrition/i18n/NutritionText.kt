@@ -196,4 +196,14 @@ internal object NutritionText {
   val glassSize = pluginI18n.tr("nutrition.glassSize")
   val resetOverrides = pluginI18n.tr("nutrition.resetOverrides")
   val minimumNote = pluginI18n.tr("nutrition.minimumNote")
+
+  val widgetCaloriesTitle = pluginI18n.tr("nutrition.widget.caloriesTitle")
+  val widgetCaloriesDescription = pluginI18n.tr("nutrition.widget.caloriesDescription")
+  val widgetWaterTitle = pluginI18n.tr("nutrition.widget.waterTitle")
+  val widgetWaterDescription = pluginI18n.tr("nutrition.widget.waterDescription")
+  val widgetWeightTitle = pluginI18n.tr("nutrition.widget.weightTitle")
+  val widgetWeightDescription = pluginI18n.tr("nutrition.widget.weightDescription")
+  val widgetNoWeight = pluginI18n.tr("nutrition.widget.noWeight")
+
+  fun widgetWeightDelta(delta: String, n: Int) = pluginI18n.tr("nutrition.widget.weightDelta", "delta" to delta, "n" to n)
 }

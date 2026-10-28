@@ -47,10 +47,10 @@ internal fun EditOperationDialog(
   accounts: List<String>,
   onDismiss: () -> Unit,
   onSave: (Operation) -> Unit,
-  onDelete: () -> Unit
+  onDelete: (() -> Unit)?
 ) {
   var kind by remember { mutableStateOf(initial.kind) }
-  var amount by remember { mutableStateOf(formatPlain(initial.amount)) }
+  var amount by remember { mutableStateOf(if (initial.amount == 0.0) "" else formatPlain(initial.amount)) }
   var category by remember { mutableStateOf(initial.category ?: categories.firstFor(initial.kind)) }
   var account by remember { mutableStateOf(initial.account) }
   var date by remember { mutableStateOf(initial.date) }
@@ -116,11 +116,12 @@ internal fun EditOperationDialog(
         }
         DateTextField(date, { date = it }, FinanceText.date(), isError = date.toDateOrNull() == null)
         BerillTextField(comment, { comment = it }, label = { Text(FinanceText.comment(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
-        TextButton(onClick = { askDelete = true }) {
-          Ic(BerillIcons.Delete, tint = MaterialTheme.colorScheme.error)
-          Spacer(Modifier.width(6.dp))
-          Text(FinanceText.deleteOperation(), color = MaterialTheme.colorScheme.error)
-        }
+        if (onDelete != null)
+          TextButton(onClick = { askDelete = true }) {
+            Ic(BerillIcons.Delete, tint = MaterialTheme.colorScheme.error)
+            Spacer(Modifier.width(6.dp))
+            Text(FinanceText.deleteOperation(), color = MaterialTheme.colorScheme.error)
+          }
       }
     },
     confirmButton = {
@@ -128,7 +129,7 @@ internal fun EditOperationDialog(
     },
     dismissButton = { TextButton(onClick = onDismiss) { Text(FinanceText.cancel()) } }
   )
-  if (askDelete)
+  if (askDelete && onDelete != null)
     ConfirmDialog(
       FinanceText.deleteOperationQuestion(),
       FinanceText.deleteOperationText(),

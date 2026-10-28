@@ -77,6 +77,8 @@
     "watching.watchingNowCard": "Сейчас смотрю",
     "watching.year": "Год",
     "watching.stats.months": "Просмотрено по месяцам",
-    "watching.stats.completed": "Завершено"
+    "watching.stats.completed": "Завершено",
+    "watching.widget.nowTitle": "Смотрю сейчас",
+    "watching.widget.nowDescription": "Тайтлы в просмотре и кнопка «+1 серия»"
   }
 }

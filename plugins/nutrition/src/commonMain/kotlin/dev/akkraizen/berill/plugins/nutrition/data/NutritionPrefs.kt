@@ -74,3 +74,18 @@ internal fun rememberNutritionPrefs(ctx: PluginContext): NutritionPrefs {
     glassMl = (glassJson as? JsonPrimitive)?.intOrNull?.takeIf { it > 0 } ?: DEFAULT_GLASS
   )
 }
+
+internal fun nutritionPrefs(ctx: PluginContext): NutritionPrefs {
+  val profile = profileOf(ctx)
+  val targets = targetsOf(ctx)
+  val weight = latestWeight(weights(ctx).all().map { it.value }, profile)
+  val computed = computeNorm(profile, weight)
+  return NutritionPrefs(
+    profile = profile,
+    targets = targets,
+    weightKg = weight,
+    computed = computed,
+    norm = computed.withOverrides(targets),
+    glassMl = (ctx.settings.get(GLASS_KEY) as? JsonPrimitive)?.intOrNull?.takeIf { it > 0 } ?: DEFAULT_GLASS
+  )
+}

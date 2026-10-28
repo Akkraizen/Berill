@@ -10,10 +10,13 @@ import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
 import dev.akkraizen.berill.plugins.finance.ui.FinanceHomeCard
 import dev.akkraizen.berill.plugins.finance.ui.FinanceScreen
 import dev.akkraizen.berill.plugins.finance.ui.FinanceSettings
+import dev.akkraizen.berill.plugins.finance.widgets.financeWidgets
 
 object FinancePlugin : BerillPlugin {
   const val OPERATIONS = "operations"
   const val ACCOUNTS = "accounts"
+
+  internal const val ADD_ROUTE = "add:"
 
   override val id = "finance"
   override val title
@@ -37,4 +40,6 @@ object FinancePlugin : BerillPlugin {
 
   override fun homeCards(ctx: PluginContext) =
     listOf(HomeCard("month", FinanceText.homeCardTitle, order = 40) { FinanceHomeCard(ctx) })
+
+  override fun widgets(ctx: PluginContext) = financeWidgets(ctx)
 }

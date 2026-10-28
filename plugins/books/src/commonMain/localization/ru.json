@@ -46,6 +46,10 @@
     "books.title": "Чтение",
     "books.untitled": "Без названия",
     "books.stats.months": "Прочитано по месяцам",
-    "books.stats.completed": "Завершено"
+    "books.stats.completed": "Завершено",
+    "books.widget.readingTitle": "Сейчас читаю",
+    "books.widget.readingDescription": "Книги в процессе чтения, касание открывает книгу",
+    "books.widget.readingDays": "день {n}",
+    "books.widget.pages": "{n} стр."
   }
 }

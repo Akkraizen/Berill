@@ -31,6 +31,8 @@ import dev.akkraizen.berill.core.sync.SyncEngine
 import dev.akkraizen.berill.core.ui.theme.AppearanceCache
 import dev.akkraizen.berill.core.ui.theme.AppearanceStore
 import dev.akkraizen.berill.core.update.AppUpdates
+import dev.akkraizen.berill.core.widgets.WidgetHub
+import dev.akkraizen.berill.core.widgets.coreWidgets
 import dev.akkraizen.berill.protocol.HybridClock
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -67,6 +69,14 @@ class BerillCore(
   val collections = CollectionRegistry(plugins + external.loaded)
   val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, files, vault, oauth)
   val appearance = AppearanceStore(store, scope)
+
+  val widgets: WidgetHub = WidgetHub(
+    plugins = this.plugins,
+    nav = nav,
+    store = store,
+    coreProviders = coreWidgets(notes) { except -> widgets.summaries(except) },
+    now = { Clock.System.now().toEpochMilliseconds() }
+  )
 
   val encryption = SyncEncryption(store, vault)
   val sync = SyncEngine(store, deviceId, scope, encryption, vault)

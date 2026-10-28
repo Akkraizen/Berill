@@ -31,6 +31,15 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
 
   val localChanges: SharedFlow<Unit> = _localChanges
 
+  private val _changes = MutableSharedFlow<Unit>(extraBufferCapacity = 64)
+
+  val changes: SharedFlow<Unit> = _changes
+
+  private fun changed() {
+    _localChanges.tryEmit(Unit)
+    _changes.tryEmit(Unit)
+  }
+
   private val _pendingDeletions = MutableStateFlow(emptyList<PendingDeletion>())
   val pendingDeletions = _pendingDeletions.asStateFlow()
 
@@ -61,7 +70,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       val patch = SyncRecord(collection, id, JsonObject(changed), changed.keys.associateWith { stamp })
       write(current.mergeWith(patch), dirty = true, version = (row?.version ?: 0) + 1)
     }
-    _localChanges.tryEmit(Unit)
+    changed()
   }
 
   fun delete(collection: String, id: String) {
@@ -75,7 +84,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       deletion = PendingDeletion(collection, id, stamp)
     }
     deletion?.let { item -> _pendingDeletions.update { it + item } }
-    _localChanges.tryEmit(Unit)
+    changed()
   }
 
   fun dismissDeletions(batch: List<PendingDeletion>) {
@@ -93,7 +102,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       }
     }
     dismissDeletions(batch)
-    _localChanges.tryEmit(Unit)
+    changed()
   }
 
   fun restampAll() {
@@ -106,7 +115,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         write(next, dirty = true, version = row.version + 1)
       }
     }
-    _localChanges.tryEmit(Unit)
+    changed()
   }
 
   fun enqueueAllForSync() {
@@ -130,6 +139,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         write(merged, dirty = row?.dirty == 1L, version = row?.version ?: 0)
       }
     }
+    _changes.tryEmit(Unit)
   }
 
   fun markClean(record: SyncRecord, version: Long) = q.markClean(record.collection, record.id, version)

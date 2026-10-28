@@ -77,6 +77,8 @@
     "watching.watchingNowCard": "Currently watching",
     "watching.year": "Year",
     "watching.stats.months": "Titles finished by month",
-    "watching.stats.completed": "Completed"
+    "watching.stats.completed": "Completed",
+    "watching.widget.nowTitle": "Watching now",
+    "watching.widget.nowDescription": "Titles you're watching with a “+1 episode” button"
   }
 }

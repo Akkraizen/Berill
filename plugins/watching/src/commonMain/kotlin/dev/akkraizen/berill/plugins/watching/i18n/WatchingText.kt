@@ -128,4 +128,7 @@ internal object WatchingText {
   val keyLocalHint = pluginI18n.tr("watching.keyLocalHint")
   val shikimoriHint = pluginI18n.tr("watching.shikimoriHint")
   val keysStorageHint = pluginI18n.tr("watching.keysStorageHint")
+
+  val widgetNowTitle = pluginI18n.tr("watching.widget.nowTitle")
+  val widgetNowDescription = pluginI18n.tr("watching.widget.nowDescription")
 }

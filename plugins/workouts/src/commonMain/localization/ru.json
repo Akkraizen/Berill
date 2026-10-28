@@ -453,6 +453,19 @@
     "exercise.db_lateral_lunge.name": "Боковые выпады с гантелями",
     "exercise.db_lateral_lunge.description": "Выпад в сторону с гантелями в руках.",
     "exercise.cable_pull_through.name": "Тяга каната между ног",
-    "exercise.cable_pull_through.description": "Разгибание таза с канатом нижнего блока."
+    "exercise.cable_pull_through.description": "Разгибание таза с канатом нижнего блока.",
+    "workouts.widget.nextTitle": "Следующая тренировка",
+    "workouts.widget.nextDescription": "День из активного цикла или программы и кнопка «Начать»",
+    "workouts.widget.restTitle": "Таймер отдыха",
+    "workouts.widget.restDescription": "Отдых между подходами, запуск прямо с виджета",
+    "workouts.widget.start": "Начать",
+    "workouts.widget.continue": "Продолжить",
+    "workouts.widget.inProgress": "Идёт тренировка",
+    "workouts.widget.nothingPlanned": "Нет активного цикла или программы",
+    "workouts.widget.noExercises": "В этом дне нет упражнений",
+    "workouts.widget.resting": "Отдых",
+    "workouts.widget.restIdle": "Выберите время отдыха",
+    "workouts.widget.stop": "Стоп",
+    "workouts.widget.progress": "подходов: {done} из {total}"
 }
 }

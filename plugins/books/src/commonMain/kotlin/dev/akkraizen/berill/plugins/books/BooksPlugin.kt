@@ -16,6 +16,7 @@ import dev.akkraizen.berill.plugins.books.ui.BookScreen
 import dev.akkraizen.berill.plugins.books.ui.BooksBoard
 import dev.akkraizen.berill.plugins.books.ui.BooksSettings
 import dev.akkraizen.berill.plugins.books.ui.ReadingNow
+import dev.akkraizen.berill.plugins.books.widgets.booksWidgets
 
 object BooksPlugin : BerillPlugin {
   const val BOOKS = "books"
@@ -56,4 +57,6 @@ object BooksPlugin : BerillPlugin {
     listOf(HomeCard("reading", BooksText.readingNowCard, order = 30) { ReadingNow(ctx) })
 
   internal const val BOOK_ROUTE = "book:"
+
+  override fun widgets(ctx: PluginContext) = booksWidgets(ctx)
 }

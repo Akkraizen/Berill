@@ -3,6 +3,7 @@ package dev.akkraizen.berill.api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.akkraizen.berill.api.i18n.Tr
+import dev.akkraizen.berill.api.widgets.WidgetProvider
 
 interface BerillPlugin {
   val id: String
@@ -40,6 +41,8 @@ interface BerillPlugin {
   fun homeCards(ctx: PluginContext): List<HomeCard> = emptyList()
 
   fun quickActions(ctx: PluginContext): List<QuickAction> = emptyList()
+
+  fun widgets(ctx: PluginContext): List<WidgetProvider> = emptyList()
 
   val permissions: PluginPermissions
     get() = PluginPermissions.None

@@ -53,6 +53,13 @@
     "finance.savedToAccounts": "Отложено на счета",
     "finance.savingsAccounts": "Сберегательные счета — {total}",
     "finance.title": "Финансы",
-    "finance.stats.flow": "Доходы и расходы по дням"
+    "finance.stats.flow": "Доходы и расходы по дням",
+    "finance.widget.monthTitle": "Финансы за месяц",
+    "finance.widget.monthDescription": "Свободные деньги, доходы, расходы и главные категории",
+    "finance.widget.quickTitle": "Быстрая трата",
+    "finance.widget.quickDescription": "Кнопки категорий открывают ввод суммы",
+    "finance.widget.free": "Свободно",
+    "finance.widget.today": "Сегодня",
+    "finance.widget.other": "Другая трата"
   }
 }

@@ -15,6 +15,7 @@ import dev.akkraizen.berill.plugins.watching.ui.TitleScreen
 import dev.akkraizen.berill.plugins.watching.ui.WatchBoard
 import dev.akkraizen.berill.plugins.watching.ui.WatchingNow
 import dev.akkraizen.berill.plugins.watching.ui.WatchingSettings
+import dev.akkraizen.berill.plugins.watching.widgets.watchingWidgets
 
 object WatchingPlugin : BerillPlugin {
   const val TITLES = "titles"
@@ -58,4 +59,6 @@ object WatchingPlugin : BerillPlugin {
 
   override fun homeCards(ctx: PluginContext) =
     listOf(HomeCard("watching", WatchingText.watchingNowCard, order = 31) { WatchingNow(ctx) })
+
+  override fun widgets(ctx: PluginContext) = watchingWidgets(ctx)
 }

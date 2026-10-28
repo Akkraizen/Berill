@@ -71,6 +71,8 @@ class StoreRawCollection(private val store: LocalStore, override val name: Strin
 
   override fun get(id: String): RawRecord? = store.get(name, id)?.takeUnless { it.deleted }?.let { RawRecord(it.id, it.fields) }
 
+  override fun all(): List<RawRecord> = store.list(name).filterNot { it.deleted }.map { RawRecord(it.id, it.fields) }
+
   override fun patch(id: String, fields: Map<String, JsonElement>) = store.put(name, id, fields)
 
   override fun delete(id: String) = store.delete(name, id)

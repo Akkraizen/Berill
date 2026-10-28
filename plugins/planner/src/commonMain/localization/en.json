@@ -97,6 +97,22 @@
     "planner.stats.week": "Weekly tasks",
     "planner.stats.planned": "Planned",
     "planner.stats.done": "Completed",
-    "planner.stats.hint": "Tasks are grouped by their scheduled date, rather than completion time."
+    "planner.stats.hint": "Tasks are grouped by their scheduled date, rather than completion time.",
+    "planner.widget.todayTitle": "Today's plan",
+    "planner.widget.todayDescription": "Tasks and events for the day; check off tasks on the widget",
+    "planner.widget.add": "Add",
+    "planner.widget.done": "{done} of {total}",
+    "planner.widget.events": "events: {n}",
+    "planner.widget.calendarTitle": "Calendar",
+    "planner.widget.calendarDescription": "A month with event markers and the selected day's events",
+    "planner.widget.agendaTitle": "Schedule",
+    "planner.widget.agendaDescription": "Events for the next two weeks, day by day",
+    "planner.widget.previous": "Previous month",
+    "planner.widget.next": "Next month",
+    "planner.widget.tomorrow": "Tomorrow",
+    "planner.widget.noEvents": "No events",
+    "planner.widget.noUpcoming": "No upcoming events",
+    "planner.widget.openDay": "Day",
+    "planner.widget.newEvent": "Event"
   }
 }

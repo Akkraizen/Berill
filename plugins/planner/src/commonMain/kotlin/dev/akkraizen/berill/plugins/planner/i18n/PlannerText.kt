@@ -48,4 +48,24 @@ internal object PlannerText {
   val addGoal = pluginI18n.tr("planner.addGoal")
   val weekSummary = pluginI18n.tr("planner.weekSummary")
   val weekSummaryHint = pluginI18n.tr("planner.weekSummaryHint")
+
+  val widgetTodayTitle = pluginI18n.tr("planner.widget.todayTitle")
+  val widgetTodayDescription = pluginI18n.tr("planner.widget.todayDescription")
+  val widgetAdd = pluginI18n.tr("planner.widget.add")
+
+  fun widgetDone(done: Int, total: Int) = pluginI18n.tr("planner.widget.done", "done" to done, "total" to total)
+
+  fun widgetEvents(n: Int) = pluginI18n.tr("planner.widget.events", "n" to n)
+
+  val widgetCalendarTitle = pluginI18n.tr("planner.widget.calendarTitle")
+  val widgetCalendarDescription = pluginI18n.tr("planner.widget.calendarDescription")
+  val widgetAgendaTitle = pluginI18n.tr("planner.widget.agendaTitle")
+  val widgetAgendaDescription = pluginI18n.tr("planner.widget.agendaDescription")
+  val widgetPrevious = pluginI18n.tr("planner.widget.previous")
+  val widgetNext = pluginI18n.tr("planner.widget.next")
+  val widgetTomorrow = pluginI18n.tr("planner.widget.tomorrow")
+  val widgetNoEvents = pluginI18n.tr("planner.widget.noEvents")
+  val widgetNoUpcoming = pluginI18n.tr("planner.widget.noUpcoming")
+  val widgetOpenDay = pluginI18n.tr("planner.widget.openDay")
+  val widgetNewEvent = pluginI18n.tr("planner.widget.newEvent")
 }

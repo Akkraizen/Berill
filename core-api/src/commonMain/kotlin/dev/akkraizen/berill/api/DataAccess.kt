@@ -41,6 +41,8 @@ interface RawCollection {
 
   fun get(id: String): RawRecord?
 
+  fun all(): List<RawRecord>
+
   fun patch(id: String, fields: Map<String, JsonElement>)
 
   fun delete(id: String)

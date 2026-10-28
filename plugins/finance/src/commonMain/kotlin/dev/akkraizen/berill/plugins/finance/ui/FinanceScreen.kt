@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ import dev.akkraizen.berill.api.ui.selection.DropdownField
 import dev.akkraizen.berill.api.ui.state.rememberDraft
 import dev.akkraizen.berill.api.ui.toDateOrNull
 import dev.akkraizen.berill.api.ui.today
+import dev.akkraizen.berill.plugins.finance.FinancePlugin
 import dev.akkraizen.berill.plugins.finance.data.Account
 import dev.akkraizen.berill.plugins.finance.data.EXPENSE
 import dev.akkraizen.berill.plugins.finance.data.INCOME
@@ -82,6 +84,15 @@ internal fun FinanceScreen(ctx: PluginContext) {
   var editingOp by remember { mutableStateOf<Item<Operation>?>(null) }
   var editingAccount by remember { mutableStateOf<Item<Account>?>(null) }
   var addingAccount by remember { mutableStateOf(false) }
+  var quickAdd by remember { mutableStateOf<Operation?>(null) }
+  val route by ctx.nav.route.collectAsState()
+  LaunchedEffect(route) {
+    val r = route
+    if (r != null && r.startsWith(FinancePlugin.ADD_ROUTE)) {
+      quickAdd = Operation(EXPENSE, 0.0, r.removePrefix(FinancePlugin.ADD_ROUTE).ifBlank { null }, null, today().toString())
+      ctx.nav.back()
+    }
+  }
 
   val accounts = accs.sortedBy { it.value.title.lowercase() }
   val categories = rememberCategories(ctx)
@@ -158,6 +169,19 @@ internal fun FinanceScreen(ctx: PluginContext) {
         opsCollection.delete(item.id)
         editingOp = null
       }
+    )
+  }
+  quickAdd?.let { initial ->
+    EditOperationDialog(
+      initial = initial,
+      categories = categories,
+      accounts = accounts.map { it.value.title },
+      onDismiss = { quickAdd = null },
+      onSave = {
+        opsCollection.save(ctx.data.newId(), it)
+        quickAdd = null
+      },
+      onDelete = null
     )
   }
   editingAccount?.let { item ->

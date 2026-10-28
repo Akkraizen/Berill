@@ -26,6 +26,260 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".widgets.TodayWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_today_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today" />
+        </receiver>
+        <receiver
+            android:name=".widgets.QuickNoteWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_quick_note_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_note" />
+        </receiver>
+        <receiver
+            android:name=".widgets.PinnedNoteWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_pinned_note_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_pinned_note" />
+        </receiver>
+        <receiver
+            android:name=".widgets.JournalWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_journal_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_journal" />
+        </receiver>
+        <receiver
+            android:name=".widgets.HabitsTodayWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_habits_today_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_habits_today" />
+        </receiver>
+        <receiver
+            android:name=".widgets.HabitsWeekWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_habits_week_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_habits_week" />
+        </receiver>
+        <receiver
+            android:name=".widgets.PlannerTodayWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_planner_today_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_planner_today" />
+        </receiver>
+        <receiver
+            android:name=".widgets.CalendarWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_calendar_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_calendar" />
+        </receiver>
+        <receiver
+            android:name=".widgets.AgendaWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_agenda_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_agenda" />
+        </receiver>
+        <receiver
+            android:name=".widgets.NextWorkoutWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_next_workout_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_next_workout" />
+        </receiver>
+        <receiver
+            android:name=".widgets.RestTimerWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_rest_timer_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_rest_timer" />
+        </receiver>
+        <receiver
+            android:name=".widgets.CaloriesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_calories_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_calories" />
+        </receiver>
+        <receiver
+            android:name=".widgets.WaterWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_water_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_water" />
+        </receiver>
+        <receiver
+            android:name=".widgets.WeightWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_weight_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_weight" />
+        </receiver>
+        <receiver
+            android:name=".widgets.ReadingWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_reading_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_reading" />
+        </receiver>
+        <receiver
+            android:name=".widgets.WatchingWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_watching_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_watching" />
+        </receiver>
+        <receiver
+            android:name=".widgets.FlashcardWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_flashcard_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_flashcard" />
+        </receiver>
+        <receiver
+            android:name=".widgets.DeadlinesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_deadlines_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_deadlines" />
+        </receiver>
+        <receiver
+            android:name=".widgets.FinanceMonthWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_finance_month_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_finance_month" />
+        </receiver>
+        <receiver
+            android:name=".widgets.QuickExpenseWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_quick_expense_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_expense" />
+        </receiver>
+        <receiver
+            android:name=".widgets.RecipeOfDayWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_recipe_day_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_recipe_day" />
+        </receiver>
+        <receiver
+            android:name=".widgets.AnyWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_any_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_any" />
+        </receiver>
+
+        <activity
+            android:name=".widgets.WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Berill">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name="dev.akkraizen.berill.core.external.PluginRunnerService"
             android:exported="false"

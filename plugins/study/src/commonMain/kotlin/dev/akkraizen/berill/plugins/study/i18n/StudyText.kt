@@ -106,4 +106,7 @@ internal object StudyText {
   val practiceHours = pluginI18n.tr("study.practiceHours")
   val labsHours = pluginI18n.tr("study.labsHours")
   val selfStudyHours = pluginI18n.tr("study.selfStudyHours")
+
+  val widgetDeadlinesTitle = pluginI18n.tr("study.widget.deadlinesTitle")
+  val widgetDeadlinesDescription = pluginI18n.tr("study.widget.deadlinesDescription")
 }

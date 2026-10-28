@@ -52,4 +52,10 @@ internal object RecipesText {
   val makeCover = pluginI18n.tr("recipes.makeCover")
   val deletePhoto = pluginI18n.tr("recipes.deletePhoto")
   val close = pluginI18n.tr("recipes.close")
+
+  val widgetDayTitle = pluginI18n.tr("recipes.widget.dayTitle")
+  val widgetDayDescription = pluginI18n.tr("recipes.widget.dayDescription")
+  val widgetNoRecipes = pluginI18n.tr("recipes.widget.noRecipes")
+  val widgetOpen = pluginI18n.tr("recipes.widget.open")
+  val widgetAnother = pluginI18n.tr("recipes.widget.another")
 }

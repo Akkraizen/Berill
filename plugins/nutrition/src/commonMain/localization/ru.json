@@ -149,6 +149,14 @@
     "nutrition.weightKg": "Вес, кг",
     "nutrition.yesterday": "Вчера",
     "nutrition.stats.macros": "Белки, жиры и углеводы по дням",
-    "nutrition.stats.water": "Вода по дням"
+    "nutrition.stats.water": "Вода по дням",
+    "nutrition.widget.caloriesTitle": "Калории и БЖУ",
+    "nutrition.widget.caloriesDescription": "Съедено за день, остаток до цели и макронутриенты",
+    "nutrition.widget.waterTitle": "Вода",
+    "nutrition.widget.waterDescription": "Прогресс по воде и быстрые кнопки «+стакан»",
+    "nutrition.widget.weightTitle": "Вес",
+    "nutrition.widget.weightDescription": "График веса за последние записи",
+    "nutrition.widget.noWeight": "Записей веса пока нет",
+    "nutrition.widget.weightDelta": "{delta} кг за {n} записей"
   }
 }

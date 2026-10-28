@@ -1,5 +1,6 @@
 package dev.akkraizen.berill
 
+import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
@@ -22,6 +23,7 @@ import dev.akkraizen.berill.core.files.ImagePicker
 import dev.akkraizen.berill.core.ui.startup.BerillStartup
 import dev.akkraizen.berill.core.ui.theme.ThemeMode
 import dev.akkraizen.berill.core.ui.theme.cachedAndroidAppearance
+import dev.akkraizen.berill.widgets.WidgetHost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
     ImagePicker.register(this)
     DocumentPicker.register(this)
     val app = application as BerillApplication
+    if (savedInstanceState == null) WidgetHost.handleIntent(this, intent, app.scope)
     setContent {
       var core by remember { mutableStateOf<BerillCore?>(null) }
       val appearance = core?.appearance?.state?.collectAsState()?.value ?: cached
@@ -59,6 +62,12 @@ class MainActivity : ComponentActivity() {
         overlay = { ImagePicker.Content() }
       )
     }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    WidgetHost.handleIntent(this, intent, (application as BerillApplication).scope)
   }
 
   private companion object {

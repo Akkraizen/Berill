@@ -109,4 +109,11 @@ internal object LanguagesText {
   val name = pluginI18n.tr("languages.name")
   val date = pluginI18n.tr("languages.date")
   val lessonNotes = pluginI18n.tr("languages.lessonNotes")
+
+  val widgetCardTitle = pluginI18n.tr("languages.widget.cardTitle")
+  val widgetCardDescription = pluginI18n.tr("languages.widget.cardDescription")
+  val widgetCardChoose = pluginI18n.tr("languages.widget.cardChoose")
+  val widgetNoWords = pluginI18n.tr("languages.widget.noWords")
+  val widgetShow = pluginI18n.tr("languages.widget.show")
+  val widgetNext = pluginI18n.tr("languages.widget.next")
 }

@@ -114,4 +114,13 @@ internal object HabitsText {
   val habitList = pluginI18n.tr("habits.habitList")
   val habitListHint = pluginI18n.tr("habits.habitListHint")
   val openHabitList = pluginI18n.tr("habits.openHabitList")
+
+  val widgetTodayTitle = pluginI18n.tr("habits.widget.todayTitle")
+  val widgetTodayDescription = pluginI18n.tr("habits.widget.todayDescription")
+  val widgetWeekTitle = pluginI18n.tr("habits.widget.weekTitle")
+  val widgetWeekDescription = pluginI18n.tr("habits.widget.weekDescription")
+
+  fun widgetPerfectStreak(n: Int) = pluginI18n.tr("habits.widget.perfectStreak", "n" to n)
+
+  fun widgetStreak(n: Int) = pluginI18n.tr("habits.widget.streak", "n" to n)
 }

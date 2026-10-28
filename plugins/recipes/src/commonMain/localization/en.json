@@ -50,6 +50,11 @@
     "photos.moveRight": "Move right",
     "photos.cover": "Cover",
     "recipes.title": "Recipes",
-    "recipes.untitled": "Untitled"
+    "recipes.untitled": "Untitled",
+    "recipes.widget.dayTitle": "Recipe of the day",
+    "recipes.widget.dayDescription": "A new recipe every day, favorites first",
+    "recipes.widget.noRecipes": "Add recipes to your cookbook",
+    "recipes.widget.open": "Open",
+    "recipes.widget.another": "Another"
   }
 }

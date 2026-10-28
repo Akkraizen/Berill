@@ -11,6 +11,7 @@ import dev.akkraizen.berill.plugins.languages.i18n.LanguagesText
 import dev.akkraizen.berill.plugins.languages.ui.DictionaryScreen
 import dev.akkraizen.berill.plugins.languages.ui.LanguagesSettings
 import dev.akkraizen.berill.plugins.languages.ui.OverviewPage
+import dev.akkraizen.berill.plugins.languages.widgets.languagesWidgets
 
 object LanguagesPlugin : BerillPlugin {
   const val WORDS = "lang_words"
@@ -45,4 +46,6 @@ object LanguagesPlugin : BerillPlugin {
       DictionaryScreen(ctx)
     }
   )
+
+  override fun widgets(ctx: PluginContext) = languagesWidgets(ctx)
 }

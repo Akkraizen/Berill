@@ -68,3 +68,10 @@ internal fun FinanceSettings(ctx: PluginContext) {
     color = MaterialTheme.colorScheme.onSurfaceVariant
   )
 }
+
+internal fun categoriesOf(ctx: PluginContext): Map<String, List<String>> =
+  CATEGORIES +
+    mapOf(
+      EXPENSE to (ctx.settings.stringList(categoriesKey(EXPENSE))?.takeIf { it.isNotEmpty() } ?: CATEGORIES.getValue(EXPENSE)),
+      INCOME to (ctx.settings.stringList(categoriesKey(INCOME))?.takeIf { it.isNotEmpty() } ?: CATEGORIES.getValue(INCOME))
+    )
