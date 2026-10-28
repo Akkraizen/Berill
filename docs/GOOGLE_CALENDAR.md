@@ -1,7 +1,8 @@
 # Google Calendar
 
 The planner has a **Calendar** page: a month grid, and an hour-by-hour view of any day with events,
-timed tasks, all-day events, and deadlines from other sections. Events can be kept only in Berill or
+timed tasks, all-day events, birthdays, and deadlines from other sections. Events can repeat daily,
+weekly on chosen days, monthly, or yearly. Events can be kept only in Berill or
 synced both ways with Google Calendar. For the user, connecting Google is a single
 **Sign in with Google** button.
 
@@ -91,7 +92,9 @@ events, because the events arrive through Berill sync.
 | Event created, changed, or deleted in Google | Picked up on the next sync. |
 | Event changed in both places before a sync | Google's version wins. |
 | Event deleted in Berill | Deleted in Google too. |
-| Recurring event in Google | Every occurrence is a separate event in Berill; editing one changes only that occurrence. |
+| Recurring event created in Berill | Sent to Google as one series with its repeat rule; occurrences deleted with "This one only" become exceptions. |
+| Recurring event created in Google | Every occurrence is a separate event in Berill; editing one changes only that occurrence. |
+| Birthday | Sent as a yearly all-day event. The birth year is kept in the event's private properties, so other Berill devices show the age. |
 | Calendar unchecked in settings | Its events disappear from Berill; nothing changes in Google. |
 | Read-only calendar (holidays, shared) | Shown, but new events cannot be created there. |
 

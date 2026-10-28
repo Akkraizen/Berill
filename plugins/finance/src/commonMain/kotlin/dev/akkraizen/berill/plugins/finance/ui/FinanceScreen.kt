@@ -33,6 +33,7 @@ import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.feedback.Tone
 import dev.akkraizen.berill.api.ui.feedback.color
+import dev.akkraizen.berill.api.ui.fields.DateTextField
 import dev.akkraizen.berill.api.ui.fields.MonthSwitcher
 import dev.akkraizen.berill.api.ui.formatRub
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
@@ -235,7 +236,7 @@ private fun AddOperationForm(
       error = null
     }
   )
-  FieldsRow {
+  FieldsRow(minItemWidth = 160.dp) {
     BerillTextField(
       amount,
       {
@@ -248,15 +249,7 @@ private fun AddOperationForm(
       modifier = Modifier.fillMaxWidth(),
       onSubmit = { submit() }
     )
-    BerillTextField(
-      date,
-      { date = it },
-      label = { Text(FinanceText.date(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-      singleLine = true,
-      isError = date.toDateOrNull() == null,
-      modifier = Modifier.fillMaxWidth(),
-      onSubmit = { submit() }
-    )
+    DateTextField(date, { date = it }, FinanceText.date(), isError = date.toDateOrNull() == null, onSubmit = { submit() })
   }
   DropdownField(
     FinanceText.category(),

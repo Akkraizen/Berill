@@ -2,6 +2,7 @@ package dev.akkraizen.berill.plugins.planner.data
 
 import dev.akkraizen.berill.api.HttpRequest
 import dev.akkraizen.berill.api.HttpResponse
+import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.arr
 import dev.akkraizen.berill.api.formBody
@@ -9,6 +10,7 @@ import dev.akkraizen.berill.api.int
 import dev.akkraizen.berill.api.obj
 import dev.akkraizen.berill.api.string
 import dev.akkraizen.berill.api.str
+import dev.akkraizen.berill.api.strings
 import dev.akkraizen.berill.api.stringList
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.plusDays
@@ -95,13 +97,78 @@ fun docIdForGoogle(calendarId: String, eventId: String): String {
   return "gcal-$tag-${eventId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }}"
 }
 
+private val WEEKDAY_CODES = listOf("MO", "TU", "WE", "TH", "FR", "SA", "SU")
+
+private fun compact(date: LocalDate): String = date.toString().replace("-", "")
+
+private fun expand(text: String): LocalDate? =
+  text.take(8).takeIf { it.length == 8 && it.all(Char::isDigit) }
+    ?.let { "${it.substring(0, 4)}-${it.substring(4, 6)}-${it.substring(6, 8)}".toDateOrNull() }
+
+fun recurrenceLines(event: CalendarEvent, zone: TimeZone): List<String> {
+  val rule = event.repeat ?: return emptyList()
+  val first = event.firstDay ?: return emptyList()
+  val freq = when (rule.freq) {
+    DAILY -> "DAILY"
+    MONTHLY -> "MONTHLY"
+    YEARLY -> "YEARLY"
+    else -> "WEEKLY"
+  }
+  val parts = mutableListOf("FREQ=$freq")
+  if (rule.interval > 1) parts += "INTERVAL=${rule.interval}"
+  if (rule.freq == WEEKLY) parts += "BYDAY=" + rule.weekdays(first).joinToString(",") { WEEKDAY_CODES[it - 1] }
+  rule.untilDate?.let { until ->
+    parts += if (event.allDay)
+      "UNTIL=${compact(until)}"
+    else
+      "UNTIL=" + LocalDateTime(until, timeOfMinutes(24 * 60 - 1)).toInstant(zone).toString()
+        .replace("-", "").replace(":", "").substringBefore('.').removeSuffix("Z") + "Z"
+  }
+  val lines = mutableListOf("RRULE:" + parts.joinToString(";"))
+  val skipped = event.exceptions.mapNotNull { it.toDateOrNull() }.sorted()
+  if (skipped.isNotEmpty()) {
+    lines += if (event.allDay)
+      "EXDATE;VALUE=DATE:" + skipped.joinToString(",") { compact(it) }
+    else {
+      val time = (event.start ?: "00:00").replace(":", "") + "00"
+      "EXDATE;TZID=${zone.id}:" + skipped.joinToString(",") { compact(it) + "T" + time }
+    }
+  }
+  return lines
+}
+
+fun parseRecurrence(lines: List<String>): Pair<Repeat?, List<String>> {
+  var repeat: Repeat? = null
+  val exceptions = mutableListOf<String>()
+  for (line in lines) {
+    when {
+      line.startsWith("RRULE:") -> {
+        val fields = line.removePrefix("RRULE:").split(';').associate { it.substringBefore('=') to it.substringAfter('=', "") }
+        val freq = when (fields["FREQ"]) {
+          "DAILY" -> DAILY
+          "WEEKLY" -> WEEKLY
+          "MONTHLY" -> MONTHLY
+          "YEARLY" -> YEARLY
+          else -> return null to emptyList()
+        }
+        val days = fields["BYDAY"]?.split(',')?.mapNotNull { code -> WEEKDAY_CODES.indexOf(code.trim()).takeIf { it >= 0 }?.plus(1) }
+        if (freq != WEEKLY && fields["BYDAY"] != null) return null to emptyList()
+        repeat = Repeat(freq, fields["INTERVAL"]?.toIntOrNull() ?: 1, days.orEmpty(), fields["UNTIL"]?.let(::expand)?.toString())
+      }
+      line.startsWith("EXDATE") ->
+        exceptions += line.substringAfter(':').split(',').mapNotNull { expand(it.trim())?.toString() }
+    }
+  }
+  return repeat to exceptions.distinct().sorted()
+}
+
 fun eventFromGoogle(source: JsonElement, calendarId: String, zone: TimeZone): CalendarEvent? {
   val id = source.str("id") ?: return null
   if (source.str("status") == "cancelled") return null
   val start = source.obj("start") ?: return null
   val end = source.obj("end")
   val title = source.str("summary").orEmpty()
-  val base = CalendarEvent(
+  val plain = CalendarEvent(
     title = title,
     location = source.str("location").orEmpty(),
     notes = source.str("description").orEmpty(),
@@ -109,6 +176,15 @@ fun eventFromGoogle(source: JsonElement, calendarId: String, zone: TimeZone): Ca
     googleId = id,
     etag = source.str("etag"),
     updatedAt = source.str("updated")?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() } ?: 0
+  )
+  val props = source.obj("extendedProperties").obj("private")
+  val birthday = props.str("berillKind") == BIRTHDAY || source.str("eventType") == BIRTHDAY
+  val (repeat, skipped) = parseRecurrence(source.strings("recurrence"))
+  val base = plain.copy(
+    repeat = repeat ?: if (birthday && source.str("recurringEventId") == null) Repeat(YEARLY) else null,
+    exceptions = skipped,
+    kind = if (birthday) BIRTHDAY else null,
+    birthYear = props.str("berillBirthYear")?.toIntOrNull()
   )
   val startDate = start.str("date")?.toDateOrNull()
   if (startDate != null) {
@@ -142,9 +218,36 @@ fun googleBody(event: CalendarEvent, zone: TimeZone, id: String?): JsonObject =
     } else {
       val s = event.startAt() ?: LocalDateTime(first, timeOfMinutes(0))
       val e = event.endAt()?.takeIf { it > s } ?: plusMinutes(s, 60)
-      put("start", buildJsonObject { put("dateTime", s.toInstant(zone).toString()) })
-      put("end", buildJsonObject { put("dateTime", e.toInstant(zone).toString()) })
+      put(
+        "start",
+        buildJsonObject {
+          put("dateTime", s.toInstant(zone).toString())
+          if (event.recurring) put("timeZone", zone.id)
+        }
+      )
+      put(
+        "end",
+        buildJsonObject {
+          put("dateTime", e.toInstant(zone).toString())
+          if (event.recurring) put("timeZone", zone.id)
+        }
+      )
     }
+    val instance = event.googleId?.contains('_') == true
+    if (!instance) put("recurrence", JsonArray(recurrenceLines(event, zone).map(::JsonPrimitive)))
+    if (event.isBirthday)
+      put(
+        "extendedProperties",
+        buildJsonObject {
+          put(
+            "private",
+            buildJsonObject {
+              put("berillKind", BIRTHDAY)
+              event.birthYear?.let { put("berillBirthYear", it.toString()) }
+            }
+          )
+        }
+      )
   }
 
 internal class GoogleCalendarSync private constructor(private val ctx: PluginContext) {
@@ -452,6 +555,14 @@ internal class GoogleCalendarSync private constructor(private val ctx: PluginCon
     for (cal in selected) {
       val seen = HashSet<String>()
       for (raw in list(cal, from, to, zone)) {
+        val parent = raw.str("recurringEventId")
+        if (parent != null) {
+          val master = byGoogle[cal to parent]
+          if (master != null || parent.startsWith(OWN_PREFIX)) {
+            seen += master?.id ?: docIdForGoogle(cal, parent)
+            continue
+          }
+        }
         val remote = eventFromGoogle(raw, cal, zone) ?: continue
         val gid = remote.googleId ?: continue
         val existing = byGoogle[cal to gid]
@@ -464,12 +575,36 @@ internal class GoogleCalendarSync private constructor(private val ctx: PluginCon
       }
       local
         .filter { it.value.calendarId == cal && it.value.googleId != null && !it.value.dirty && it.id !in seen }
+        .filter { !it.value.recurring }
         .filter { item -> item.value.firstDay?.let { it >= from && it < to } == true }
         .forEach { events.delete(it.id) }
+      refreshSeries(cal, local, zone)
     }
     local
       .filter { it.value.googleId != null && it.value.calendarId !in selected && !it.value.dirty }
       .forEach { events.delete(it.id) }
+  }
+
+  private suspend fun refreshSeries(calendarId: String, local: List<Item<CalendarEvent>>, zone: TimeZone) {
+    val series = local.filter {
+      it.value.calendarId == calendarId && it.value.recurring && it.value.googleId != null && !it.value.dirty && !it.value.deleted
+    }
+    for (item in series) {
+      val gid = item.value.googleId ?: continue
+      val r = api("GET", eventUrl(calendarId, gid))
+      if (r.status == 404 || r.status == 410) {
+        events.delete(item.id)
+        continue
+      }
+      if (!r.ok) fail(r)
+      val remote = eventFromGoogle(Json.parseToJsonElement(r.body), calendarId, zone)
+      val current = events.get(item.id) ?: continue
+      when {
+        current.dirty -> Unit
+        remote == null -> events.delete(item.id)
+        remote.etag != current.etag -> events.save(item.id, remote)
+      }
+    }
   }
 
   companion object {

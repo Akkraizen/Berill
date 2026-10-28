@@ -22,6 +22,7 @@ import dev.akkraizen.berill.api.ui.BerillIcons
 import dev.akkraizen.berill.api.ui.dialogs.ConfirmDialog
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.color
+import dev.akkraizen.berill.api.ui.fields.DateTextField
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.parseAmount
@@ -113,13 +114,7 @@ internal fun EditOperationDialog(
             { account = it.takeIf { a -> a != NO_ACCOUNT } }
           )
         }
-        BerillTextField(
-          date,
-          { date = it },
-          label = { Text(FinanceText.date(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-          singleLine = true,
-          isError = date.toDateOrNull() == null
-        )
+        DateTextField(date, { date = it }, FinanceText.date(), isError = date.toDateOrNull() == null)
         BerillTextField(comment, { comment = it }, label = { Text(FinanceText.comment(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         TextButton(onClick = { askDelete = true }) {
           Ic(BerillIcons.Delete, tint = MaterialTheme.colorScheme.error)

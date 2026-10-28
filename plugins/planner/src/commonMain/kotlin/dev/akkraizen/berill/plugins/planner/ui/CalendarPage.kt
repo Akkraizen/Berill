@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -152,18 +153,19 @@ internal fun CalendarPage(ctx: PluginContext) {
       delay(5 * 60_000L)
     }
   }
-  var editing by remember { mutableStateOf<Pair<String?, CalendarEvent>?>(null) }
+  var editing by remember { mutableStateOf<Editing?>(null) }
   AnimatedRoute(route) { r ->
     val day = r?.takeIf { it.startsWith(DAY_ROUTE) }?.removePrefix(DAY_ROUTE)?.toDateOrNull()
     if (day != null)
-      DayView(state, day, connected) { id, event -> editing = id to event }
+      DayView(state, day, connected) { edit -> editing = edit }
     else
-      MonthView(state, connected) { id, event -> editing = id to event }
+      MonthView(state, connected) { edit -> editing = edit }
   }
-  editing?.let { (id, event) ->
+  editing?.let { (id, event, occurrence) ->
     EventDialog(
       initial = event,
       isNew = id == null,
+      occurrence = occurrence,
       calendars = state.calendars,
       defaultCalendar = if (connected) state.google.defaultCalendar() else null,
       onDismiss = { editing = null },
@@ -176,18 +178,33 @@ internal fun CalendarPage(ctx: PluginContext) {
         if (id != null) state.data.delete(id)
         state.google.scheduleSync()
         editing = null
+      },
+      onSkip = {
+        if (id != null && occurrence != null) state.data.skipOccurrence(id, occurrence)
+        state.google.scheduleSync()
+        editing = null
       }
     )
   }
 }
 
-private fun newEvent(day: LocalDate, hour: Int? = null): CalendarEvent {
+private data class Editing(val id: String?, val event: CalendarEvent, val occurrence: LocalDate? = null)
+
+private fun newEvent(day: LocalDate, hour: Int? = null): Editing {
   val h = hour ?: 9
-  return CalendarEvent(
-    date = day.toString(),
-    start = timeOfMinutes(h * 60).hhmm(),
-    end = if (h >= 23) "23:59" else timeOfMinutes((h + 1) * 60).hhmm()
+  return Editing(
+    null,
+    CalendarEvent(
+      date = day.toString(),
+      start = timeOfMinutes(h * 60).hhmm(),
+      end = if (h >= 23) "23:59" else timeOfMinutes((h + 1) * 60).hhmm()
+    )
   )
+}
+
+internal fun CalendarEvent.label(day: LocalDate): String {
+  val age = if (isBirthday) ageOn(day) else null
+  return if (age != null && age > 0) "$title, $age" else title
 }
 
 @Composable
@@ -207,7 +224,7 @@ private fun SyncButton(state: CalendarState) {
 }
 
 @Composable
-private fun MonthView(state: CalendarState, connected: Boolean, edit: (String?, CalendarEvent) -> Unit) {
+private fun MonthView(state: CalendarState, connected: Boolean, edit: (Editing) -> Unit) {
   val now = today()
   var month by rememberSaveable { mutableStateOf(now.year * 12 + now.month.ordinal) }
   val year = month / 12
@@ -231,7 +248,7 @@ private fun MonthView(state: CalendarState, connected: Boolean, edit: (String?, 
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (connected) SyncButton(state)
-          FilledTonalButton(onClick = { edit(null, newEvent(now)) }) {
+          FilledTonalButton(onClick = { edit(newEvent(now)) }) {
             Ic(BerillIcons.Add, size = 18.dp)
             Spacer(Modifier.width(8.dp))
             Text(CalendarText.event())
@@ -271,7 +288,10 @@ private fun MonthGrid(state: CalendarState, year: Int, month: Int, now: LocalDat
           week.forEachIndexed { i, day ->
             if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(colors.outlineVariant))
             val entries = buildList {
-              eventsOn(state.events, day).forEach { add(CellEntry(it.value.title, state.colorOf(it.value) ?: colors.primary)) }
+              eventsOn(state.events, day).forEach {
+                val fallback = if (it.value.isBirthday) colors.tertiary else colors.primary
+                add(CellEntry(it.value.label(day), state.colorOf(it.value) ?: fallback))
+              }
               state.deadlinesOn(day).forEach { add(CellEntry(it.title, colors.error)) }
               state.tasksOn(day).forEach { add(CellEntry(parse(it.value.text).title, colors.outline, it.value.done)) }
             }
@@ -353,7 +373,7 @@ private fun DayCell(
 }
 
 @Composable
-private fun DayView(state: CalendarState, day: LocalDate, connected: Boolean, edit: (String?, CalendarEvent) -> Unit) {
+private fun DayView(state: CalendarState, day: LocalDate, connected: Boolean, edit: (Editing) -> Unit) {
   val nav = state.ctx.nav
   val colors = MaterialTheme.colorScheme
   val events = eventsOn(state.events, day)
@@ -403,7 +423,7 @@ private fun DayView(state: CalendarState, day: LocalDate, connected: Boolean, ed
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (connected) SyncButton(state)
-          FilledTonalButton(onClick = { edit(null, newEvent(day)) }) {
+          FilledTonalButton(onClick = { edit(newEvent(day)) }) {
             Ic(BerillIcons.Add, size = 18.dp)
             Spacer(Modifier.width(8.dp))
             Text(CalendarText.event())
@@ -413,11 +433,21 @@ private fun DayView(state: CalendarState, day: LocalDate, connected: Boolean, ed
       if (allDay.isNotEmpty() || untimed.isNotEmpty() || deadlines.isNotEmpty())
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
           allDay.forEach { item ->
+            val age = item.value.takeIf { it.isBirthday }?.ageOn(day)?.takeIf { it > 0 }
             BerillChip(
-              onClick = { edit(item.id, item.value) },
-              label = { Text(item.value.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+              onClick = { state.events.firstOrNull { it.id == item.id }?.let { edit(Editing(it.id, it.value, day)) } },
+              label = {
+                Text(
+                  if (age != null) "${item.value.title} · ${CalendarText.turns(age)()}" else item.value.title,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis
+                )
+              },
               leadingIcon = {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(state.colorOf(item.value) ?: colors.primary))
+                if (item.value.isBirthday)
+                  Ic(Icons.Outlined.Cake, size = 16.dp, tint = state.colorOf(item.value) ?: colors.tertiary)
+                else
+                  Box(Modifier.size(8.dp).clip(CircleShape).background(state.colorOf(item.value) ?: colors.primary))
               }
             )
           }
@@ -461,12 +491,12 @@ private fun DayView(state: CalendarState, day: LocalDate, connected: Boolean, ed
         isToday = isToday,
         done = doneTasks,
         colorOf = { state.colorOf(it) },
-        onSlot = { hour -> edit(null, newEvent(day, hour)) },
+        onSlot = { hour -> edit(newEvent(day, hour)) },
         onOpen = { seg ->
           if (seg.id.startsWith(TASK_PREFIX))
             state.planner.edit(seg.id.removePrefix(TASK_PREFIX)) { it.copy(done = !it.done) }
           else
-            state.events.firstOrNull { it.id == seg.id }?.let { edit(it.id, it.value) }
+            state.events.firstOrNull { it.id == seg.id }?.let { edit(Editing(it.id, it.value, day)) }
         }
       )
     }

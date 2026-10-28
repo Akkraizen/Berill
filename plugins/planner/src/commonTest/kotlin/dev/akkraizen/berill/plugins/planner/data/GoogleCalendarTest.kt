@@ -15,6 +15,7 @@ import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.PluginSettings
 import dev.akkraizen.berill.api.RawCollection
 import dev.akkraizen.berill.api.SecretStore
+import dev.akkraizen.berill.api.obj
 import dev.akkraizen.berill.api.str
 import dev.akkraizen.berill.api.ui.today
 import dev.akkraizen.berill.plugins.planner.PlannerPlugin
@@ -150,6 +151,14 @@ private class FakeGoogle : HttpAccess {
     )
   }
 
+  private fun expanded(event: JsonObject): List<JsonObject> {
+    if (event["recurrence"].let { it !is JsonArray || it.isEmpty() }) return listOf(event)
+    val id = event.str("id")!!
+    return listOf("20261028", "20261104").map { stamp ->
+      JsonObject(event - "recurrence" + mapOf("id" to JsonPrimitive("${id}_$stamp"), "recurringEventId" to JsonPrimitive(id)))
+    }
+  }
+
   override suspend fun send(request: HttpRequest): HttpResponse {
     val path = request.url.substringBefore('?')
     calls += "${request.method} ${path.substringAfter("/calendar/v3")}"
@@ -168,7 +177,7 @@ private class FakeGoogle : HttpAccess {
     val body = request.body?.let { Json.parseToJsonElement(it).jsonObject }
     return when (request.method) {
       "GET" ->
-        if (id == null) respond(200, buildJsonObject { put("items", JsonArray(events.values.toList())) })
+        if (id == null) respond(200, buildJsonObject { put("items", JsonArray(events.values.flatMap(::expanded))) })
         else events[id]?.let { respond(200, it) } ?: respond(404)
       "POST" -> {
         val newId = body!!.str("id") ?: "remote${events.size}"
@@ -297,5 +306,46 @@ class GoogleCalendarTest {
       "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
       Pkce.challengeOf("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
     )
+  }
+
+  @Test
+  fun recurrenceRulesRoundTrip() {
+    val weekly = CalendarEvent(
+      "Йога", "2026-10-26", start = "08:00", end = "09:00",
+      repeat = Repeat(WEEKLY, interval = 2, days = listOf(1, 3), until = "2026-12-31"),
+      exceptions = listOf("2026-11-09")
+    )
+    val lines = recurrenceLines(weekly, utc)
+    assertEquals("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;UNTIL=20261231T235900Z", lines[0])
+    assertEquals("EXDATE;TZID=UTC:20261109T080000", lines[1])
+    val (repeat, skipped) = parseRecurrence(lines)
+    assertEquals(weekly.repeat, repeat)
+    assertEquals(listOf("2026-11-09"), skipped)
+    val birthday = CalendarEvent("Анна", "2000-03-15", kind = BIRTHDAY, birthYear = 2000, repeat = Repeat(YEARLY))
+    assertEquals(listOf("RRULE:FREQ=YEARLY"), recurrenceLines(birthday, utc))
+    val body = googleBody(birthday, utc, null)
+    assertEquals("2000", (body["extendedProperties"] as JsonObject).obj("private").str("berillBirthYear"))
+    val back = eventFromGoogle(JsonObject(body + mapOf("id" to JsonPrimitive("b"))), "c", utc)!!
+    assertTrue(back.isBirthday)
+    assertEquals(2000, back.birthYear)
+    assertEquals(Repeat(YEARLY), back.repeat)
+  }
+
+  @Test
+  fun ownSeriesAreNotDuplicatedByTheirInstancesAndFollowRemoteEdits(): Unit = runBlocking {
+    val (ctx, google, sync) = setup("series")
+    val data = CalendarData(ctx)
+    val id = data.save(null, CalendarEvent("Йога", today().toString(), start = "08:00", end = "09:00", repeat = Repeat(WEEKLY)))
+    google.putRemote("native", "Чужая серия", today().toString(), "10:00", "11:00")
+    google.events["native"] = JsonObject(google.events.getValue("native") + ("recurrence" to JsonArray(listOf(JsonPrimitive("RRULE:FREQ=DAILY")))))
+    sync.sync()
+    val master = googleEventIdFor(id)!!
+    assertTrue(google.events.getValue(master)["recurrence"] is JsonArray)
+    val ids = events(ctx).all().map { it.id }.toSet()
+    assertEquals(setOf(id, docIdForGoogle("me@x", "native_20261028"), docIdForGoogle("me@x", "native_20261104")), ids)
+    google.events[master] = JsonObject(google.events.getValue(master) + mapOf("summary" to JsonPrimitive("Йога утром"), "etag" to JsonPrimitive("\"changed\"")))
+    sync.sync()
+    assertEquals("Йога утром", events(ctx).get(id)!!.title)
+    assertEquals(Repeat(WEEKLY, days = listOf(today().dayOfWeek.ordinal + 1)), events(ctx).get(id)!!.repeat)
   }
 }

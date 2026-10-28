@@ -1,6 +1,7 @@
 package dev.akkraizen.berill.plugins.planner.data
 
 import dev.akkraizen.berill.api.Item
+import dev.akkraizen.berill.api.ui.plusDays
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -81,5 +82,49 @@ class CalendarModelTest {
     val seg = daySegments(listOf(ev("s", "23:55", "23:55")), day).single()
     assertEquals(15, seg.endMinute - seg.startMinute)
     assertTrue(seg.endMinute <= 24 * 60)
+  }
+
+  private fun dates(event: CalendarEvent, from: LocalDate, days: Int): List<String> =
+    (0 until days).map { from.plusDays(it) }.filter { event.occursOn(it) }.map { it.toString() }
+
+  @Test
+  fun weeklyRepeatUsesChosenWeekdaysIntervalAndUntil() {
+    val e = CalendarEvent(
+      "Йога", "2026-10-26", start = "08:00", end = "09:00",
+      repeat = Repeat(WEEKLY, interval = 2, days = listOf(1, 3), until = "2026-11-25")
+    )
+    assertEquals(
+      listOf("2026-10-26", "2026-10-28", "2026-11-09", "2026-11-11", "2026-11-23", "2026-11-25"),
+      dates(e, LocalDate(2026, 10, 1), 70)
+    )
+  }
+
+  @Test
+  fun monthlyRepeatSkipsMonthsWithoutTheDayAndExceptionsAreHidden() {
+    val e = CalendarEvent("Оплата", "2026-01-31", repeat = Repeat(MONTHLY), exceptions = listOf("2026-05-31"))
+    assertEquals(listOf("2026-01-31", "2026-03-31", "2026-07-31"), dates(e, LocalDate(2026, 1, 1), 212))
+  }
+
+  @Test
+  fun birthdaysRepeatYearlyWithAgeAndLeapDayFallback() {
+    val b = CalendarEvent("Анна", "2000-02-29", kind = BIRTHDAY, birthYear = 2000, repeat = Repeat(YEARLY))
+    assertTrue(b.occursOn(LocalDate(2027, 2, 28)))
+    assertTrue(b.occursOn(LocalDate(2028, 2, 29)))
+    assertTrue(!b.occursOn(LocalDate(2028, 2, 28)))
+    assertEquals(28, b.ageOn(LocalDate(2028, 2, 29)))
+    assertEquals(listOf("b"), eventsOn(listOf(Item("b", b), Item("x", CalendarEvent("x", "2027-02-28"))), LocalDate(2027, 2, 28)).take(1).map { it.id })
+  }
+
+  @Test
+  fun occurrencesAreShiftedForTheHourGridAndMultiDaySpans() {
+    val night = Item(
+      "n",
+      CalendarEvent("Смена", "2026-10-26", endDate = "2026-10-27", start = "22:00", end = "06:00", repeat = Repeat(DAILY, interval = 3))
+    )
+    val seg = daySegments(listOf(night), LocalDate(2026, 10, 30)).single()
+    assertEquals(0, seg.startMinute)
+    assertEquals(6 * 60, seg.endMinute)
+    assertEquals("2026-10-29", night.value.occurrenceOn(LocalDate(2026, 10, 30))!!.date)
+    assertTrue(daySegments(listOf(night), LocalDate(2026, 10, 31)).isEmpty())
   }
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.daysUntil
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -28,10 +29,20 @@ data class CalendarEvent(
   val etag: String? = null,
   val dirty: Boolean = false,
   val deleted: Boolean = false,
-  val updatedAt: Long = 0
+  val updatedAt: Long = 0,
+  val repeat: Repeat? = null,
+  val exceptions: List<String> = emptyList(),
+  val kind: String? = null,
+  val birthYear: Int? = null
 ) {
   val allDay: Boolean
     get() = start == null
+
+  val isBirthday: Boolean
+    get() = kind == BIRTHDAY
+
+  val recurring: Boolean
+    get() = repeat != null
 
   val firstDay: LocalDate?
     get() = date.toDateOrNull()
@@ -44,11 +55,29 @@ data class CalendarEvent(
       return if (last < first) first else last
     }
 
-  fun occursOn(day: LocalDate): Boolean {
-    val first = firstDay ?: return false
-    val last = lastDay ?: return false
-    return day in first..last
+  fun occurrenceStart(day: LocalDate): LocalDate? {
+    val first = firstDay ?: return null
+    val last = lastDay ?: return null
+    val rule = repeat ?: return first.takeIf { day in first..last }
+    val span = first.daysUntil(last)
+    for (back in 0..span) {
+      val candidate = day.plusDays(-back)
+      if (rule.matches(first, candidate) && candidate.toString() !in exceptions) return candidate
+    }
+    return null
   }
+
+  fun occursOn(day: LocalDate): Boolean = occurrenceStart(day) != null
+
+  fun occurrenceOn(day: LocalDate): CalendarEvent? {
+    val start = occurrenceStart(day) ?: return null
+    val first = firstDay ?: return null
+    if (start == first) return this
+    val shift = first.daysUntil(start)
+    return copy(date = start.toString(), endDate = endDate.toDateOrNull()?.plusDays(shift)?.toString())
+  }
+
+  fun ageOn(day: LocalDate): Int? = birthYear?.let { day.year - it }?.takeIf { it >= 0 }
 
   fun startAt(): LocalDateTime? {
     val d = firstDay ?: return null
@@ -103,7 +132,8 @@ data class DaySegment(
 
 fun daySegments(events: List<Item<CalendarEvent>>, day: LocalDate, minLength: Int = 15): List<DaySegment> {
   val raw = events
-    .filter { !it.value.deleted && !it.value.allDay && it.value.occursOn(day) }
+    .filter { !it.value.deleted && !it.value.allDay }
+    .mapNotNull { item -> item.value.occurrenceOn(day)?.let { Item(item.id, it) } }
     .mapNotNull { item ->
       val s = item.value.startAt() ?: return@mapNotNull null
       val e = item.value.endAt() ?: return@mapNotNull null
@@ -139,8 +169,9 @@ fun daySegments(events: List<Item<CalendarEvent>>, day: LocalDate, minLength: In
 
 fun eventsOn(events: List<Item<CalendarEvent>>, day: LocalDate): List<Item<CalendarEvent>> =
   events
-    .filter { !it.value.deleted && it.value.occursOn(day) }
-    .sortedWith(compareBy({ !it.value.allDay }, { it.value.startAt() }, { it.value.title }))
+    .filter { !it.value.deleted }
+    .mapNotNull { item -> item.value.occurrenceOn(day)?.let { Item(item.id, it) } }
+    .sortedWith(compareBy({ !it.value.isBirthday }, { !it.value.allDay }, { it.value.startAt() }, { it.value.title }))
 
 internal class CalendarData(val ctx: PluginContext) {
   val events = ctx.data.collection(PlannerPlugin.EVENTS, CalendarEvent.serializer())
@@ -151,6 +182,12 @@ internal class CalendarData(val ctx: PluginContext) {
     val key = id ?: ctx.data.newId()
     events.save(key, event.copy(dirty = true, updatedAt = nowMillis()))
     return key
+  }
+
+  fun skipOccurrence(id: String, day: LocalDate) {
+    val current = events.get(id) ?: return
+    val start = current.occurrenceStart(day) ?: return
+    save(id, current.copy(exceptions = (current.exceptions + start.toString()).distinct().sorted()))
   }
 
   fun delete(id: String) {

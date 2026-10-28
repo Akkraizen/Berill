@@ -163,7 +163,7 @@ internal fun TitleScreen(ctx: PluginContext, id: String) {
               { v -> update { it.copy(genre = v.trim().ifEmpty { null }) } },
               WatchingText.genres()
             )
-            FieldsRow {
+            FieldsRow(minItemWidth = 160.dp) {
               DateField(
                 t.started,
                 { v -> update { it.copy(started = v) } },

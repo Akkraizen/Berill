@@ -115,7 +115,7 @@ internal fun TaskScreen(ctx: PluginContext, id: String) {
               { v -> update { it.copy(type = v) } },
               Modifier.fillMaxWidth()
             )
-            FieldsRow {
+            FieldsRow(minItemWidth = 160.dp) {
               DateField(
                 t.deadline,
                 { v -> update { it.copy(deadline = v) } },

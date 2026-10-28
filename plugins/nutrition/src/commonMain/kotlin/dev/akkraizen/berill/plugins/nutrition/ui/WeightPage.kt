@@ -129,7 +129,7 @@ private fun WeighInCard(ctx: PluginContext) {
     value = ""
   }
   SectionCard(NutritionText.weighIn(), Icons.Outlined.MonitorWeight) {
-    FieldsRow {
+    FieldsRow(minItemWidth = 160.dp) {
       BerillTextField(
         value,
         { value = it.take(6) },

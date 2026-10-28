@@ -38,6 +38,7 @@ import dev.akkraizen.berill.api.ui.deadlineInfo
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.feedback.color
+import dev.akkraizen.berill.api.ui.fields.DateTextField
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.interactive
 import dev.akkraizen.berill.api.ui.layout.FieldsRow
@@ -272,15 +273,7 @@ private fun NewTaskForm(
   )
   FieldsRow(minItemWidth = 170.dp) {
     DropdownField(StudyText.type(), types, type, { it }, { type = it })
-    BerillTextField(
-      deadline,
-      { deadline = it },
-      label = { Text(StudyText.deadline(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-      singleLine = true,
-      isError = deadline.isNotBlank() && deadline.toDateOrNull() == null,
-      modifier = Modifier.fillMaxWidth(),
-      onSubmit = { submit() }
-    )
+    DateTextField(deadline, { deadline = it }, StudyText.deadline(), onSubmit = { submit() })
   }
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
   Button(onClick = { submit() }) { Text(StudyText.add()) }

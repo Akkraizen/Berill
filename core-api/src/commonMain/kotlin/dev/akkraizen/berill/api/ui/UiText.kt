@@ -23,6 +23,9 @@ object UiText {
   val deleteEverywhere = Tr("ui.deleteEverywhere")
 
   val datePlaceholder = Tr("ui.datePlaceholder")
+  val pickDate = Tr("ui.pickDate")
+  val pickTime = Tr("ui.pickTime")
+  val done = Tr("ui.done")
   val bodyPlaceholder = Tr("ui.bodyPlaceholder")
 
   fun deleteItem(item: String) = Tr("ui.deleteItem", "item" to item)

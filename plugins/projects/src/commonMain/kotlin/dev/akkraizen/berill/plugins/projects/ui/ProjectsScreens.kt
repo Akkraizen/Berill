@@ -314,7 +314,7 @@ internal fun ProjectScreen(ctx: PluginContext, id: String) {
               { v -> update { it.copy(site = v.trim().ifEmpty { null }) } },
               ProjectsText.siteLabel()
             )
-            FieldsRow {
+            FieldsRow(minItemWidth = 160.dp) {
               DateField(
                 p.started,
                 { v -> update { it.copy(started = v) } },

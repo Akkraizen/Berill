@@ -116,7 +116,7 @@ internal fun BookScreen(ctx: PluginContext, id: String) {
                 Modifier.weight(1f)
               )
             }
-            FieldsRow {
+            FieldsRow(minItemWidth = 160.dp) {
               DateField(
                 b.started,
                 { v -> update { it.copy(started = v) } },
