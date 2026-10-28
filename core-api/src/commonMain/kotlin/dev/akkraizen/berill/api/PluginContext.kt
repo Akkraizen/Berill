@@ -21,4 +21,7 @@ interface PluginContext {
 
   val secrets: SecretStore
     get() = NoSecrets
+
+  val oauth: OAuthRedirects
+    get() = NoOAuthRedirects
 }

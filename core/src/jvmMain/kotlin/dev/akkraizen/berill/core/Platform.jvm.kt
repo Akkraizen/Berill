@@ -10,6 +10,7 @@ import dev.akkraizen.berill.core.log.AppLog
 import dev.akkraizen.berill.core.log.installFileLog
 import dev.akkraizen.berill.core.platform.DesktopIntegration
 import dev.akkraizen.berill.core.secure.DesktopVault
+import dev.akkraizen.berill.core.secure.LoopbackRedirects
 import java.awt.Desktop
 import java.io.File
 import java.util.Properties
@@ -32,7 +33,8 @@ fun createDesktopCore(plugins: List<BerillPlugin>, desktop: DesktopIntegration? 
     DesktopFileAccess(),
     externalPlatform = runCatching { DesktopExternalPlugins(File(dir, "plugins")) }.getOrNull(),
     vault = DesktopVault(File(dir, "secrets")),
-    desktop = desktop
+    desktop = desktop,
+    oauth = LoopbackRedirects()
   )
     .also { it.start() }
 }

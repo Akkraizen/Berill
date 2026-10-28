@@ -12,6 +12,7 @@ import dev.akkraizen.berill.core.external.AndroidExternalPlugins
 import dev.akkraizen.berill.core.files.AndroidFileAccess
 import dev.akkraizen.berill.core.log.installFileLog
 import dev.akkraizen.berill.core.secure.AndroidVault
+import dev.akkraizen.berill.core.secure.LoopbackRedirects
 import java.io.File
 
 fun createAndroidCore(context: Context, plugins: List<BerillPlugin>): BerillCore {
@@ -27,7 +28,8 @@ fun createAndroidCore(context: Context, plugins: List<BerillPlugin>): BerillCore
     externalPlatform = runCatching {
       AndroidExternalPlugins(context, File(context.applicationContext.filesDir, "plugins"))
     }.getOrNull(),
-    vault = AndroidVault(context.applicationContext)
+    vault = AndroidVault(context.applicationContext),
+    oauth = LoopbackRedirects()
   )
     .also { it.start() }
 }

@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import dev.akkraizen.berill.api.HttpAccess
+import dev.akkraizen.berill.api.HttpRequest
+import dev.akkraizen.berill.api.HttpResponse
 import dev.akkraizen.berill.api.NetworkNotAllowedException
 import dev.akkraizen.berill.api.PluginPermissions
 import dev.akkraizen.berill.api.BerillPlugin
@@ -19,6 +21,12 @@ internal class GuardedHttpAccess(
     if (!permissions.allowsRequest(url))
       throw NetworkNotAllowedException(parseWebUrl(url)?.host ?: url.take(60))
     return inner.getJson(url, headers)
+  }
+
+  override suspend fun send(request: HttpRequest): HttpResponse {
+    if (!permissions.allowsRequest(request.url))
+      throw NetworkNotAllowedException(parseWebUrl(request.url)?.host ?: request.url.take(60))
+    return inner.send(request)
   }
 }
 

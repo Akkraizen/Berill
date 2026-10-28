@@ -6,6 +6,8 @@ import dev.akkraizen.berill.api.DataAccess
 import dev.akkraizen.berill.api.FileAccess
 import dev.akkraizen.berill.api.HttpAccess
 import dev.akkraizen.berill.api.NoFileAccess
+import dev.akkraizen.berill.api.NoOAuthRedirects
+import dev.akkraizen.berill.api.OAuthRedirects
 import dev.akkraizen.berill.api.i18n.I18n
 import dev.akkraizen.berill.api.ui.interaction.HotKeys
 import dev.akkraizen.berill.core.data.KtorHttpAccess
@@ -43,7 +45,8 @@ class BerillCore(
   val files: FileAccess = NoFileAccess,
   externalPlatform: ExternalPluginPlatform? = null,
   val vault: SecretVault = MemoryVault(),
-  val desktop: DesktopIntegration? = null
+  val desktop: DesktopIntegration? = null,
+  oauth: OAuthRedirects = NoOAuthRedirects
 ) {
   private val db = BerillDatabase(driver)
 
@@ -60,7 +63,7 @@ class BerillCore(
 
   val external: ExternalPlugins = loadExternalPlugins(externalPlatform, plugins, scope)
   val collections = CollectionRegistry(plugins + external.loaded)
-  val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, files, vault)
+  val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, files, vault, oauth)
   val appearance = AppearanceStore(store, scope)
 
   val encryption = SyncEncryption(store, vault)

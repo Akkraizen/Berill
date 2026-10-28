@@ -10,7 +10,24 @@ import kotlinx.serialization.json.intOrNull
 
 interface HttpAccess {
   suspend fun getJson(url: String, headers: Map<String, String> = emptyMap()): JsonElement
+
+  suspend fun send(request: HttpRequest): HttpResponse = throw UnsupportedOperationException("HTTP requests are not supported")
 }
+
+class HttpRequest(
+  val method: String,
+  val url: String,
+  val headers: Map<String, String> = emptyMap(),
+  val body: String? = null,
+  val contentType: String? = null
+)
+
+class HttpResponse(val status: Int, val body: String) {
+  val ok: Boolean
+    get() = status in 200..299
+}
+
+fun formBody(fields: Map<String, String>): String = fields.entries.joinToString("&") { (k, v) -> "${k.urlEncode()}=${v.urlEncode()}" }
 
 class HttpException(val status: Int, message: String = "HTTP $status") : Exception(message)
 

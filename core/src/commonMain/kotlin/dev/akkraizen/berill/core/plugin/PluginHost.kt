@@ -7,6 +7,8 @@ import dev.akkraizen.berill.api.FileAccess
 import dev.akkraizen.berill.api.HttpAccess
 import dev.akkraizen.berill.api.Navigator
 import dev.akkraizen.berill.api.NoFileAccess
+import dev.akkraizen.berill.api.NoOAuthRedirects
+import dev.akkraizen.berill.api.OAuthRedirects
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.PluginSettings
 import dev.akkraizen.berill.api.SecretStore
@@ -39,7 +41,8 @@ class PluginHost(
   private val nav: AppNavigator,
   private val scope: CoroutineScope,
   private val files: FileAccess = NoFileAccess,
-  private val vault: SecretVault = MemoryVault()
+  private val vault: SecretVault = MemoryVault(),
+  private val redirects: OAuthRedirects = NoOAuthRedirects
 ) {
 
   val all: List<BerillPlugin> = plugins.sortedWith(compareBy({ it.order }, { it.title }))
@@ -147,6 +150,9 @@ class PluginHost(
       get() = this@PluginHost.scope
 
     override val secrets: SecretStore = PluginSecrets(this@PluginHost.vault, plugin.id)
+
+    override val oauth: OAuthRedirects
+      get() = this@PluginHost.redirects
   }
 
   private fun parseSwitches(record: SyncRecord?): Map<String, Boolean> =
