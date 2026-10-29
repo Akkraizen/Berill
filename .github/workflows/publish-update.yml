@@ -2,7 +2,7 @@ name: Publish update
 
 on:
   release:
-    types: [published]
+    types: [ published ]
   workflow_dispatch:
     inputs:
       tag:
@@ -44,6 +44,10 @@ jobs:
             --pattern SHA256SUMS.txt
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
             --pattern "Berill-$version-macos.dmg" || echo "No macOS build in $TAG"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern "Berill-$version-linux.deb" || echo "No Linux deb build in $TAG"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern "Berill-$version-linux.rpm" || echo "No Linux rpm build in $TAG"
           (cd dist && sha256sum --check --ignore-missing SHA256SUMS.txt)
           test -f "dist/Berill-$version-android.apk"
           test -f "dist/Berill-$version-Setup.exe"
@@ -65,6 +69,8 @@ jobs:
           ssh deploy "rm -rf '$DEPLOY_PATH/releases/.incoming' && mkdir -p '$DEPLOY_PATH/releases/.incoming'"
           files=("dist/Berill-$VERSION-android.apk" "dist/Berill-$VERSION-Setup.exe")
           if [ -f "dist/Berill-$VERSION-macos.dmg" ]; then files+=("dist/Berill-$VERSION-macos.dmg"); fi
+          if [ -f "dist/Berill-$VERSION-linux.deb" ]; then files+=("dist/Berill-$VERSION-linux.deb"); fi
+          if [ -f "dist/Berill-$VERSION-linux.rpm" ]; then files+=("dist/Berill-$VERSION-linux.rpm"); fi
           scp "${files[@]}" "deploy:$DEPLOY_PATH/releases/.incoming/"
           ssh deploy "KEEP='$KEEP' bash -s -- '$DEPLOY_PATH/releases'" < scripts/deploy/publish-release.sh
           echo "### Update $VERSION published" >> "$GITHUB_STEP_SUMMARY"

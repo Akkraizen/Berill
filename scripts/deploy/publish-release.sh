@@ -16,12 +16,12 @@ for file in "${incoming[@]}"; do
 done
 rmdir .incoming 2>/dev/null || true
 
-files=(Berill-*-android.apk Berill-*-Setup.exe Berill-*-macos.dmg)
+files=(Berill-*-android.apk Berill-*-Setup.exe Berill-*-macos.dmg Berill-*-linux.deb Berill-*-linux.rpm)
 mapfile -t versions < <(printf '%s\n' "${files[@]}" | sed -E 's/^Berill-([0-9]+(\.[0-9]+)+)-.*/\1/' | sort -u -V)
 count=${#versions[@]}
 if [ "$count" -gt "$keep" ]; then
   for version in "${versions[@]:0:count-keep}"; do
-    rm -f "Berill-$version-android.apk" "Berill-$version-Setup.exe" "Berill-$version-macos.dmg"
+    rm -f "Berill-$version-android.apk" "Berill-$version-Setup.exe" "Berill-$version-macos.dmg" "Berill-$version-linux.deb" "Berill-$version-linux.rpm"
     echo "Removed $version"
   done
 fi

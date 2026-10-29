@@ -14,17 +14,20 @@ internal actual fun clientDeviceName(): String =
 internal actual val clientPlatform: String = when {
   osName.startsWith("Windows") -> "windows"
   osName.startsWith("Mac") -> "macos"
+  osName.startsWith("Linux") -> "linux"
   else -> "desktop"
 }
 
 private fun macComputerName(): String? {
   if (!osName.startsWith("Mac")) return null
   return runCatching {
-    val process = ProcessBuilder("scutil", "--get", "ComputerName").redirectErrorStream(true).start()
+    val process =
+      ProcessBuilder("scutil", "--get", "ComputerName").redirectErrorStream(true).start()
     if (!process.waitFor(2, TimeUnit.SECONDS)) {
       process.destroy()
       return null
     }
-    process.inputStream.bufferedReader().readText().trim().takeIf { process.exitValue() == 0 && it.isNotBlank() }
+    process.inputStream.bufferedReader().readText().trim()
+      .takeIf { process.exitValue() == 0 && it.isNotBlank() }
   }.getOrNull()
 }

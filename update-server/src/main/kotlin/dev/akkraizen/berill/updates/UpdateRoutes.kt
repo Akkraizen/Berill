@@ -19,10 +19,16 @@ fun Route.releaseDownloads(releases: Releases) {
       "windows" -> latest?.windows
       "macos" -> latest?.macos
       "android" -> latest?.android
+      "linux-deb", "deb" -> latest?.linuxDeb
+      "linux-rpm", "rpm" -> latest?.linuxRpm
+      "linux" -> latest?.linuxDeb ?: latest?.linuxRpm
       else -> null
     }
     call.response.header(HttpHeaders.CacheControl, "no-store")
-    if (path == null) call.respond(HttpStatusCode.NotFound) else call.respondRedirect(path, permanent = false)
+    if (path == null) call.respond(HttpStatusCode.NotFound) else call.respondRedirect(
+      path,
+      permanent = false
+    )
   }
   get("/download/{file}") {
     val file = call.parameters["file"]?.let(releases::file)
@@ -32,7 +38,8 @@ fun Route.releaseDownloads(releases: Releases) {
     }
     call.response.header(
       HttpHeaders.ContentDisposition,
-      ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, file.name).toString()
+      ContentDisposition.Attachment.withParameter(ContentDisposition.Parameters.FileName, file.name)
+        .toString()
     )
     call.respondFile(file)
   }

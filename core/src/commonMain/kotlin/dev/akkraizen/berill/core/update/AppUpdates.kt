@@ -67,6 +67,7 @@ class AppUpdates(private val store: LocalStore) {
             val path = when (clientPlatform) {
               "android" -> latest.android
               "macos" -> latest.macos
+              "linux" -> latest.linuxDeb ?: latest.linuxRpm
               else -> latest.windows
             }
             AppLog.info(TAG, "update available: ${latest.version}")

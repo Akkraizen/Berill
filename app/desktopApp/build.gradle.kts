@@ -23,7 +23,14 @@ compose.desktop {
     mainClass = "dev.akkraizen.berill.MainKt"
 
     nativeDistributions {
-      targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Dmg)
+      targetFormats(
+        TargetFormat.Msi,
+        TargetFormat.Exe,
+        TargetFormat.Dmg,
+        TargetFormat.Deb,
+        TargetFormat.Rpm,
+        TargetFormat.AppImage
+      )
       packageName = "Berill"
       packageVersion = rootProject.extra["appVersionName"] as String
       modules("java.sql", "java.naming", "java.net.http", "jdk.unsupported", "jdk.crypto.ec")
@@ -31,9 +38,9 @@ compose.desktop {
       copyright = "© 2026 Akkraizen"
       windows {
         upgradeUuid = "037c9dec-c551-3b2f-b65e-d0959a559736"
-        iconFile.set(rootProject.file("scripts/windows-installer/assets/Berill.ico"))
         menuGroup = "Berill"
         shortcut = true
+        iconFile.set(rootProject.file("scripts/windows-installer/assets/Berill.ico"))
       }
       macOS {
         bundleID = "dev.akkraizen.berill"
@@ -41,6 +48,13 @@ compose.desktop {
         appCategory = "public.app-category.productivity"
         minimumSystemVersion = "12.0"
         iconFile.set(rootProject.file("scripts/macos/Berill.icns"))
+      }
+      linux {
+        packageName = "berill"
+        appCategory = "Office;Productivity;"
+        shortcut = true
+        menuGroup = "Berill"
+        iconFile.set(rootProject.file("scripts/linux/Berill.png"))
       }
     }
 

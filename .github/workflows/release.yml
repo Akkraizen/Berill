@@ -149,8 +149,50 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BERILL_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      BERILL_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select a version tag when running this workflow manually.' }
+          ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fakeroot rpm
+      - name: Build Linux packages
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:desktopApp:test :app:desktopApp:packageReleaseDeb :app:desktopApp:packageReleaseRpm --no-configuration-cache --console=plain
+          version=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          mkdir -p dist
+          cp app/desktopApp/build/compose/binaries/main-release/deb/*.deb "dist/Berill-$version-linux.deb"
+          cp app/desktopApp/build/compose/binaries/main-release/rpm/*.rpm "dist/Berill-$version-linux.rpm"
+          (cd dist && sha256sum "Berill-$version-linux.deb" "Berill-$version-linux.rpm" > SHA256SUMS-linux.txt)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-files
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
   draft:
-    needs: [build, macos]
+    needs: [ build, macos, linux ]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -168,14 +210,18 @@ jobs:
         with:
           name: macos-files
           path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-files
+          path: dist
       - name: Verify release checksums
         working-directory: dist
         run: |
           set -euo pipefail
-          sha256sum --check SHA256SUMS.txt SHA256SUMS-macos.txt
-          cat SHA256SUMS.txt SHA256SUMS-macos.txt | sort -k 2 > SHA256SUMS.merged
+          sha256sum --check SHA256SUMS.txt SHA256SUMS-macos.txt SHA256SUMS-linux.txt
+          cat SHA256SUMS.txt SHA256SUMS-macos.txt SHA256SUMS-linux.txt | sort -k 2 > SHA256SUMS.merged
           mv SHA256SUMS.merged SHA256SUMS.txt
-          rm SHA256SUMS-macos.txt
+          rm SHA256SUMS-macos.txt SHA256SUMS-linux.txt
           sha256sum --check SHA256SUMS.txt
       - name: Create or update release draft
         env:

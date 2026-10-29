@@ -20,7 +20,14 @@ class UpdateRoutesTest {
 
   @Test
   fun latestReleaseIsPublic() = testApplication {
-    application { updatesModule(releasesWith("Berill-1.2.0-android.apk", "Berill-1.2.0-Setup.exe")) }
+    application {
+      updatesModule(
+        releasesWith(
+          "Berill-1.2.0-android.apk",
+          "Berill-1.2.0-Setup.exe"
+        )
+      )
+    }
 
     val response = client.get("/api/release")
 
@@ -52,7 +59,14 @@ class UpdateRoutesTest {
   fun latestDownloadRedirectsToNewestFileOfPlatform() = testApplication {
     application {
       updatesModule(
-        releasesWith("Berill-1.1.0-Setup.exe", "Berill-1.2.0-Setup.exe", "Berill-1.2.0-macos.dmg", "Berill-1.2.0-android.apk")
+        releasesWith(
+          "Berill-1.1.0-Setup.exe",
+          "Berill-1.2.0-Setup.exe",
+          "Berill-1.2.0-macos.dmg",
+          "Berill-1.2.0-linux.deb",
+          "Berill-1.2.0-linux.rpm",
+          "Berill-1.2.0-android.apk"
+        )
       )
     }
     val noRedirects = createClient { followRedirects = false }
@@ -60,9 +74,34 @@ class UpdateRoutesTest {
     val windows = noRedirects.get("/download/latest/windows")
     assertEquals(HttpStatusCode.Found, windows.status)
     assertEquals("/download/Berill-1.2.0-Setup.exe", windows.headers[HttpHeaders.Location])
-    assertEquals("/download/Berill-1.2.0-macos.dmg", noRedirects.get("/download/latest/macos").headers[HttpHeaders.Location])
-    assertEquals("/download/Berill-1.2.0-android.apk", noRedirects.get("/download/latest/android").headers[HttpHeaders.Location])
-    assertEquals(HttpStatusCode.NotFound, noRedirects.get("/download/latest/linux").status)
+    assertEquals(
+      "/download/Berill-1.2.0-macos.dmg",
+      noRedirects.get("/download/latest/macos").headers[HttpHeaders.Location]
+    )
+    assertEquals(
+      "/download/Berill-1.2.0-linux.deb",
+      noRedirects.get("/download/latest/linux").headers[HttpHeaders.Location]
+    )
+    assertEquals(
+      "/download/Berill-1.2.0-linux.deb",
+      noRedirects.get("/download/latest/linux-deb").headers[HttpHeaders.Location]
+    )
+    assertEquals(
+      "/download/Berill-1.2.0-linux.deb",
+      noRedirects.get("/download/latest/deb").headers[HttpHeaders.Location]
+    )
+    assertEquals(
+      "/download/Berill-1.2.0-linux.rpm",
+      noRedirects.get("/download/latest/linux-rpm").headers[HttpHeaders.Location]
+    )
+    assertEquals(
+      "/download/Berill-1.2.0-linux.rpm",
+      noRedirects.get("/download/latest/rpm").headers[HttpHeaders.Location]
+    )
+    assertEquals(
+      "/download/Berill-1.2.0-android.apk",
+      noRedirects.get("/download/latest/android").headers[HttpHeaders.Location]
+    )
   }
 
   @Test
