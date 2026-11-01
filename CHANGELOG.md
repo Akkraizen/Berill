@@ -113,6 +113,7 @@ are released together with them.
 
 ### Changed
 
+- Workout Journal separates entries and statistics into localized tabs, preserving each tab's scroll and filters.
 - Search, daily overview, trash and workspace dialogs use Material 3 Expressive styling; oversized
   cards and quick-entry dialogs are smaller, and long secondary lists scroll within bounded areas.
 - Desktop search is centered in an adaptive title bar. Mobile header actions move into an overflow

@@ -44,7 +44,7 @@ class MuscleRadarRenderTest {
       val catalog = ctx.data.collection(WorkoutsPlugin.EXERCISES, CustomExercise.serializer())
       catalog.save("press", CustomExercise("Press", MUSCLE_CHEST))
       catalog.save("rows", CustomExercise("Rows", MUSCLE_BACK))
-      ctx.data.collection(WorkoutsPlugin.LOGS, WorkoutLog.serializer()).save("log", WorkoutLog(today().toString(), finished = true,
+      ctx.data.collection(WorkoutsPlugin.LOGS, WorkoutLog.serializer()).save("log", WorkoutLog(today().toString(), title = "Journal fixture", finished = true,
         exercises = listOf(LoggedExercise("Press", List(4) { LoggedSet(40.0, 10, true) }), LoggedExercise("Rows", List(6) { LoggedSet(30.0, 12, true) }))))
       val page = WorkoutsPlugin.pages.first { it.id == WorkoutsPlugin.PAGE_JOURNAL }
       val scene = ImageComposeScene(width, 1000) {
@@ -53,12 +53,25 @@ class MuscleRadarRenderTest {
         }
       }
       try {
+        render(scene, "workout-entries-$width.png")
+        assertTrue(text(scene).contains("Journal fixture"))
+        fun selectTab(label: String) {
+          val tab = scene.semanticsOwners.flatMap { nodes(it.rootSemanticsNode) }.first { node ->
+            node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { it.text == label } && node.config.getOrNull(SemanticsActions.OnClick) != null
+          }
+          assertNotNull(tab.config.getOrNull(SemanticsActions.OnClick)?.action).invoke()
+        }
+        selectTab("Статистика")
         render(scene, "muscle-radar-$width.png")
+        assertFalse(text(scene).contains("Journal fixture"))
         val chart = scene.semanticsOwners.flatMap { nodes(it.rootSemanticsNode) }.firstOrNull {
           it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().any { value -> value.contains("Грудь") && value.contains("Спина") }
         }
         assertNotNull(chart, "Radar must expose group totals to accessibility")
         assertTrue(chart.boundsInRoot.left >= 0 && chart.boundsInRoot.right <= width)
+        selectTab("Записи")
+        render(scene, "workout-entries-restored-$width.png")
+        assertTrue(text(scene).contains("Journal fixture"))
       } finally { scene.close(); scope.cancel(); driver.close() }
     }
   }

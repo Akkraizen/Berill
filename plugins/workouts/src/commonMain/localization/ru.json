@@ -481,6 +481,8 @@
     "workouts.radar.region.CORE": "Кор",
     "workouts.radar.region.LEGS": "Ноги",
     "workouts.radar.region.GLUTES": "Ягодицы",
-    "workouts.radar.region.BACK": "Спина"
+    "workouts.radar.region.BACK": "Спина",
+    "workouts.journal.tab.RECORDS": "Записи",
+    "workouts.journal.tab.STATISTICS": "Статистика"
   }
 }

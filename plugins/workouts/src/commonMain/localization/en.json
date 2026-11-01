@@ -476,6 +476,8 @@
     "workouts.radar.region.CORE": "Core",
     "workouts.radar.region.LEGS": "Legs",
     "workouts.radar.region.GLUTES": "Glutes",
-    "workouts.radar.region.BACK": "Back"
+    "workouts.radar.region.BACK": "Back",
+    "workouts.journal.tab.RECORDS": "Entries",
+    "workouts.journal.tab.STATISTICS": "Statistics"
   }
 }

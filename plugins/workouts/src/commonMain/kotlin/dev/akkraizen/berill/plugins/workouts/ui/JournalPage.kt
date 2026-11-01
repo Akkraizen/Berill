@@ -1,5 +1,13 @@
 package dev.akkraizen.berill.plugins.workouts.ui
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import dev.akkraizen.berill.plugins.workouts.i18n.pluginI18n
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,15 +68,18 @@ internal fun JournalPage(ctx: PluginContext) {
 private val newestFirst =
   compareByDescending<Item<WorkoutLog>> { it.value.date }.thenByDescending { it.value.createdAt }
 
+private enum class JournalTab { RECORDS, STATISTICS }
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun JournalList(ctx: PluginContext) {
   val collection = remember(ctx) { logs(ctx) }
   val all by remember(collection) { collection.observe() }.collectAsState(emptyList())
-  val sorted = all.sortedWith(newestFirst)
-  val catalog = rememberCatalog(ctx)
+  var selected by rememberSaveable { mutableStateOf(JournalTab.RECORDS) }
+  val savedTabs = rememberSaveableStateHolder()
 
-  PluginList {
-    item {
+  Column(Modifier.fillMaxSize()) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
       DetailHeader(WorkoutsText.journal(), Icons.Outlined.EventNote) {
         FilledTonalButton(onClick = { startWorkout(ctx, WorkoutsText.workoutTitle(), null, emptyList()) }) {
           Ic(BerillIcons.Add, size = 18.dp)
@@ -77,13 +88,31 @@ private fun JournalList(ctx: PluginContext) {
         }
       }
     }
-    item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx) }
-    item { MuscleBalanceCard(all.map { it.value }, catalog.visible + catalog.hidden) }
-    if (sorted.isEmpty()) item { SectionCard { EmptyHint(WorkoutsText.noLogs()) } }
-    items(sorted, key = { it.id }) { item ->
-      LogRow(item.value) { ctx.nav.open(WorkoutsPlugin.LOG_ROUTE + item.id) }
+    PrimaryTabRow(selectedTabIndex = selected.ordinal) {
+      JournalTab.entries.forEach { tab ->
+        Tab(selected = selected == tab, onClick = { selected = tab },
+          text = { Text(pluginI18n.text("workouts.journal.tab.${tab.name}")) })
+      }
     }
-    item { WorkoutStatistics(all.map { it.value }) }
+    savedTabs.SaveableStateProvider(selected.name) {
+      when (selected) {
+        JournalTab.RECORDS -> PluginList(Modifier.weight(1f)) {
+          val sorted = all.sortedWith(newestFirst)
+          if (sorted.isEmpty()) item { SectionCard { EmptyHint(WorkoutsText.noLogs()) } }
+          items(sorted, key = { it.id }) { item ->
+            LogRow(item.value) { ctx.nav.open(WorkoutsPlugin.LOG_ROUTE + item.id) }
+          }
+        }
+        JournalTab.STATISTICS -> {
+          val catalog = rememberCatalog(ctx)
+          PluginList(Modifier.weight(1f)) {
+            item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx) }
+            item { MuscleBalanceCard(all.map { it.value }, catalog.visible + catalog.hidden) }
+            item { WorkoutStatistics(all.map { it.value }) }
+          }
+        }
+      }
+    }
   }
 }
 
