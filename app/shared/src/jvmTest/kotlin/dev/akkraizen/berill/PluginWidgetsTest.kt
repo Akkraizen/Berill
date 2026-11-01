@@ -313,11 +313,16 @@ class PluginWidgetsTest {
       ops.save("o1", Operation(INCOME, 1000.0, "Зарплата", null, today().toString()))
       ops.save("o2", Operation(EXPENSE, 300.0, dev.akkraizen.berill.plugins.finance.data.FinanceCategory.CAFES.name, null, today().toString()))
       val month = c.render("finance.month")
-      assertEquals("Кафе и рестораны", month.block<WidgetBlock.Bar>().label)
+      // Labels follow the app language, not the developer machine's locale.
+      val expectedCategory = when (dev.akkraizen.berill.api.i18n.I18n.language.code) {
+        "ru" -> "Кафе и рестораны"
+        else -> "Cafes & restaurants"
+      }
+      assertEquals(expectedCategory, month.block<WidgetBlock.Bar>().label)
       val free = month.block<WidgetBlock.Metrics>().items.first().value.filter { it.isDigit() }
       assertEquals("700", free)
       val quick = c.render("finance.quick").block<WidgetBlock.Buttons>().items
-      assertEquals("Кафе и рестораны", quick.first().label)
+      assertEquals(expectedCategory, quick.first().label)
       c.widgets.perform(WidgetInstance("finance.quick"), quick.first().action)
       assertEquals(Destination.Plugin(FinancePlugin.id, "add:" + dev.akkraizen.berill.plugins.finance.data.FinanceCategory.CAFES.name), c.nav.stack.value.last())
     }

@@ -123,6 +123,7 @@ are released together with them.
 
 ### Fixed
 
+- Release widget tests respect the selected language on English CI runners; failed Windows test reports are retained as workflow artifacts.
 - Cross-module synchronization recovery, logical clocks and reconciliation after server/dataset changes.
 - Unsaved note drafts are protected against concurrent synchronization and MCP edits, with conflicts retained.
 - Rescheduled planner tasks remain planned and incomplete on the source day and planned on the destination day.

@@ -46,9 +46,20 @@ jobs:
           & $sdk 'platforms;android-37.0' 'build-tools;37.0.0'
           if ($LASTEXITCODE -ne 0) { throw 'Android SDK setup failed.' }
       - name: Run tests
+        id: tests
         run: |
           ./gradlew.bat jvmTest :server:test :update-server:test --no-configuration-cache --console=plain
           if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+      - name: Upload failed test reports
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-test-reports
+          path: |
+            **/build/test-results/**/*.xml
+            **/build/reports/tests/**
+          if-no-files-found: warn
+          retention-days: 14
       - name: Prepare Android signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
