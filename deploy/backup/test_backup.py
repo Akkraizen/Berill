@@ -41,6 +41,10 @@ echo "rclone $*" >> "$TEST_LOG"
 [ "${FAIL_RCLONE:-0}" = 0 ] || exit 1
 printf "encrypted cloud" > "$3/cloud-photo"
 ''')
+        self.stub("mv", '''
+[ "${FAIL_MV:-0}" = 0 ] || exit 1
+exec /usr/bin/mv "$@"
+''')
         self.stub("restic", '''
 echo "restic $*" >> "$TEST_LOG"
 [ "${FAIL_RESTIC:-0}" = 0 ] || exit 1
@@ -48,7 +52,7 @@ echo "restic $*" >> "$TEST_LOG"
         script = Path(__file__).with_name("backup.sh").read_text()
         script = script.replace("/backups", shell_path(self.backups)).replace("/attachments", shell_path(self.attachments))
         self.script = self.root / "backup.sh"
-        self.script.write_text(script)
+        self.script.write_text('PATH="' + shell_path(self.bin) + ':$PATH"\n' + script)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -106,6 +110,11 @@ echo "restic $*" >> "$TEST_LOG"
         calls = self.log.read_text()
         self.assertNotIn("init", calls)
         self.assertNotIn("forget", calls)
+
+    def test_publish_failure_never_cleans_previous_backups(self):
+        result = self.run_backup(FAIL_MV="1")
+        self.assertNotEqual(0, result.returncode)
+        self.assertTrue(self.old.exists())
 
     def test_invalid_retention_is_rejected(self):
         self.assertNotEqual(0, self.run_backup(BACKUP_KEEP_DAYS="0").returncode)

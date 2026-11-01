@@ -6,9 +6,9 @@ HOUR="${BACKUP_HOUR:-3}"
 DIR=/backups
 
 backup() {
-  name="$DIR/berill-$(date +%Y-%m-%d_%H%M).dump"
+  name="$DIR/berill-$(date +%Y-%m-%d_%H%M%S)-$$.dump"
   if pg_dump --format=custom --file="$name.tmp"; then
-    mv "$name.tmp" "$name"
+    mv "$name.tmp" "$name" || return 1
     attachments=/attachments
     if [ "${ATTACHMENTS_BACKEND:-local}" = s3 ]; then
       # Dedicated attachment credentials; restic can use an independent account/bucket.
@@ -30,7 +30,7 @@ backup() {
       rm -f "$name.attachments.tar.tmp"
       return 1
     fi
-    mv "$name.attachments.tar.tmp" "$name.attachments.tar"
+    mv "$name.attachments.tar.tmp" "$name.attachments.tar" || return 1
     if [ -n "${RESTIC_REPOSITORY:-}" ]; then
       # Initialize explicitly once; authentication/network failures must not trigger init.
       restic cat config >/dev/null || return 1
