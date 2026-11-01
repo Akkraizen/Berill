@@ -29,7 +29,7 @@ data class DraftMergeResult(val record: SyncRecord?, val baseline: SyncRecord?, 
 
 data class PendingDeletion(val collection: String, val id: String, val stamp: String)
 
-class LocalStore(private val db: BerillDatabase, private val clock: HybridClock) {
+class LocalStore(private val db: BerillDatabase, private val clock: HybridClock, private val index: SearchIndex? = null) {
   private val q = db.recordsQueries
   private val json = Json { ignoreUnknownKeys = true }
   val conflicts = ConflictJournal(::meta, ::setMeta)
@@ -40,6 +40,23 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
     if (q.getMeta(BASES_CLEANED).executeAsOneOrNull() == null) {
       db.transaction { q.deleteCleanBases(); q.setMeta(BASES_CLEANED, "1") }
     }
+    // Databases from before the search index get it built once.
+    if (index != null && q.getMeta(SEARCH_INDEXED).executeAsOneOrNull() == null) {
+      db.transaction {
+        index.clear()
+        q.selectAll().executeAsList().forEach { index.update(toRecord(it)) }
+        q.setMeta(SEARCH_INDEXED, "1")
+      }
+    }
+  }
+
+  /**
+   * Full-text search over all records; null when this store has no index (tests, older callers),
+   * in which case callers scan records themselves.
+   */
+  fun search(query: String, collections: Set<String>? = null, limit: Int = 100): List<SyncRecord>? {
+    val index = index ?: return null
+    return index.search(query, collections, limit).mapNotNull { (collection, id) -> get(collection, id)?.takeUnless { it.deleted } }
   }
 
   private val _localChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 64)
@@ -403,6 +420,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       dirty = if (dirty) 1 else 0,
       version = version
     )
+    index?.update(r)
   }
 
   private fun toRecord(row: Record) =
@@ -418,5 +436,6 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
     /** Marks a deleted record whose content was erased from the trash; the tombstone stays for sync. */
     const val PURGED = "__berill_purged"
     const val BASES_CLEANED = "maintenance.bases_cleaned_v1"
+    const val SEARCH_INDEXED = "maintenance.search_index_v1"
   }
 }

@@ -44,6 +44,12 @@ interface RawCollection {
 
   fun isDeleted(id: String): Boolean = false
 
+  /**
+   * Records whose words start with every word of [query], best matches first, from the full-text
+   * index; null if the store has no index, in which case callers scan [all] themselves.
+   */
+  fun search(query: String, limit: Int = 200): List<RawRecord>? = null
+
   val name: String
 
   fun observe(): Flow<List<RawRecord>>

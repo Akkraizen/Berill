@@ -6,6 +6,7 @@ import dev.akkraizen.berill.api.widgets.*
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.notes.displayTitle
 import dev.akkraizen.berill.core.widgets.WidgetInstance
+import dev.akkraizen.berill.protocol.Collections
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -53,10 +54,18 @@ class Connections(private val core: BerillCore) {
         core.scope.launch { errors.runSuspending(FailureOperation.COMMAND) { core.widgets.perform(instance, button.action) } }
       }
     }
-    if (q.isNotBlank()) read("notes") { core.notes.all() }.orEmpty().filter { (it.value.title + " " + it.value.body).contains(q, ignoreCase = true) }
-      .take(50).forEach { item -> results += SearchResult("note:${item.id}", item.value.displayTitle(), ConnectionsText.notes()) { core.nav.openNote(item.id) } }
+    if (q.isNotBlank()) read("notes") { noteMatches(q) }.orEmpty()
+      .forEach { (id, title) -> results += SearchResult("note:$id", title, ConnectionsText.notes()) { core.nav.openNote(id) } }
     searchPartial.value = partial
     return results.distinctBy { it.id }.take(100)
+  }
+
+  /** Notes matching [query]: ranked full-text hits, or a scan when the store has no index. */
+  private fun noteMatches(query: String): List<Pair<String, String>> {
+    val indexed = core.store.search(query, setOf(Collections.NOTES), 50)
+    if (indexed != null) return indexed.mapNotNull { record -> core.notes.get(record.id)?.let { record.id to it.displayTitle() } }
+    return core.notes.all().filter { (it.value.title + " " + it.value.body).contains(query, ignoreCase = true) }
+      .take(50).map { it.id to it.value.displayTitle() }
   }
 
   suspend fun day(date: LocalDate): List<DayEntry> {

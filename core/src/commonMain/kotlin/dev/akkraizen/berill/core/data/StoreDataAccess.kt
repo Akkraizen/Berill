@@ -89,6 +89,9 @@ class StoreRawCollection(private val store: LocalStore, override val name: Strin
 
   override fun isDeleted(id: String): Boolean = store.get(name, id)?.deleted == true
 
+  override fun search(query: String, limit: Int): List<RawRecord>? =
+    store.search(query, setOf(name), limit)?.map { RawRecord(it.id, it.fields) }
+
   override fun observe(): Flow<List<RawRecord>> = store.observe(name).map { records -> records.map { RawRecord(it.id, it.fields) } }
 
   override fun get(id: String): RawRecord? = store.get(name, id)?.takeUnless { it.deleted }?.let { RawRecord(it.id, it.fields) }

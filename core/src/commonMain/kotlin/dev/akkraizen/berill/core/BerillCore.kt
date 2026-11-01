@@ -64,7 +64,7 @@ class BerillCore(
 
   private val clock = HybridClock(deviceId) { Clock.System.now().toEpochMilliseconds() }
 
-  val store = LocalStore(db, clock)
+  val store = LocalStore(db, clock, dev.akkraizen.berill.core.data.SearchIndex(driver))
   val data: DataAccess = StoreDataAccess(store)
   val homePreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "home.preferences", dev.akkraizen.berill.core.preferences.HomePreferences.serializer(), dev.akkraizen.berill.core.preferences.HomePreferences())
   val editorPreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "editor.preferences", dev.akkraizen.berill.core.preferences.EditorPreferences.serializer(), dev.akkraizen.berill.core.preferences.EditorPreferences())

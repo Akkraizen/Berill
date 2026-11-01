@@ -25,7 +25,8 @@ class CollectionSearchSource(
   override suspend fun search(query: String): List<SearchResult> {
     val terms = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
     if (terms.isEmpty()) return emptyList()
-    return ctx.data.raw(collection).all().mapNotNull { record ->
+    val raw = ctx.data.raw(collection)
+    return (raw.search(query) ?: raw.all()).mapNotNull { record ->
       val text = record.fields.filterKeys { it !in setOf("data", "image", "cover", "thumbnail") }
         .values.filterIsInstance<JsonPrimitive>().filter { it.isString && it.content.length < 10000 }
         .joinToString(" ") { it.content }
