@@ -1,5 +1,6 @@
 package dev.akkraizen.berill.server
 
+import dev.akkraizen.berill.protocol.HybridClock
 import dev.akkraizen.berill.protocol.SyncRecord
 import dev.akkraizen.berill.protocol.SyncRequest
 import dev.akkraizen.berill.protocol.SyncResponse
@@ -18,7 +19,24 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.upsert
 
-class SyncRepository(private val db: Database) {
+/** A device sent stamps far ahead of the server's time: its clock is wrong. */
+class ClockSkewException(val record: String) : RuntimeException("clock_skew: $record")
+
+/**
+ * Rejects stamps more than [HybridClock.MAX_DRIFT_MILLIS] ahead of [now] unless they continue a
+ * future time the server already stores for that record (an edit of data written earlier by a device
+ * with a wrong clock). Such stamps would otherwise win against every later edit on every device.
+ */
+fun checkClockSkew(change: SyncRecord, existing: SyncRecord?, now: Long) {
+  val limit = now + HybridClock.MAX_DRIFT_MILLIS
+  val known = (existing?.clocks?.values.orEmpty() + listOfNotNull(existing?.deletedAt)).mapNotNull { HybridClock.decode(it)?.first }.toSet()
+  val stamps = change.clocks.values + listOfNotNull(change.deletedAt)
+  if (stamps.any { stamp -> HybridClock.decode(stamp)?.first?.let { it > limit && it !in known } == true }) {
+    throw ClockSkewException("${change.collection}/${change.id}")
+  }
+}
+
+class SyncRepository(private val db: Database, private val now: () -> Long = System::currentTimeMillis) {
   private val json = Json { ignoreUnknownKeys = true }
   private val clocksSerializer = MapSerializer(String.serializer(), String.serializer())
 
@@ -46,6 +64,7 @@ class SyncRepository(private val db: Database) {
           }
           .singleOrNull()
           ?.let(::toRecord)
+        checkClockSkew(change, existing, now())
         val merged = existing?.mergeWith(change) ?: change.copy(rev = 0)
         if (merged.sameContentAs(existing)) continue
         rev += 1

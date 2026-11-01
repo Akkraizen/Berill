@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.SerializationException
 
 @kotlinx.serialization.Serializable
-enum class FailureReason { UNEXPECTED, NETWORK, ACCESS_DENIED, AUTH_REQUIRED, INVALID_DATA, MISSING_ATTACHMENT, CORRUPT_ATTACHMENT, TOO_LARGE, IO, SERVICE_UNAVAILABLE, SERVER_NOT_FOUND, ENCRYPTION_LOCKED }
+enum class FailureReason { UNEXPECTED, NETWORK, ACCESS_DENIED, AUTH_REQUIRED, INVALID_DATA, MISSING_ATTACHMENT, CORRUPT_ATTACHMENT, TOO_LARGE, IO, SERVICE_UNAVAILABLE, SERVER_NOT_FOUND, ENCRYPTION_LOCKED, CLOCK_SKEW }
 @kotlinx.serialization.Serializable
 enum class FailureOperation { SEARCH, DAY, TRASH, RESTORE, DELETE, COMMAND, EXPORT, IMPORT, HEALTH, REMINDERS, ATTACHMENT, SHARE }
 class FeatureException(val reason: FailureReason, cause: Throwable? = null) : Exception(reason.name, cause)

@@ -564,6 +564,7 @@
     "errors.operation.ATTACHMENT": "attachment",
     "errors.operation.SHARE": "saving",
     "errors.reason.ENCRYPTION_LOCKED": "Attachments are encrypted. Unlock encryption in sync settings.",
+    "errors.reason.CLOCK_SKEW": "The device clock is far ahead. Set the correct date and time; changes will be sent after that.",
     "errors.reason.SERVER_NOT_FOUND": "The API was not found at this address. Check the server URL and version in sync settings.",
     "ui.apiNetwork": "Cannot connect to the API. Check your connection and try again.",
     "ui.apiTimeout": "The API did not respond in time. Try again later.",

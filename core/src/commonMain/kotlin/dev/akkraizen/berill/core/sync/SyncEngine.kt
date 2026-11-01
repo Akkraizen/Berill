@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.core.sync
 
+import dev.akkraizen.berill.core.connections.FailureReason
+import dev.akkraizen.berill.core.connections.FeatureException
 import dev.akkraizen.berill.core.connections.checkServiceStatus
 import dev.akkraizen.berill.core.connections.failureMessage
 import kotlinx.coroutines.CancellationException
@@ -18,7 +20,9 @@ import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlin.time.Clock
@@ -193,6 +197,9 @@ class SyncEngine(
         contentType(ContentType.Application.Json)
         setBody(SyncRequest(deviceId, cursor, records, client))
       }
+      if (response.status == HttpStatusCode.Conflict && dev.akkraizen.berill.protocol.CLOCK_SKEW in response.bodyAsText()) {
+        throw FeatureException(FailureReason.CLOCK_SKEW)
+      }
       checkServiceStatus(response.status.value)
       val body: SyncResponse = response.body()
       body.user?.let { if (store.meta(KEY_USER) != it) store.setMeta(KEY_USER, it) }
@@ -224,6 +231,7 @@ class SyncEngine(
       } while (body.hasMore)
 
       beforeUpload()
+      store.restampFutureChanges().takeIf { it > 0 }?.let { AppLog.warn(TAG, "re-stamped $it record(s) made while the device clock ran ahead") }
       val dirty = store.dirty().filter { (record, _) -> options.includes(record.collection, record.id) || isE2eParams(record) }
       val outgoing = dirty.mapNotNull { (record, version) -> encryption.encryptOutgoing(record)?.let { Triple(record, version, it) } }
       for (batch in batches(outgoing)) {

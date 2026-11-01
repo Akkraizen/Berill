@@ -44,4 +44,19 @@ class TypedSaveTest {
     } finally { driver.close() }
   }
 
+  @Test fun localChangesMadeWithAClockFarAheadAreReStampedBeforeUpload() {
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    try {
+      BerillDatabase.Schema.create(driver)
+      var now = 4_102_444_800_000L // the device clock is in 2100
+      val store = LocalStore(BerillDatabase(driver), HybridClock("skewed") { now })
+      store.put("notes", "n1", mapOf("body" to JsonPrimitive("written in the future")))
+      now = 1_800_000_000_000L // the clock is fixed
+      assertEquals(1, store.restampFutureChanges())
+      val stamp = store.get("notes", "n1")!!.clocks.getValue("body")
+      assertTrue(HybridClock.decode(stamp)!!.first <= now + HybridClock.MAX_DRIFT_MILLIS)
+      assertEquals(0, store.restampFutureChanges())
+      assertEquals(1, store.dirty().size)
+    } finally { driver.close() }
+  }
 }

@@ -66,3 +66,6 @@ object Collections {
   const val NOTES = "notes"
   const val SETTINGS = "settings"
 }
+
+/** Error code in a 409 response to `/api/sync`: the device's clock is far ahead of the server's. */
+const val CLOCK_SKEW = "clock_skew"

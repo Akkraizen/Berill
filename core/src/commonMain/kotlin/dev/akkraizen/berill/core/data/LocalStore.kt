@@ -74,7 +74,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       val current = row?.let(::toRecord) ?: SyncRecord(collection, id)
       val changed = fields.filter { (k, v) -> current.fields[k] != v || current.deleted }
       if (changed.isEmpty()) return@transaction
-      val stamp = clock.tick()
+      val stamp = stampFor(current, changed.keys)
       val patch = SyncRecord(collection, id, JsonObject(changed), changed.keys.associateWith { stamp })
       write(current.mergeWith(patch), dirty = true, version = (row?.version ?: 0) + 1)
     }
@@ -88,7 +88,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       val current = toRecord(row)
       if (current.deleted || current.fields[field] != expected || expected == value) return@transaction
       current.latestClock?.let(clock::observe)
-      val patch = SyncRecord(collection, id, JsonObject(mapOf(field to value)), mapOf(field to clock.tick()))
+      val patch = SyncRecord(collection, id, JsonObject(mapOf(field to value)), mapOf(field to stampFor(current, setOf(field))))
       write(current.mergeWith(patch), dirty = true, version = row.version + 1)
       updated = true
     }
@@ -102,7 +102,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       val row = q.selectOne(collection, id).executeAsOneOrNull() ?: return@transaction
       val current = toRecord(row)
       if (current.deleted) return@transaction
-      val stamp = clock.tick()
+      val stamp = stampFor(current, current.clocks.keys)
       write(current.copy(deletedAt = stamp), dirty = true, version = row.version + 1)
       deletion = PendingDeletion(collection, id, stamp)
     }
@@ -120,7 +120,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         val row = q.selectOne(item.collection, item.id).executeAsOneOrNull() ?: continue
         val current = toRecord(row)
         if (!current.deleted || current.deletedAt != item.stamp) continue
-        val stamp = clock.tick()
+        val stamp = stampFor(current, current.clocks.keys)
         write(current.copy(clocks = current.fields.keys.associateWith { stamp }), dirty = true, version = row.version + 1)
       }
     }
@@ -132,9 +132,9 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
     db.transaction {
       for (row in q.selectAll().executeAsList()) {
         val current = toRecord(row)
-        val stamp = clock.tick()
+        val stamp = stampFor(current, current.clocks.keys)
         var next = current.copy(clocks = current.fields.keys.associateWith { stamp })
-        if (current.deleted) next = next.copy(deletedAt = clock.tick())
+        if (current.deleted) next = next.copy(deletedAt = clock.stampAbove(listOf(stamp)))
         write(next, dirty = true, version = row.version + 1)
       }
     }
@@ -167,9 +167,9 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         val current = toRecord(row)
         if (!current.deleted || current.deletedAt != record.deletedAt) continue
         current.latestClock?.let(clock::observe)
-        val stamp = clock.tick()
+        val stamp = stampFor(current, current.clocks.keys)
         val fields = current.fields.mapValues { JsonNull } + (PURGED to JsonPrimitive(true))
-        write(current.copy(fields = JsonObject(fields), clocks = fields.keys.associateWith { stamp }, deletedAt = clock.tick()),
+        write(current.copy(fields = JsonObject(fields), clocks = fields.keys.associateWith { stamp }, deletedAt = clock.stampAbove(listOf(stamp))),
           dirty = true, version = row.version + 1)
         setMeta(baseKey(record.collection, record.id), json.encodeToString(SyncRecord.serializer(), get(record.collection, record.id)!!))
         conflicts.forget(record.collection, record.id)
@@ -181,6 +181,35 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
   }
 
   fun countAll(): Long = q.countAll().executeAsOne()
+
+  /**
+   * Gives local, not yet sent changes a current stamp if they were made while this device's clock ran
+   * far ahead. Otherwise such a field would win against every later edit on all devices. Returns the
+   * number of records changed.
+   */
+  fun restampFutureChanges(): Int {
+    var count = 0
+    db.transaction {
+      for (row in q.selectDirty().executeAsList()) {
+        val record = toRecord(row)
+        // Successors of future stamps the server already has (see HybridClock.stampAbove) stay as they are.
+        val base = meta(baseKey(record.collection, record.id))?.let { json.decodeFromString(SyncRecord.serializer(), it) }
+        val known = (base?.clocks?.values.orEmpty() + listOfNotNull(base?.deletedAt)).mapNotNull { HybridClock.decode(it)?.first }.toSet()
+        fun ownFuture(stamp: String) = clock.isFromFuture(stamp) && HybridClock.decode(stamp)?.first !in known
+        val future = record.clocks.filterValues(::ownFuture).keys
+        val futureDeletion = record.deletedAt?.let(::ownFuture) == true
+        if (future.isEmpty() && !futureDeletion) continue
+        val stamp = clock.tick()
+        val next = record.copy(
+          clocks = record.clocks + future.associateWith { stamp },
+          deletedAt = if (futureDeletion) clock.tick() else record.deletedAt,
+        )
+        write(next, dirty = true, version = row.version + 1)
+        count++
+      }
+    }
+    return count
+  }
 
   fun dirty(): List<Pair<SyncRecord, Long>> = q.selectDirty().executeAsList().map { toRecord(it) to it.version }
 
@@ -216,6 +245,10 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
     }
   }
 
+  /** A stamp that wins over the current stamps of [fields] and the record's tombstone. */
+  private fun stampFor(current: SyncRecord, fields: Collection<String>): String =
+    clock.stampAbove(fields.mapNotNull { current.clocks[it] } + listOfNotNull(current.deletedAt))
+
   private fun baseKey(collection: String, id: String) = "sync.base.$collection/$id"
 
   fun mergeDraft(collection: String, id: String, base: SyncRecord?, desired: JsonObject, existingConflict: String? = null): DraftMergeResult {
@@ -237,13 +270,13 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       var merged = current
       if (safe.isNotEmpty()) {
         val patch = safe + desired.filterKeys { it == "updatedAt" }
-        val stamp = clock.tick()
+        val stamp = stampFor(current, patch.keys)
         merged = current.copy(fields = JsonObject(current.fields + patch), clocks = current.clocks + patch.keys.associateWith { stamp })
         write(merged, dirty = true, version = (row?.version ?: 0) + 1)
         wrote = true
       }
       if (collision.isNotEmpty() || deletion) {
-        val stamp = clock.tick()
+        val stamp = stampFor(merged, desired.keys)
         val local = merged.copy(fields = JsonObject(merged.fields + desired), clocks = merged.clocks + desired.keys.associateWith { stamp }, deletedAt = null)
         val conflictId = conflicts.draft(existingConflict, local, current, merged, collision.toList(), deletion)
         val baselineFields = merged.fields.toMutableMap()
@@ -281,7 +314,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         current.latestClock?.let(clock::observe)
         conflict.local.latestClock?.let(clock::observe)
         conflict.remote.latestClock?.let(clock::observe)
-        val stamp = clock.tick()
+        val stamp = stampFor(current, current.clocks.keys)
         val keys = if (conflict.deletion) selected.fields.keys else conflict.fields.toSet()
         val fields = keys.associateWith { selected.fields[it] ?: JsonNull }.toMutableMap()
         if (!selected.deleted) {
@@ -322,7 +355,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       val current = toRecord(row)
       if (current.deleted || current.fields != expected) return@transaction
       current.latestClock?.let(clock::observe)
-      val stamp = clock.tick()
+      val stamp = stampFor(current, current.clocks.keys)
       val next = if (delete) current.copy(deletedAt = stamp) else {
         val changed = patch.orEmpty().filter { (key, value) -> current.fields[key] != value }
         current.copy(fields = JsonObject(current.fields + changed), clocks = current.clocks + changed.keys.associateWith { stamp })

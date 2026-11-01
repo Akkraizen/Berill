@@ -1,5 +1,6 @@
 package dev.akkraizen.berill.server
 
+import dev.akkraizen.berill.protocol.CLOCK_SKEW
 import dev.akkraizen.berill.protocol.SyncRequest
 import dev.akkraizen.berill.server.tokens.TokenRepository
 import dev.akkraizen.berill.server.tokens.runTokenCli
@@ -59,6 +60,10 @@ fun Application.module() {
     )
   }
   install(StatusPages) {
+    exception<ClockSkewException> { call, cause ->
+      call.application.log.warn("Rejected sync with stamps from the future: ${cause.record}")
+      call.respond(HttpStatusCode.Conflict, mapOf("error" to CLOCK_SKEW))
+    }
     exception<Throwable> { call, cause ->
       call.application.log.error("Request failed", cause)
       call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "internal error"))
