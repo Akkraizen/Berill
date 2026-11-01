@@ -46,6 +46,9 @@ class MuscleRadarRenderTest {
       catalog.save("rows", CustomExercise("Rows", MUSCLE_BACK))
       ctx.data.collection(WorkoutsPlugin.LOGS, WorkoutLog.serializer()).save("log", WorkoutLog(today().toString(), title = "Journal fixture", finished = true,
         exercises = listOf(LoggedExercise("Press", List(4) { LoggedSet(40.0, 10, true) }), LoggedExercise("Rows", List(6) { LoggedSet(30.0, 12, true) }))))
+      ctx.data.collection(WorkoutsPlugin.PROGRAMS, Program.serializer()).save("weekly", Program("Weekly fixture", days = listOf(
+        WorkoutDay("A", listOf(Exercise("Press", sets = 5, reps = "10", weight = 40.0))),
+        WorkoutDay("B", listOf(Exercise("Rows", sets = 3, reps = "12", weight = 30.0))))))
       val page = WorkoutsPlugin.pages.first { it.id == WorkoutsPlugin.PAGE_JOURNAL }
       val scene = ImageComposeScene(width, 1000) {
         MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
@@ -69,9 +72,20 @@ class MuscleRadarRenderTest {
         }
         assertNotNull(chart, "Radar must expose group totals to accessibility")
         assertTrue(chart.boundsInRoot.left >= 0 && chart.boundsInRoot.right <= width)
+        selectTab("Программа")
+        render(scene, "muscle-program-$width.png")
+        fun descriptions() = scene.semanticsOwners.flatMap { nodes(it.rootSemanticsNode) }
+          .flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+        assertTrue(descriptions().any { it.contains("План на неделю") && it.contains("4 / 5") && it.contains("6 / 3") })
+        selectTab("Тоннаж, кг")
+        render(scene, "muscle-program-volume-$width.png")
+        assertTrue(descriptions().any { it.contains("1600 / 2000") && it.contains("2160 / 1080") })
         selectTab("Записи")
         render(scene, "workout-entries-restored-$width.png")
         assertTrue(text(scene).contains("Journal fixture"))
+        selectTab("Статистика")
+        render(scene, "muscle-program-restored-$width.png")
+        assertTrue(descriptions().any { it.contains("1600 / 2000") })
       } finally { scene.close(); scope.cancel(); driver.close() }
     }
   }

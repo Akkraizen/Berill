@@ -11,6 +11,8 @@ are released together with them.
 
 ### Added
 
+- Workout radar can compare actual calendar-week load with a selected program treated as a weekly plan, with week navigation and explicit warnings for incomplete planned tonnage.
+
 - An in-app update center with progress, cancellation, persistent verified downloads, release notes,
   Android package/signature checks and system installation, and Windows install/relaunch with saved drafts.
 - A Material 3 Expressive workout radar comparing completed sets or tonnage by muscle region with the

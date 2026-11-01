@@ -105,9 +105,12 @@ private fun JournalList(ctx: PluginContext) {
         }
         JournalTab.STATISTICS -> {
           val catalog = rememberCatalog(ctx)
+          val prefs = rememberWorkoutPrefs(ctx)
+          val templates = remember(ctx) { dev.akkraizen.berill.plugins.workouts.data.programs(ctx) }
+          val programs by remember(templates) { templates.observe() }.collectAsState(emptyList())
           PluginList(Modifier.weight(1f)) {
             item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx) }
-            item { MuscleBalanceCard(all.map { it.value }, catalog.visible + catalog.hidden) }
+            item { MuscleBalanceCard(all.map { it.value }, catalog.visible + catalog.hidden, programs, prefs.maxes, prefs.rounding) }
             item { WorkoutStatistics(all.map { it.value }) }
           }
         }

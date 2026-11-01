@@ -483,6 +483,21 @@
     "workouts.radar.region.GLUTES": "Ягодицы",
     "workouts.radar.region.BACK": "Спина",
     "workouts.journal.tab.RECORDS": "Записи",
-    "workouts.journal.tab.STATISTICS": "Статистика"
+    "workouts.journal.tab.STATISTICS": "Статистика",
+    "workouts.radar.compare.PREVIOUS": "Предыдущий период",
+    "workouts.radar.compare.PROGRAM": "Программа",
+    "workouts.radar.program": "Программа на неделю",
+    "workouts.radar.untitledProgram": "Программа без названия",
+    "workouts.radar.noPrograms": "Создайте программу тренировок для сравнения с её недельным планом.",
+    "workouts.radar.actualWeek": "Факт за неделю · сплошная",
+    "workouts.radar.plannedWeek": "План на неделю · пунктир",
+    "workouts.radar.programHint": "Факт — все завершённые тренировки выбранной недели по сегодняшний день. План — все дни программы по одному разу. Значения: факт / план.",
+    "workouts.radar.previousWeek": "Предыдущая неделя",
+    "workouts.radar.nextWeek": "Следующая неделя",
+    "workouts.radar.thisWeek": "Текущая неделя",
+    "workouts.radar.weekRange": "{start} — {end}, {year}",
+    "workouts.radar.planExcluded": "Не распределено по группам плановых подходов: {count}. Это кардио или упражнения без найденной группы.",
+    "workouts.radar.planMissing": "Плановый тоннаж неполный: у {count} подходов нет положительного веса или точного числа повторений.",
+    "workouts.radar.noVolumePlan": "Укажите веса и точные повторения в программе или переключитесь на сравнение подходов."
   }
 }

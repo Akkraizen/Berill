@@ -48,3 +48,37 @@ fun muscleBalance(logs: List<WorkoutLog>, catalog: List<CatalogExercise>, end: L
   }
   return MuscleBalance(current.toList(), previous.toList(), excluded)
 }
+
+data class WorkoutComparisonWeek(val start: LocalDate, val end: LocalDate, val through: LocalDate)
+fun workoutComparisonWeek(today: LocalDate, offset: Int): WorkoutComparisonWeek {
+  require(offset <= 0)
+  val anchor = today.plus(offset * 7, DateTimeUnit.DAY)
+  val start = anchor.minus(anchor.dayOfWeek.ordinal, DateTimeUnit.DAY)
+  val end = start.plus(6, DateTimeUnit.DAY)
+  return WorkoutComparisonWeek(start, end, minOf(end, today))
+}
+
+data class PlannedMuscleLoad(val values: List<Double>, val excludedSets: Int, val missingVolumeSets: Int)
+fun plannedMuscleLoad(program: Program, catalog: List<CatalogExercise>, metric: MuscleMetric,
+  maxes: Map<String, Double> = emptyMap(), rounding: Double = DEFAULT_ROUNDING): PlannedMuscleLoad {
+  val values = DoubleArray(MuscleRegion.entries.size)
+  val exercises = catalog.sortedByDescending { it.custom }
+  var excluded = 0
+  var missing = 0
+  for (exercise in program.days.flatMap { it.exercises }) {
+    val count = if (exercise.durationSeconds != null && !exercise.durationPerSet) 1 else exercise.sets.coerceIn(1, 50)
+    val region = exercises.firstOrNull { it.matches(exercise.name) }?.let { muscleRegion(it.muscle) }
+    if (region == null) { excluded += count; continue }
+    val value = when (metric) {
+      MuscleMetric.SETS -> count.toDouble()
+      MuscleMetric.VOLUME -> {
+        val weight = exercise.resolvedWeight(maxes, rounding)?.takeIf { it > 0 && it.isFinite() }
+        val reps = if (exercise.durationSeconds == null) exercise.reps.trim().toIntOrNull()?.takeIf { it > 0 } else null
+        val volume = if (weight != null && reps != null) weight * reps * count else null
+        if (volume == null || !volume.isFinite()) { missing += count; 0.0 } else volume
+      }
+    }
+    values[region.ordinal] = (values[region.ordinal] + value).takeIf { it.isFinite() } ?: values[region.ordinal]
+  }
+  return PlannedMuscleLoad(values.toList(), excluded, missing)
+}

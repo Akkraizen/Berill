@@ -478,6 +478,21 @@
     "workouts.radar.region.GLUTES": "Glutes",
     "workouts.radar.region.BACK": "Back",
     "workouts.journal.tab.RECORDS": "Entries",
-    "workouts.journal.tab.STATISTICS": "Statistics"
+    "workouts.journal.tab.STATISTICS": "Statistics",
+    "workouts.radar.compare.PREVIOUS": "Previous period",
+    "workouts.radar.compare.PROGRAM": "Program",
+    "workouts.radar.program": "Weekly program",
+    "workouts.radar.untitledProgram": "Untitled program",
+    "workouts.radar.noPrograms": "Create a workout program to compare its weekly plan.",
+    "workouts.radar.actualWeek": "Actual week · solid",
+    "workouts.radar.plannedWeek": "Weekly plan · dashed",
+    "workouts.radar.programHint": "Actual: all finished workouts in the selected week, through today. Plan: all program days once. Values: actual / plan.",
+    "workouts.radar.previousWeek": "Previous week",
+    "workouts.radar.nextWeek": "Next week",
+    "workouts.radar.thisWeek": "Current week",
+    "workouts.radar.weekRange": "{start} — {end}, {year}",
+    "workouts.radar.planExcluded": "{count} planned sets have no matched muscle region or belong to cardio.",
+    "workouts.radar.planMissing": "Planned volume is incomplete: {count} sets lack a positive weight or exact repetitions.",
+    "workouts.radar.noVolumePlan": "Specify weights and exact repetitions in the program, or compare completed sets."
   }
 }
