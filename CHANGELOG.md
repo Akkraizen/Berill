@@ -31,6 +31,16 @@ are released together with them.
 - A notification center, shared reminder scheduling, per-module notification controls, sound preferences
   and quiet hours that can span midnight.
 - A synchronization conflict viewer with preserved versions and field-level resolution.
+- Full-text search over all records (SQLite FTS4): words are matched by prefix in any language,
+  results with the query in the title come first, and the index is built once for existing data.
+- Automatic local export on a schedule (daily or weekly) into a chosen folder — a directory on desktop,
+  a document tree with persistent access on Android — keeping the latest seven archives.
+- A size limit for the attachment cache (256 MB – 2 GB): once the server has every file, the least
+  recently used ones are removed from the device and downloaded again when opened.
+- A synced template for daily notes with `{{date}}`, `{{weekday}}` and `{{iso}}`, and mood selection in Day.
+- Signed in-app updates: CI signs every package (ECDSA P-256); builds with `berill.updatePublicKey`
+  refuse unsigned or wrongly signed packages before downloading and before installing.
+- `POST /api/blobs/missing` on the sync server, so clients re-upload only the attachments it lacks.
 
 #### Module capabilities and Android integration
 
@@ -128,6 +138,14 @@ are released together with them.
 - Plugin sources are split into `data`, `ui`, and `i18n` packages.
 - MCP tools moved into a shared `mcp` module used by both `berill-mcp` and the desktop app.
 - The desktop runtime image now includes the `java.net.http` module.
+- MCP lists return a short `etag` per record instead of repeating all fields as `expected`; updates and
+  deletes accept the etag (older clients may still pass `expected`).
+- Stored enum values of older versions live in each plugin's `data/LegacyValues.kt` instead of translation
+  files; typed saves keep a stored value this version does not understand unless that field was edited.
+- Base snapshots for conflict detection are kept only while a record has unsent changes; old ones are
+  removed once. The conflict journal is no longer re-read after every synchronization.
+- Global search, archive export/import and status-code handling were moved out of UI code into
+  `LocalArchiveService` and shared helpers; deleted records for the trash are queried in SQL.
 
 ### Fixed
 
@@ -148,6 +166,13 @@ are released together with them.
 - Alignment of the workout tiles on the home screen.
 - The tray menu now opens at the cursor, and its labels stay on one line.
 - Field labels and task times no longer wrap onto a second line.
+- Workout journal views (entries and statistics) switch with a Material 3 Expressive connected button
+  group instead of tabs that left a grey rectangle behind the selected tab (`BerillTabs` in the UI kit).
+- A missing or rejected (HTTP 413) attachment no longer blocks all synchronization; it is skipped and logged.
+- Reminders are rescheduled once after a burst of changes instead of on every autosaved keystroke.
+- Stamps from a device whose clock runs far ahead no longer poison other devices: the server rejects them
+  with `clock_skew` (the app asks to fix the date and time), local clocks ignore them, unsent changes are
+  re-stamped after the clock is corrected, and edits of such existing data still win.
 
 ## [1.0.0] - 2026-10-25
 
