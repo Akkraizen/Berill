@@ -47,7 +47,19 @@ class TypedCollection<T>(
   override fun all(): List<Item<T>> = store.list(name).mapNotNull(::decode)
 
   override fun save(id: String, value: T) {
-    store.put(name, id, json.encodeToJsonElement(serializer, value).jsonObject)
+    store.put(name, id, changedFields(store.get(name, id), json.encodeToJsonElement(serializer, value).jsonObject))
+  }
+
+  /**
+   * Fields the caller actually changed. A field whose stored value decodes and re-encodes to the
+   * new value is left as stored, so values this version does not understand (an enum value from a
+   * newer client, a lenient number) survive edits of other fields.
+   */
+  private fun changedFields(current: SyncRecord?, next: JsonObject): JsonObject {
+    if (current == null || current.deleted) return next
+    val normalized = runCatching { json.encodeToJsonElement(serializer, json.decodeFromJsonElement(serializer, current.fields)).jsonObject }
+      .getOrNull() ?: return next
+    return JsonObject(next.filter { (key, value) -> key !in current.fields || normalized[key] != value })
   }
 
   override fun delete(id: String) = store.delete(name, id)

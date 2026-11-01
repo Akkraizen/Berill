@@ -1,5 +1,4 @@
 package dev.akkraizen.berill.plugins.watching.data
-import dev.akkraizen.berill.plugins.watching.i18n.pluginI18n
 enum class MediaFormat(val translationKey: String) {
  MOVIE("watching.formatLabel"),
  SPECIAL("watching.formatLabel.2"),
@@ -9,5 +8,5 @@ enum class MediaFormat(val translationKey: String) {
  SERIES("watching.formatLabel.6"),
  MINI_SERIES("watching.formatLabel.7"),
  TV_SHOW("watching.formatLabel.8");
- val wire: String get() = pluginI18n.tr("legacy.MediaFormat.$name").get("ru")
+ val wire: String get() = LegacyValues.mediaFormat.getValue(this)
 }

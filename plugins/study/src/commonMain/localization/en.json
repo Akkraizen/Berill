@@ -89,16 +89,6 @@
     "study.stats.subjects": "Outstanding tasks by subject",
     "study.widget.deadlinesTitle": "Upcoming deadlines",
     "study.widget.deadlinesDescription": "Due dates from Study and other modules, soonest first",
-    "legacy.TaskStatus.TODO": "не начато",
-    "legacy.TaskStatus.DOING": "в работе",
-    "legacy.TaskStatus.SUBMITTED": "сдано",
-    "legacy.SubjectControl.EXAM": [
-      "экзамен"
-    ],
-    "legacy.SubjectControl.CREDIT": [
-      "зачёт",
-      "зачет"
-    ],
     "study.otherType": "Other",
     "study.defaultTaskTypes": [
       "Laboratory",

@@ -73,16 +73,6 @@
     "study.stats.subjects": "Нагрузка по предметам",
     "study.widget.deadlinesTitle": "Ближайшие дедлайны",
     "study.widget.deadlinesDescription": "Сроки из учёбы и других модулей, по возрастанию",
-    "legacy.TaskStatus.TODO": "не начато",
-    "legacy.TaskStatus.DOING": "в работе",
-    "legacy.TaskStatus.SUBMITTED": "сдано",
-    "legacy.SubjectControl.EXAM": [
-      "экзамен"
-    ],
-    "legacy.SubjectControl.CREDIT": [
-      "зачёт",
-      "зачет"
-    ],
     "study.otherType": "Другое",
     "study.defaultTaskTypes": [
       "Лабораторная",

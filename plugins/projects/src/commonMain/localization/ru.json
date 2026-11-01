@@ -37,10 +37,6 @@
     "projects.stats.months": "Завершено по месяцам",
     "projects.stats.completed": "Завершено",
     "projects.taskHeading": "## Задачи",
-    "projects.template": "## Идея\n\n\n## Задачи\n\n\n## Заметки\n",
-    "legacy.ProjectStatus.IDEA": "идея",
-    "legacy.ProjectStatus.IN_PROGRESS": "в работе",
-    "legacy.ProjectStatus.PAUSED": "на паузе",
-    "legacy.ProjectStatus.READY": "готово"
+    "projects.template": "## Идея\n\n\n## Задачи\n\n\n## Заметки\n"
   }
 }

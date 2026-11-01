@@ -88,8 +88,6 @@
     "languages.widget.next": "Next",
     "languages.reviewDone": "All cards reviewed for today",
     "languages.defaultLesson": "Lesson",
-    "languages.englishName": "English",
-    "legacy.WordSection.WORDS": "Слова",
-    "legacy.WordSection.PHRASES": "Фразы"
+    "languages.englishName": "English"
   }
 }

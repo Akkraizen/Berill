@@ -87,10 +87,6 @@
     "finance.automation.limit": "Лимит за месяц",
     "finance.automation.save": "Сохранить",
     "finance.automation.monthly": "Ежемесячно",
-    "finance.automation.daily": "Ежедневно",
-    "legacy.OperationKind.EXPENSE": "расход",
-    "legacy.OperationKind.INCOME": "доход",
-    "legacy.OperationKind.DEPOSIT": "пополнение",
-    "legacy.OperationKind.WITHDRAW": "снятие"
+    "finance.automation.daily": "Ежедневно"
   }
 }

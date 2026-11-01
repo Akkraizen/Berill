@@ -141,6 +141,8 @@ tasks.register("verifySourceLocalization") {
   val sources = fileTree(repositoryRoot) {
     include("**/src/*Main/**/*.kt", "**/src/main/**/*.kt", "**/src/main/res/layout/*.xml")
     exclude("**/build/**")
+    // Values stored in records by older versions are data, not interface text.
+    exclude("**/data/LegacyValues.kt")
   }
   inputs.files(sources)
   doLast {
