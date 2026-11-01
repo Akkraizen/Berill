@@ -41,8 +41,10 @@ class BerillTools(private val core: BerillCore) {
   suspend fun readRecords(collection: String, limit: Int, offset: Int): JsonElement = collection(collection).list(limit, offset)
   fun getRecord(collection: String, id: String): JsonElement = collection(collection).get(id)
   fun createRecord(collection: String, fields: JsonObject): JsonElement = editable(collection).create(fields)
-  fun updateRecord(collection: String, id: String, fields: JsonObject, expected: JsonObject): JsonElement = editable(collection).update(id, fields, expected)
-  fun deleteRecord(collection: String, id: String, expected: JsonObject, confirm: Boolean): JsonElement = editable(collection).delete(id, expected, confirm)
+  fun updateRecord(collection: String, id: String, fields: JsonObject, etag: String?, expected: JsonObject?): JsonElement =
+    editable(collection).let { it.update(id, fields, it.expectedFor(id, etag, expected)) }
+  fun deleteRecord(collection: String, id: String, etag: String?, expected: JsonObject?, confirm: Boolean): JsonElement =
+    editable(collection).let { it.delete(id, it.expectedFor(id, etag, expected), confirm) }
 
   suspend fun search(query: String, limit: Int): JsonElement {
     require(query.isNotBlank()) { "Query must not be empty" }
@@ -83,7 +85,9 @@ class BerillTools(private val core: BerillCore) {
       put("id", id)
       put("title", note.title)
       put("body", note.body)
-      put("expected", notes.get(id).getValue("expected"))
+      val record = notes.get(id)
+      put("etag", record.getValue("etag"))
+      put("expected", record.getValue("expected"))
       put("updated", time(note.updatedAt))
     }
   }
@@ -94,11 +98,12 @@ class BerillTools(private val core: BerillCore) {
     val body = (current["body"] as? JsonPrimitive)?.content.orEmpty()
     return notes.update(id, buildJsonObject { put("body", if (body.isBlank()) text else body.trimEnd('\n') + "\n\n" + text) }, current)
   }
-  fun updateNote(id: String, title: String?, body: String?, expected: JsonObject? = null): JsonElement {
+  fun updateNote(id: String, title: String?, body: String?, etag: String?, expected: JsonObject?): JsonElement {
     require(title != null || body != null) { "Pass title or body" }
-    return notes.update(id, buildJsonObject { title?.let { put("title", it) }; body?.let { put("body", it) } }, expected ?: notes.get(id).getValue("fields").jsonObject)
+    return notes.update(id, buildJsonObject { title?.let { put("title", it) }; body?.let { put("body", it) } }, notes.expectedFor(id, etag, expected))
   }
-  fun deleteNote(id: String, confirm: Boolean, expected: JsonObject? = null): JsonElement = notes.delete(id, expected ?: notes.get(id).getValue("fields").jsonObject, confirm)
+  fun deleteNote(id: String, confirm: Boolean, etag: String?, expected: JsonObject?): JsonElement =
+    notes.delete(id, notes.expectedFor(id, etag, expected), confirm)
 
   fun syncStatus(): JsonElement {
     val d = core.sync.diagnostics()

@@ -14,10 +14,9 @@ class NoteMcp(private val data: DataAccess) : McpCollection {
   override fun list(limit: Int, offset: Int): JsonObject {
     require(limit in 1..200 && offset >= 0)
     val records = raw.all().sortedByDescending { (it.fields["updatedAt"] as? JsonPrimitive)?.longOrNull ?: 0 }
-    return buildJsonObject { put("collection", name); put("total", records.size); put("records", JsonArray(records.drop(offset).take(limit).map { record(it.id, it.fields) })) }
+    return buildJsonObject { put("collection", name); put("total", records.size); put("records", JsonArray(records.drop(offset).take(limit).map { mcpRecord(it.id, it.fields, full = false) })) }
   }
-  private fun record(id: String, fields: JsonObject) = buildJsonObject { put("id", id); put("fields", fields); put("expected", fields) }
-  override fun get(id: String): JsonObject = raw.get(id)?.let { record(id, it.fields) } ?: throw McpException("Note not found")
+  override fun get(id: String): JsonObject = raw.get(id)?.let { mcpRecord(id, it.fields) } ?: throw McpException("Note not found")
   private fun prepare(fields: JsonObject, previous: JsonObject = JsonObject(emptyMap())): JsonObject {
     require(fields.keys.all { it in setOf("title", "body") }) { "Only title and body can be edited" }
     fields.values.forEach { require(it is JsonPrimitive && it.isString) { "Note fields must be strings" } }

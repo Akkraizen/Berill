@@ -16,11 +16,12 @@ internal class HabitsDayMcp(private val ctx: PluginContext) : McpCollection {
       put("values", buildJsonObject { put("type", "object"); put("description", "Habit id to nonnegative integer progress; updates patch only supplied habits") })
     }); put("required", JsonArray(listOf(JsonPrimitive("date"), JsonPrimitive("values"))))
   }
-  private fun record(id: String, values: JsonObject) = buildJsonObject { put("id", id); put("fields", buildJsonObject { put("date", id); put("values", values) }); put("expected", values) }
+  private fun record(id: String, values: JsonObject, full: Boolean = true) =
+    mcpRecord(id, buildJsonObject { put("date", id); put("values", values) }, expected = values, full = full)
   override fun list(limit: Int, offset: Int): JsonObject {
     require(limit in 1..200 && offset >= 0)
     val rows = raw.all().sortedByDescending { it.id }
-    return buildJsonObject { put("total", rows.size); put("records", JsonArray(rows.drop(offset).take(limit).map { record(it.id, it.fields) })) }
+    return buildJsonObject { put("total", rows.size); put("records", JsonArray(rows.drop(offset).take(limit).map { record(it.id, it.fields, full = false) })) }
   }
   override fun get(id: String) = raw.get(id)?.let { record(id, it.fields) } ?: throw McpException("Habit day not found")
   private fun values(fields: JsonObject): JsonObject {

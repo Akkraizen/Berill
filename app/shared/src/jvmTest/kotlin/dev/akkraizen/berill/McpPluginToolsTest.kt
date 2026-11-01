@@ -38,6 +38,19 @@ class McpPluginToolsTest {
     val finished = books.update(id, buildJsonObject { put("status", "DONE") }, changed.getValue("expected").jsonObject)
     assertTrue(finished.getValue("fields").jsonObject.getValue("finished") != JsonNull)
   }
+  @Test fun listsCarryShortEtagsThatGuardEditsLikeExpectedFields() {
+    val books = model(BooksPlugin, BooksPlugin.BOOKS)
+    val id = books.create(buildJsonObject { put("title", "Etag book") }).getValue("id").jsonPrimitive.content
+    val listed = books.list(50, 0).getValue("records").jsonArray.single().jsonObject
+    assertFalse("expected" in listed, "lists do not repeat the fields")
+    val etag = listed.getValue("etag").jsonPrimitive.content
+    assertEquals(16, etag.length)
+    assertEquals(etag, books.get(id).getValue("etag").jsonPrimitive.content)
+    books.update(id, buildJsonObject { put("title", "Edited") }, books.expectedFor(id, etag, null))
+    val stale = assertFailsWith<McpException> { books.expectedFor(id, etag, null) }
+    assertEquals(McpErrorCode.CONFLICT, stale.code)
+    assertNotEquals(etag, books.get(id).getValue("etag").jsonPrimitive.content)
+  }
   @Test fun habitProgressUsesDateIdsAndPreservesOtherHabits() {
     val definitions = model(HabitsPlugin, HabitsPlugin.HABITS)
     val habit = definitions.create(buildJsonObject { put("label", "Read"); put("defaultDuration", 1) }).getValue("id").jsonPrimitive.content

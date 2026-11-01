@@ -99,27 +99,47 @@ fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
         string("text", "Markdown text to add")
       }, write) { args -> tools.appendToNote(args.string("id"), args.string("text")) }
 
-    register("update_note", "Replaces the title and/or body using the expected snapshot from read_note or get_record.",
-      schema(required = listOf("id", "expected")) {
+    register("update_note", "Replaces the title and/or body. Pass the etag from read_note or get_record; re-read on conflict.",
+      schema(required = listOf("id")) {
         string("id", "Note id")
         string("title", "New title")
         string("body", "New Markdown body")
-        obj("expected", "Expected fields returned by get_record; prevents overwriting newer edits")
-      }, write) { args -> tools.updateNote(args.string("id"), args.optionalString("title"), args.optionalString("body"), args.obj("expected")) }
+        string("etag", "etag from read_note or get_record; prevents overwriting newer edits")
+        obj("expected", "Older alternative to etag: the expected object from get_record")
+      }, write) { args -> tools.updateNote(args.string("id"), args.optionalString("title"), args.optionalString("body"), args.optionalString("etag"), args.optionalObj("expected")) }
 
-    register("delete_note", "Moves a note to trash on synced devices. Requires expected snapshot and confirm=true.",
-      schema(required = listOf("id", "confirm", "expected")) {
+    register("delete_note", "Moves a note to trash on synced devices. Requires the etag from the last read and confirm=true.",
+      schema(required = listOf("id", "confirm")) {
         string("id", "Note id")
         boolean("confirm", "Must be true; set it only after the user agreed")
-        obj("expected", "Snapshot from read_note or get_record")
+        string("etag", "etag from read_note or get_record")
+        obj("expected", "Older alternative to etag")
       }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args ->
-      tools.deleteNote(args.string("id"), args.boolean("confirm"), args.obj("expected"))
+      tools.deleteNote(args.string("id"), args.boolean("confirm"), args.optionalString("etag"), args.optionalObj("expected"))
     }
   }
   if (!readOnly) {
     register("create_record", "Creates a record using the owning plugin's model and validation. Discover fields via list_collections.", schema(listOf("collection", "fields")) { string("collection", "Enabled collection"); obj("fields", "New fields") }, write) { args -> tools.createRecord(args.string("collection"), args.obj("fields")) }
-    register("update_record", "Updates fields atomically. Pass expected exactly as returned by get_record. Re-read on conflict.", schema(listOf("collection", "id", "fields", "expected")) { string("collection", "Collection"); string("id", "Record id"); obj("fields", "Field patch"); obj("expected", "Full previous fields") }, write) { args -> tools.updateRecord(args.string("collection"), args.string("id"), args.obj("fields"), args.obj("expected")) }
-    register("delete_record", "Moves a record to trash. Requires expected fields and explicit confirm=true.", schema(listOf("collection", "id", "expected", "confirm")) { string("collection", "Collection"); string("id", "Record id"); obj("expected", "Full previous fields"); boolean("confirm", "User approved deletion") }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args -> tools.deleteRecord(args.string("collection"), args.string("id"), args.obj("expected"), args.boolean("confirm")) }
+    register("update_record", "Updates fields atomically. Pass the etag returned by read_records or get_record. Re-read on conflict.",
+      schema(listOf("collection", "id", "fields")) {
+        string("collection", "Collection")
+        string("id", "Record id")
+        obj("fields", "Field patch")
+        string("etag", "etag from the last read of this record")
+        obj("expected", "Older alternative to etag: the expected object from get_record")
+      }, write) { args ->
+      tools.updateRecord(args.string("collection"), args.string("id"), args.obj("fields"), args.optionalString("etag"), args.optionalObj("expected"))
+    }
+    register("delete_record", "Moves a record to trash. Requires the etag from the last read and explicit confirm=true.",
+      schema(listOf("collection", "id", "confirm")) {
+        string("collection", "Collection")
+        string("id", "Record id")
+        string("etag", "etag from the last read of this record")
+        obj("expected", "Older alternative to etag")
+        boolean("confirm", "User approved deletion")
+      }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args ->
+      tools.deleteRecord(args.string("collection"), args.string("id"), args.optionalString("etag"), args.optionalObj("expected"), args.boolean("confirm"))
+    }
   }
   var registered = emptySet<String>()
   fun refreshPluginTools() {
@@ -134,10 +154,11 @@ fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
         when (args.operation()) { McpOperation.LIST -> collection.list(args.int("limit", 50, 1..200), args.int("offset", 0, 0..Int.MAX_VALUE)); McpOperation.GET -> collection.get(args.string("id")); else -> throw ToolException("Use list or get") }
       }
       val editName = "berill_${source.pluginId}_edit"
-      if (editName in desired && editName !in registered) register(editName, "Create, update or delete ${source.pluginId} records with plugin validation. Updates/deletes require expected fields. Deletion requires confirm=true.", schema(listOf("action", "collection")) { choice("action", "Edit operation", listOf(McpOperation.CREATE, McpOperation.UPDATE, McpOperation.DELETE).map { it.wire }); choice("collection", "Editable plugin collection", source.collections.filter { it.writable }.map { it.name }); string("id", "Record id"); obj("fields", "Field patch"); obj("expected", "Full fields returned by read"); boolean("confirm", "Required for deletion") }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args ->
+      if (editName in desired && editName !in registered) register(editName, "Create, update or delete ${source.pluginId} records with plugin validation. Updates/deletes require the etag from the last read. Deletion requires confirm=true.", schema(listOf("action", "collection")) { choice("action", "Edit operation", listOf(McpOperation.CREATE, McpOperation.UPDATE, McpOperation.DELETE).map { it.wire }); choice("collection", "Editable plugin collection", source.collections.filter { it.writable }.map { it.name }); string("id", "Record id"); obj("fields", "Field patch"); string("etag", "etag from the last read"); obj("expected", "Older alternative to etag"); boolean("confirm", "Required for deletion") }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args ->
         val current = tools.sources().firstOrNull { it.pluginId == source.pluginId } ?: throw ToolException("Plugin disabled", McpErrorCode.UNAVAILABLE)
         val collection = current.collections.firstOrNull { it.name == args.string("collection") && it.writable } ?: throw ToolException("Collection is not editable")
-        when (args.operation()) { McpOperation.CREATE -> collection.create(args.obj("fields")); McpOperation.UPDATE -> collection.update(args.string("id"), args.obj("fields"), args.obj("expected")); McpOperation.DELETE -> collection.delete(args.string("id"), args.obj("expected"), args.boolean("confirm")); else -> throw ToolException("Unknown edit action") }
+        when (args.operation()) { McpOperation.CREATE -> collection.create(args.obj("fields")); McpOperation.UPDATE -> args.string("id").let { id -> collection.update(id, args.obj("fields"), collection.expectedFor(id, args.optionalString("etag"), args.optionalObj("expected"))) }
+          McpOperation.DELETE -> args.string("id").let { id -> collection.delete(id, collection.expectedFor(id, args.optionalString("etag"), args.optionalObj("expected")), args.boolean("confirm")) }; else -> throw ToolException("Unknown edit action") }
       }
     }
     registered = desired
@@ -220,6 +241,8 @@ private fun JsonObject.boolean(name: String): Boolean =
   (this[name] as? JsonPrimitive)?.booleanOrNull ?: throw ToolException("Missing boolean argument `$name`.")
 
 private fun JsonObject.obj(name: String): JsonObject = this[name] as? JsonObject ?: throw ToolException("Missing object argument: $name")
+
+private fun JsonObject.optionalObj(name: String): JsonObject? = this[name] as? JsonObject
 
 private fun JsonObject.operation(): McpOperation = McpOperation.entries.firstOrNull { it.wire == string("action") } ?: throw ToolException("Unknown operation")
 
