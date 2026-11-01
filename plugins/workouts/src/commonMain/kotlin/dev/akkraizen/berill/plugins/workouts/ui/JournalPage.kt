@@ -1,8 +1,7 @@
 package dev.akkraizen.berill.plugins.workouts.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
+import dev.akkraizen.berill.api.ui.selection.BerillTabs
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,12 +87,11 @@ private fun JournalList(ctx: PluginContext) {
         }
       }
     }
-    PrimaryTabRow(selectedTabIndex = selected.ordinal) {
-      JournalTab.entries.forEach { tab ->
-        Tab(selected = selected == tab, onClick = { selected = tab },
-          text = { Text(pluginI18n.text("workouts.journal.tab.${tab.name}")) })
-      }
-    }
+    BerillTabs(
+      labels = JournalTab.entries.map { pluginI18n.text("workouts.journal.tab.${it.name}") },
+      selected = selected.ordinal,
+      onSelect = { selected = JournalTab.entries[it] },
+    )
     savedTabs.SaveableStateProvider(selected.name) {
       when (selected) {
         JournalTab.RECORDS -> PluginList(Modifier.weight(1f)) {
