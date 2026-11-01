@@ -110,4 +110,37 @@ class AttachmentCacheTest {
     } finally { server.stop(0); driver.close() }
   }
 
+  @Test fun afterReconciliationOnlyFilesTheServerLacksAreUploaded() = runBlocking {
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    BerillDatabase.Schema.create(driver)
+    val store = LocalStore(BerillDatabase(driver), HybridClock("missing-test") { 0L })
+    val vault = MemoryVault()
+    val cache = MemoryAttachmentCache()
+    val service = Attachments(cache, store, vault, SyncEncryption(store, vault))
+    val kept = attachmentHash("on server".encodeToByteArray()).also { cache.put(it, "on server".encodeToByteArray()) }
+    val lost = attachmentHash("lost".encodeToByteArray()).also { cache.put(it, "lost".encodeToByteArray()) }
+    val uploaded = java.util.concurrent.CopyOnWriteArrayList<String>()
+    var legacyServer = false
+    val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+    server.createContext("/api/blobs/missing") { call ->
+      call.requestBody.readBytes()
+      if (legacyServer) { call.sendResponseHeaders(404, -1); call.close(); return@createContext }
+      val body = """{"hashes":["$lost"]}""".encodeToByteArray()
+      call.sendResponseHeaders(200, body.size.toLong()); call.responseBody.use { it.write(body) }
+    }
+    server.createContext("/api/blobs/") { call -> call.requestBody.readBytes(); uploaded += call.requestURI.path.substringAfterLast('/'); call.sendResponseHeaders(204, -1); call.close() }
+    server.start()
+    try {
+      store.setMeta(SyncEngine.KEY_URL, "http://127.0.0.1:${server.address.port}")
+      store.setMeta("blobs.mode", SyncEncryption(store, vault).state.value.name)
+      store.setMeta(SyncEngine.KEY_RECONCILED, "")
+      vault.write(SyncEngine.VAULT_TOKEN, "test-token")
+      service.uploadPending()
+      assertEquals(listOf(lost), uploaded.toList())
+      uploaded.clear(); legacyServer = true
+      service.uploadPending()
+      assertEquals(setOf(kept, lost), uploaded.toSet(), "an older server without the endpoint gets everything")
+    } finally { server.stop(0); driver.close() }
+  }
+
 }

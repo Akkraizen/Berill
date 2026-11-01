@@ -14,13 +14,20 @@ import kotlin.uuid.Uuid
 data class SyncConflict(val id: String, val local: SyncRecord, val remote: SyncRecord, val merged: SyncRecord, val fields: List<String>, val deletion: Boolean, val at: Long)
 enum class ConflictChoice { LOCAL, REMOTE, MERGED }
 
-class ConflictJournal(private val read: (String) -> String?, private val write: (String, String) -> Unit) {
+class ConflictJournal(private val read: (String) -> String?, private val storeValue: (String, String) -> Unit) {
   private val lock = kotlinx.atomicfu.locks.SynchronizedObject()
   private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
   private fun load(): List<SyncConflict> = read(KEY)?.takeIf { it.isNotBlank() }?.let { json.decodeFromString(ListSerializer(SyncConflict.serializer()), it) } ?: emptyList()
   private val mutable = MutableStateFlow(load())
   val state = mutable.asStateFlow()
-  fun reload() = synchronized(lock) { mutable.value = load() }
+  /** Set by every write; [reload] skips parsing the journal when nothing changed. */
+  private var stale = false
+  private fun write(key: String, value: String) { storeValue(key, value); synchronized(lock) { stale = true } }
+  fun reload() = synchronized(lock) {
+    if (!stale) return@synchronized
+    stale = false
+    mutable.value = load()
+  }
   internal fun capture(local: SyncRecord, remote: SyncRecord, merged: SyncRecord, base: SyncRecord?) {
     if (base == null) return
     val fields = (local.fields.keys intersect remote.fields.keys).filterNot { it in METADATA || it.startsWith("__berill_") }.filter { key ->

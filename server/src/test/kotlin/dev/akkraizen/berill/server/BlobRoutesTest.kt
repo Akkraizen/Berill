@@ -26,6 +26,12 @@ class BlobRoutesTest {
       assertEquals(HttpStatusCode.BadRequest, client.put("/api/blobs/not-a-hash") { bearerAuth("one"); setBody(byteArrayOf()) }.status)
       assertEquals(HttpStatusCode.PayloadTooLarge, client.put("/api/blobs/$hash") { bearerAuth("one"); setBody("too large payload".encodeToByteArray()) }.status)
       assertEquals("photo", client.get("/api/blobs/$hash") { bearerAuth("one") }.bodyAsText())
+      val other = "b".repeat(64)
+      val missing = client.post("/api/blobs/missing") { bearerAuth("one"); contentType(ContentType.Application.Json); setBody("""{"hashes":["$hash","$other","$other"]}""") }
+      assertEquals(HttpStatusCode.OK, missing.status)
+      assertEquals("""{"hashes":["$other"]}""", missing.bodyAsText())
+      assertEquals("""{"hashes":["$hash"]}""", client.post("/api/blobs/missing") { bearerAuth("two"); setBody("""{"hashes":["$hash"]}""") }.bodyAsText())
+      assertEquals(HttpStatusCode.BadRequest, client.post("/api/blobs/missing") { bearerAuth("one"); setBody("""{"hashes":["../x"]}""") }.status)
     } finally { directory.deleteRecursively() }
   }
 }

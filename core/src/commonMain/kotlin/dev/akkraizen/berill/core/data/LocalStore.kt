@@ -35,6 +35,13 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
   val conflicts = ConflictJournal(::meta, ::setMeta)
   private val clocksSerializer = MapSerializer(String.serializer(), String.serializer())
 
+  init {
+    // Earlier versions kept a base snapshot of every synced record; only unsent changes need one.
+    if (q.getMeta(BASES_CLEANED).executeAsOneOrNull() == null) {
+      db.transaction { q.deleteCleanBases(); q.setMeta(BASES_CLEANED, "1") }
+    }
+  }
+
   private val _localChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 64)
 
   val localChanges: SharedFlow<Unit> = _localChanges
@@ -227,8 +234,13 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         }
         write(merged, dirty = row?.dirty == 1L, version = row?.version ?: 0)
         if (remote.collection != Collections.SETTINGS) {
-          val known = meta(baseKey(remote.collection, remote.id))?.let { json.decodeFromString(SyncRecord.serializer(), it) }
-          setMeta(baseKey(remote.collection, remote.id), json.encodeToString(SyncRecord.serializer(), known?.mergeWith(remote) ?: remote))
+          val key = baseKey(remote.collection, remote.id)
+          if (row?.dirty == 1L) {
+            val known = meta(key)?.let { json.decodeFromString(SyncRecord.serializer(), it) }
+            setMeta(key, json.encodeToString(SyncRecord.serializer(), known?.mergeWith(remote) ?: remote))
+          } else {
+            q.deleteMeta(key)
+          }
         }
       }
     }
@@ -240,8 +252,8 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
     db.transaction {
       val row = q.selectOne(record.collection, record.id).executeAsOneOrNull()
       q.markClean(record.collection, record.id, version)
-      if (row?.version == version && record.sameContentAs(toRecord(row)) && record.collection != dev.akkraizen.berill.protocol.Collections.SETTINGS)
-        setMeta(baseKey(record.collection, record.id), json.encodeToString(SyncRecord.serializer(), record))
+      // A clean record needs no base snapshot: the record itself is what the server has.
+      if (row?.version == version) q.deleteMeta(baseKey(record.collection, record.id))
     }
   }
 
@@ -405,5 +417,6 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
   private companion object {
     /** Marks a deleted record whose content was erased from the trash; the tombstone stays for sync. */
     const val PURGED = "__berill_purged"
+    const val BASES_CLEANED = "maintenance.bases_cleaned_v1"
   }
 }

@@ -28,6 +28,16 @@ fun Route.blobRoutes(store: BlobStore, maxBytes: Int = 21 * 1024 * 1024) {
     val bytes = withContext(Dispatchers.IO) { store.get(blob(call.principal<UserIdPrincipal>()!!.name, hash)) }
     if (bytes != null) call.respondBytes(bytes, ContentType.Application.OctetStream) else call.respond(HttpStatusCode.NotFound)
   }
+  // Which of the given attachments the server does not have; lets clients skip re-uploading the rest.
+  post("/api/blobs/missing") {
+    val user = call.principal<UserIdPrincipal>()!!.name
+    val hashes = runCatching { kotlinx.serialization.json.Json.decodeFromString(BlobList.serializer(), call.receiveText()).hashes }.getOrNull()
+    if (hashes == null || hashes.size > MAX_BLOB_QUERY || hashes.any { !it.matches(Regex("[0-9a-f]{64}")) }) {
+      call.respond(HttpStatusCode.BadRequest); return@post
+    }
+    val missing = withContext(Dispatchers.IO) { hashes.distinct().filterNot { store.exists(blob(user, it)) } }
+    call.respondText(kotlinx.serialization.json.Json.encodeToString(BlobList.serializer(), BlobList(missing)), ContentType.Application.Json)
+  }
   put("/api/blobs/{hash}") {
     val hash = call.parameters["hash"].orEmpty()
     if (!hash.matches(Regex("[0-9a-f]{64}"))) { call.respond(HttpStatusCode.BadRequest); return@put }
@@ -46,3 +56,8 @@ fun Route.blobRoutes(store: BlobStore, maxBytes: Int = 21 * 1024 * 1024) {
     call.respond(HttpStatusCode.NoContent)
   }
 }
+
+@kotlinx.serialization.Serializable
+data class BlobList(val hashes: List<String>)
+
+const val MAX_BLOB_QUERY = 1000

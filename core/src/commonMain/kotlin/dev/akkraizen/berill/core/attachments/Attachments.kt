@@ -6,6 +6,7 @@ import dev.akkraizen.berill.core.log.AppLog
 import dev.akkraizen.berill.core.secure.SecretVault
 import dev.akkraizen.berill.core.sync.*
 import io.ktor.client.call.body
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +51,12 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     val token = vault.read(SyncEngine.VAULT_TOKEN) ?: return@withLock
     if (encryption.state.value == E2eState.Locked) return@withLock
     val mode = encryption.state.value.name
-    if (store.meta("blobs.mode") != mode || store.meta(SyncEngine.KEY_RECONCILED) != "1") pending(pending() + cache.hashes())
+    when {
+      // Encryption was switched on or off: every file must be stored again in the new form.
+      store.meta("blobs.mode") != mode -> pending(pending() + cache.hashes())
+      // After a reconciliation the server may have lost files; send only the ones it reports missing.
+      store.meta(SyncEngine.KEY_RECONCILED) != "1" -> pending(pending() + missingOnServer(url, token, cache.hashes()))
+    }
     for (hash in pending()) {
       val bytes = withContext(Dispatchers.Default) { cache.get(hash) }
       if (bytes == null) {
@@ -73,6 +79,22 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
       pending(pending() - hash)
     }
     store.setMeta("blobs.mode", mode)
+  }
+
+  /** Asks the server which files it lacks; an older server without the endpoint gets all of them. */
+  private suspend fun missingOnServer(url: String, token: String, hashes: List<String>): List<String> {
+    val missing = mutableListOf<String>()
+    for (chunk in hashes.chunked(1000)) {
+      val response = http.post("$url/api/blobs/missing") {
+        bearerAuth(token); contentType(ContentType.Application.Json)
+        setBody(buildJsonObject { putJsonArray("hashes") { chunk.forEach { add(it) } } }.toString())
+      }
+      if (response.status == HttpStatusCode.NotFound || response.status == HttpStatusCode.MethodNotAllowed) return hashes
+      checkServiceStatus(response.status.value)
+      val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject["hashes"]?.jsonArray.orEmpty()
+      missing += body.mapNotNull { (it as? JsonPrimitive)?.content }.filter { it in chunk }
+    }
+    return missing
   }
 
   suspend fun get(hash: String): ByteArray? = try {

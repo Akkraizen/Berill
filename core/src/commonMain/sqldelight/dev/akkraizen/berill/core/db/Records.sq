@@ -50,3 +50,12 @@ SELECT value FROM meta WHERE key = ?;
 
 setMeta:
 INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?);
+
+deleteMeta:
+DELETE FROM meta WHERE key = ?;
+
+-- Base snapshots are only needed while a record has unsent changes.
+deleteCleanBases:
+DELETE FROM meta WHERE key LIKE 'sync.base.%' AND NOT EXISTS (
+  SELECT 1 FROM record WHERE record.dirty = 1 AND meta.key = 'sync.base.' || record.collection || '/' || record.id
+);

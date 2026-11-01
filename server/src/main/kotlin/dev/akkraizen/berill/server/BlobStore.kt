@@ -14,11 +14,13 @@ import software.amazon.awssdk.services.s3.model.S3Exception
 interface BlobStore : AutoCloseable {
   fun get(key: String): ByteArray?
   fun put(key: String, bytes: ByteArray)
+  fun exists(key: String): Boolean = get(key) != null
   override fun close() {}
 }
 
 class FileBlobStore(private val root: File) : BlobStore {
   override fun get(key: String): ByteArray? = File(root, key).takeIf { it.isFile }?.readBytes()
+  override fun exists(key: String): Boolean = File(root, key).isFile
   override fun put(key: String, bytes: ByteArray) {
     val target = File(root, key)
     check(target.parentFile.isDirectory || target.parentFile.mkdirs())
@@ -42,6 +44,12 @@ class S3BlobStore(
     // Missing buckets and denied credentials must never look like missing attachments.
     if (e.statusCode() == 404 && e.awsErrorDetails()?.errorCode() == "NoSuchKey") null else throw e
   }
+  override fun exists(key: String): Boolean = try {
+    client.headObject { it.bucket(bucket).key(prefix + key) }
+    true
+  } catch (e: S3Exception) {
+    if (e.statusCode() == 404) false else throw e
+  }
   override fun put(key: String, bytes: ByteArray) {
     client.putObject({ it.bucket(bucket).key(prefix + key).contentType("application/octet-stream") }, RequestBody.fromBytes(bytes))
   }
@@ -51,6 +59,7 @@ class S3BlobStore(
 // Existing files remain readable during migration. Upload failures propagate; no silent local-only writes.
 class MigratingBlobStore(private val remote: BlobStore, private val legacy: BlobStore) : BlobStore {
   override fun get(key: String): ByteArray? = remote.get(key) ?: legacy.get(key)
+  override fun exists(key: String): Boolean = remote.exists(key) || legacy.exists(key)
   override fun put(key: String, bytes: ByteArray) = remote.put(key, bytes)
   override fun close() { try { remote.close() } finally { legacy.close() } }
 }
