@@ -61,7 +61,7 @@ fun Application.module() {
   install(StatusPages) {
     exception<Throwable> { call, cause ->
       call.application.log.error("Request failed", cause)
-      call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (cause.message ?: "internal error")))
+      call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "internal error"))
     }
   }
   install(Authentication) {
@@ -75,10 +75,14 @@ fun Application.module() {
     }
   }
 
+  val blobs = blobStoreFromEnv()
+  monitor.subscribe(io.ktor.server.application.ApplicationStopped) { blobs.close() }
+
   routing {
     get("/health") { call.respondText("ok") }
     get("/status") { call.respondText(STATUS_PAGE, ContentType.Text.Html) }
     authenticate("api") {
+      blobRoutes(blobs)
       post("/api/sync") {
         val user = call.principal<UserIdPrincipal>()!!.name
         val request = call.receive<SyncRequest>()

@@ -28,6 +28,17 @@ services:
       DATABASE_USER: ${DATABASE_USER:-berill}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       HUB_TOKENS: ${HUB_TOKENS:-}
+      ATTACHMENTS_BACKEND: ${ATTACHMENTS_BACKEND:-local}
+      ATTACHMENTS_S3_ENDPOINT: ${ATTACHMENTS_S3_ENDPOINT:-}
+      ATTACHMENTS_S3_BUCKET: ${ATTACHMENTS_S3_BUCKET:-}
+      ATTACHMENTS_S3_PREFIX: ${ATTACHMENTS_S3_PREFIX:-attachments}
+      ATTACHMENTS_S3_PATH_STYLE: ${ATTACHMENTS_S3_PATH_STYLE:-true}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${ATTACHMENTS_AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${ATTACHMENTS_AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${ATTACHMENTS_AWS_SESSION_TOKEN:-}
+    volumes:
+      - berill-attachments:/app/attachments
     ports:
       - "${BIND_ADDRESS:-0.0.0.0}:${SYNC_PORT:-8080}:8080"
 
@@ -43,7 +54,7 @@ services:
       - "${BIND_ADDRESS:-0.0.0.0}:${UPDATES_PORT:-8081}:8080"
 
   backup:
-    image: postgres:17
+    build: ./backup
     restart: unless-stopped
     depends_on:
       db:
@@ -54,13 +65,30 @@ services:
       PGDATABASE: ${DATABASE_NAME:-berill}
       PGUSER: ${DATABASE_USER:-berill}
       PGPASSWORD: ${DATABASE_PASSWORD}
+      BACKUP_ONCE: ${BACKUP_ONCE:-0}
       BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
+      ATTACHMENTS_BACKEND: ${ATTACHMENTS_BACKEND:-local}
+      ATTACHMENTS_S3_BUCKET: ${ATTACHMENTS_S3_BUCKET:-}
+      ATTACHMENTS_S3_PREFIX: ${ATTACHMENTS_S3_PREFIX:-attachments}
+      ATTACHMENTS_S3_ENDPOINT: ${ATTACHMENTS_S3_ENDPOINT:-}
+      ATTACHMENTS_S3_PATH_STYLE: ${ATTACHMENTS_S3_PATH_STYLE:-true}
+      ATTACHMENTS_AWS_ACCESS_KEY_ID: ${ATTACHMENTS_AWS_ACCESS_KEY_ID:-}
+      ATTACHMENTS_AWS_SECRET_ACCESS_KEY: ${ATTACHMENTS_AWS_SECRET_ACCESS_KEY:-}
+      ATTACHMENTS_AWS_SESSION_TOKEN: ${ATTACHMENTS_AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      RESTIC_KEEP_DAILY: ${RESTIC_KEEP_DAILY:-14}
       BACKUP_HOUR: ${BACKUP_HOUR:-3}
       TZ: ${TZ:-Europe/Moscow}
     volumes:
-      - ./backup/backup.sh:/backup.sh:ro
+      - berill-attachments:/attachments:ro
       - ${BACKUP_PATH:-./backups}:/backups
 
 volumes:
+  berill-attachments:
   berill-db:
     name: ${DATABASE_VOLUME:-berill-db}

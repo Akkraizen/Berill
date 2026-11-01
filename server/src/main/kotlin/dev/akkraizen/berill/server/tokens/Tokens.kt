@@ -59,7 +59,7 @@ class TokenRepository(private val db: Database, private val now: () -> Long = Sy
 
   fun create(user: String, name: String): Pair<TokenInfo, String> {
     require(TokenCodec.USER.matches(user)) {
-      "имя пользователя: латиница, цифры, _ . - (до 64 символов)"
+      TokenValidationMessage.INVALID_USERNAME.text()
     }
 
     val token = TokenCodec.generate()

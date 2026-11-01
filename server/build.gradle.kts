@@ -21,6 +21,8 @@ ktor {
 
 dependencies {
   api(project(":protocol"))
+  implementation("software.amazon.awssdk:s3:2.57.8")
+  implementation("software.amazon.awssdk:url-connection-client:2.57.8")
   implementation(libs.logback)
   implementation(libs.ktor.serverCore)
   implementation(libs.ktor.serverNetty)
