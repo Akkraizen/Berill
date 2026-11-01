@@ -11,6 +11,11 @@ are released together with them.
 
 ### Added
 
+- An in-app update center with progress, cancellation, persistent verified downloads, release notes,
+  Android package/signature checks and system installation, and Windows install/relaunch with saved drafts.
+- A Material 3 Expressive workout radar comparing completed sets or tonnage by muscle region with the
+  preceding equal-length period, including custom catalog exercises and accessible group totals.
+
 #### Connected workspace
 
 - Global search and a command palette across enabled modules, available with Ctrl+K / Command+K.

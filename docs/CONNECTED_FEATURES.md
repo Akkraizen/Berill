@@ -23,3 +23,7 @@ still require verification on a physical Android device before distribution.
 ## Local photo cache
 
 Android stores attachment originals in the app files directory; Desktop stores them in `~/.berill/attachments`. The cache persists across application restarts and is included in local archives. Files are verified by SHA-256, with a 24 MiB in-memory LRU above the disk store. Memory eviction does not delete originals. Cached images remain readable without a server and while network uploads are in progress. Temporary loading failures are retried; decoding errors in the recipe photo panel show its localized loading error and retry action.
+
+## Update center and workout radar
+
+Settings → Updates provides verified in-app downloads and Windows/Android installation. See [UPDATES.md](UPDATES.md) for server rollout, trust, signing and platform behavior. Workout Journal includes a Material 3 Expressive radar comparing completed sets or tonnage in seven muscle regions with the immediately preceding equal-length period. Only finished workouts and checked sets count. Catalog aliases and custom exercises determine regions; biceps/triceps are combined as arms, calves as legs, cardio/unmatched exercises are reported as excluded. The chart measures training distribution, not physiological muscle growth.
