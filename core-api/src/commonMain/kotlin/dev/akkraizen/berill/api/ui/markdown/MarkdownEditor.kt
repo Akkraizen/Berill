@@ -1,5 +1,15 @@
 package dev.akkraizen.berill.api.ui.markdown
 
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.BasicTextField
 import dev.akkraizen.berill.api.ui.selection.pastelCheckboxColors
@@ -17,6 +27,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import dev.akkraizen.berill.api.ui.interaction.LocalShortcuts
+import dev.akkraizen.berill.api.ui.interaction.ShortcutAction
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isShiftPressed
@@ -46,8 +58,15 @@ fun MarkdownEditor(
   modifier: Modifier = Modifier,
   placeholder: String = "",
   textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
-  onWikiLink: ((String) -> Unit)? = null
+  onWikiLink: ((String) -> Unit)? = null,
+  lineNumbers: Boolean = false
 ) {
+  val numberMeasurer = rememberTextMeasurer()
+  val density = LocalDensity.current
+  val numberStyle = textStyle.copy(fontFamily = FontFamily.Monospace)
+  val logicalLineCount = value.count { it == '\n' } + 1
+  val gutterWidth = with(density) { numberMeasurer.measure(logicalLineCount.toString(), style = numberStyle).size.width.toDp() + 16.dp }
+  val viewport = remember { mutableStateOf(0f to Float.POSITIVE_INFINITY) }
   var field by remember { mutableStateOf(TextFieldValue(value)) }
   val current = if (field.text == value)
     field
@@ -66,6 +85,7 @@ fun MarkdownEditor(
   val transformation = remember(active, theme) { LiveTransformation(active, theme, holder) }
   val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
   val openLink = rememberOpenLink()
+  val shortcuts = LocalShortcuts.current
   val colors = MaterialTheme.colorScheme
 
   fun commit(next: TextFieldValue) {
@@ -102,12 +122,12 @@ fun MarkdownEditor(
             true
           }
 
-          ctrl && e.key == Key.B -> {
+          shortcuts.matches(ShortcutAction.BOLD, e) -> {
             commit(MarkdownEditing.wrap(current, "**"))
             true
           }
 
-          ctrl && e.key == Key.I -> {
+          shortcuts.matches(ShortcutAction.ITALIC, e) -> {
             commit(MarkdownEditing.wrap(current, "*"))
             true
           }
@@ -116,7 +136,28 @@ fun MarkdownEditor(
         }
       },
     decorationBox = { inner ->
-      Box(
+      Row(Modifier.height(IntrinsicSize.Min)) {
+        if (lineNumbers) Canvas(Modifier.width(gutterWidth).fillMaxHeight().onGloballyPositioned { coordinates ->
+          val visible = coordinates.boundsInWindow()
+          val origin = coordinates.positionInWindow().y
+          viewport.value = (visible.top - origin).coerceAtLeast(0f) to (visible.bottom - origin).coerceAtLeast(0f)
+        }) {
+          val result = layout.value
+          val live = holder.result
+          if (result != null && live != null) {
+            var offset = 0
+            value.split('\n').forEachIndexed { index, line ->
+              val shown = live.mapping.originalToTransformed(offset).coerceIn(0, result.layoutInput.text.length)
+              val row = result.getLineForOffset(shown)
+              if (result.getLineBottom(row) >= viewport.value.first && result.getLineTop(row) <= viewport.value.second) {
+                val label = numberMeasurer.measure((index + 1).toString(), style = numberStyle.copy(color = colors.onSurfaceVariant))
+                drawText(label, topLeft = Offset(size.width - label.size.width - 8.dp.toPx(), result.getLineBaseline(row) - label.firstBaseline))
+              }
+              offset += line.length + 1
+            }
+          }
+        }
+      Box(Modifier.weight(1f).then(
         Modifier.drawBehind {
           val r = holder.result
           val l = layout.value
@@ -140,11 +181,12 @@ fun MarkdownEditor(
               }
             }
           }
-      ) {
+      )) {
         if (current.text.isEmpty()) {
           Text(placeholder, style = textStyle.copy(color = colors.onSurfaceVariant.copy(alpha = 0.6f)))
         }
         inner()
+      }
       }
     }
   )

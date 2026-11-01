@@ -81,17 +81,14 @@ class HabitsData(val ctx: PluginContext) {
 const val GOAL_MONTH = "perfectDaysMonthly"
 const val GOAL_YEAR = "perfectDaysYearly"
 
+enum class HabitIconKey { PUZZLE, CODE, FIRE, TRANSLATE, FITNESS, BOOK, TASK;
+  val key: String get() = name.lowercase()
+}
 fun guessIconKey(id: String): String {
-  val s = id.lowercase()
-  return when {
-    "chess" in s || "шахмат" in s -> "puzzle"
-    "leetcode" in s || "code" in s || "код" in s -> "code"
-    "flame" in s || "fire" in s || "огон" in s -> "fire"
-    "deutsch" in s || "english" in s || "немец" in s || "англ" in s -> "translate"
-    "warmup" in s || "размин" in s || "sport" in s -> "fitness"
-    "read" in s || "чтен" in s -> "book"
-    else -> "task"
-  }
+  val normalized = id.lowercase()
+  return HabitIconKey.entries.firstOrNull { key -> key != HabitIconKey.TASK &&
+    dev.akkraizen.berill.plugins.habits.i18n.pluginI18n.list("lexicon.habitIcon.${key.name}").any { it in normalized }
+  }?.key ?: HabitIconKey.TASK.key
 }
 
 internal fun dayValue(fields: Map<String, JsonElement>?, habitId: String): Int =

@@ -1,6 +1,11 @@
 package dev.akkraizen.berill.mcp
 
 import dev.akkraizen.berill.core.BuildInfo
+import dev.akkraizen.berill.api.mcp.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonObject
 import dev.akkraizen.berill.core.log.AppLog
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -29,22 +34,30 @@ private const val INSTRUCTIONS =
 fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
   val server = Server(
     Implementation(name = "berill", version = BuildInfo.VERSION_NAME, title = "Berill"),
-    ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = false))),
+    ServerOptions(capabilities = ServerCapabilities(tools = ServerCapabilities.Tools(listChanged = true))),
     INSTRUCTIONS
   )
   val read = ToolAnnotations(readOnlyHint = true, openWorldHint = false)
   val write = ToolAnnotations(readOnlyHint = false, destructiveHint = false, openWorldHint = false)
 
-  server.tool("search", "Full-text search across notes and every section. Returns matching records with snippets.",
+  fun register(name: String, description: String, schema: ToolSchema, annotations: ToolAnnotations, handler: suspend (JsonObject) -> JsonElement) {
+    server.tool(name, description, schema, annotations) { args ->
+      try { if (annotations.readOnlyHint != true) tools.prepareMutation(); handler(args) }
+      catch (e: CancellationException) { throw e }
+      catch (e: Exception) { if (e !is IllegalArgumentException && e !is ToolException) tools.reportFailure(e); throw e }
+    }
+  }
+
+  register("search", "Full-text search across notes and every section. Returns matching records with snippets.",
     schema(required = listOf("query")) {
       string("query", "Text to look for, case-insensitive")
       integer("limit", "Maximum results, 1–50, default 20")
     }, read) { args -> tools.search(args.string("query"), args.int("limit", 20, 1..50)) }
 
-  server.tool("list_collections", "Lists data collections, the section each belongs to and how many records it has.",
+  register("list_collections", "Lists data collections, the section each belongs to and how many records it has.",
     schema {}, read) { tools.listCollections() }
 
-  server.tool("read_records", "Reads records of one collection as JSON fields. Use offset and limit to page.",
+  register("read_records", "Reads records of one collection as JSON fields. Use offset and limit to page.",
     schema(required = listOf("collection")) {
       string("collection", "Collection name from list_collections")
       integer("limit", "Records per page, 1–200, default 50")
@@ -53,54 +66,86 @@ fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
     tools.readRecords(args.string("collection"), args.int("limit", 50, 1..200), args.int("offset", 0, 0..Int.MAX_VALUE))
   }
 
-  server.tool("get_record", "Reads one record by collection and id.",
+  register("get_record", "Reads one record by collection and id.",
     schema(required = listOf("collection", "id")) {
       string("collection", "Collection name")
       string("id", "Record id")
     }, read) { args -> tools.getRecord(args.string("collection"), args.string("id")) }
 
-  server.tool("list_notes", "Lists notes, newest first, with a short preview.",
+  register("list_notes", "Lists notes, newest first, with a short preview.",
     schema { integer("limit", "Maximum notes, 1–200, default 50") }, read) { args ->
     tools.listNotes(args.int("limit", 50, 1..200))
   }
 
-  server.tool("read_note", "Reads the full Markdown text of a note.",
+  register("read_note", "Reads the full Markdown text of a note.",
     schema(required = listOf("id")) { string("id", "Note id") }, read) { args -> tools.readNote(args.string("id")) }
 
-  server.tool("sync_status", "Shows whether sync is configured, when it last ran and how many changes are pending.",
+  register("sync_status", "Shows whether sync is configured, when it last ran and how many changes are pending.",
     schema {}, read) { tools.syncStatus() }
 
-  server.tool("sync_now", "Synchronizes with the user's Berill server right away and returns the new status.",
+  register("sync_now", "Synchronizes with the user's Berill server right away and returns the new status.",
     schema {}, ToolAnnotations(readOnlyHint = false, idempotentHint = true, openWorldHint = true)) { tools.syncNow() }
 
   if (!readOnly) {
-    server.tool("create_note", "Creates a Markdown note.",
+    register("create_note", "Creates a Markdown note.",
       schema(required = listOf("title", "body")) {
         string("title", "Note title")
         string("body", "Note text in Markdown")
       }, write) { args -> tools.createNote(args.string("title"), args.string("body")) }
 
-    server.tool("append_to_note", "Adds Markdown text to the end of an existing note.",
+    register("append_to_note", "Adds Markdown text to the end of an existing note.",
       schema(required = listOf("id", "text")) {
         string("id", "Note id")
         string("text", "Markdown text to add")
       }, write) { args -> tools.appendToNote(args.string("id"), args.string("text")) }
 
-    server.tool("update_note", "Replaces the title and/or the body of a note.",
-      schema(required = listOf("id")) {
+    register("update_note", "Replaces the title and/or body using the expected snapshot from read_note or get_record.",
+      schema(required = listOf("id", "expected")) {
         string("id", "Note id")
         string("title", "New title")
         string("body", "New Markdown body")
-      }, write) { args -> tools.updateNote(args.string("id"), args.optionalString("title"), args.optionalString("body")) }
+        obj("expected", "Expected fields returned by get_record; prevents overwriting newer edits")
+      }, write) { args -> tools.updateNote(args.string("id"), args.optionalString("title"), args.optionalString("body"), args.obj("expected")) }
 
-    server.tool("delete_note", "Deletes a note on every device. Ask the user first and pass confirm=true.",
-      schema(required = listOf("id", "confirm")) {
+    register("delete_note", "Moves a note to trash on synced devices. Requires expected snapshot and confirm=true.",
+      schema(required = listOf("id", "confirm", "expected")) {
         string("id", "Note id")
         boolean("confirm", "Must be true; set it only after the user agreed")
+        obj("expected", "Snapshot from read_note or get_record")
       }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args ->
-      tools.deleteNote(args.string("id"), args.boolean("confirm"))
+      tools.deleteNote(args.string("id"), args.boolean("confirm"), args.obj("expected"))
     }
   }
+  if (!readOnly) {
+    register("create_record", "Creates a record using the owning plugin's model and validation. Discover fields via list_collections.", schema(listOf("collection", "fields")) { string("collection", "Enabled collection"); obj("fields", "New fields") }, write) { args -> tools.createRecord(args.string("collection"), args.obj("fields")) }
+    register("update_record", "Updates fields atomically. Pass expected exactly as returned by get_record. Re-read on conflict.", schema(listOf("collection", "id", "fields", "expected")) { string("collection", "Collection"); string("id", "Record id"); obj("fields", "Field patch"); obj("expected", "Full previous fields") }, write) { args -> tools.updateRecord(args.string("collection"), args.string("id"), args.obj("fields"), args.obj("expected")) }
+    register("delete_record", "Moves a record to trash. Requires expected fields and explicit confirm=true.", schema(listOf("collection", "id", "expected", "confirm")) { string("collection", "Collection"); string("id", "Record id"); obj("expected", "Full previous fields"); boolean("confirm", "User approved deletion") }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args -> tools.deleteRecord(args.string("collection"), args.string("id"), args.obj("expected"), args.boolean("confirm")) }
+  }
+  var registered = emptySet<String>()
+  fun refreshPluginTools() {
+    val active = tools.sources()
+    val desired = active.flatMap { listOf("berill_${it.pluginId}_read") + if (readOnly || it.collections.none { c -> c.writable }) emptyList() else listOf("berill_${it.pluginId}_edit") }.toSet()
+    (registered - desired).forEach(server::removeTool)
+    active.forEach { source ->
+      val readName = "berill_${source.pluginId}_read"
+      if (readName !in registered) register(readName, "Read ${source.pluginId} records. Model and behavior supplied by its plugin.", schema(listOf("action", "collection")) { choice("action", "Read operation", listOf(McpOperation.LIST, McpOperation.GET).map { it.wire }); choice("collection", "Plugin collection", source.collections.map { it.name }); string("id", "Record id for get"); integer("limit", "1..200, default 50"); integer("offset", "Default 0") }, read) { args ->
+        val current = tools.sources().firstOrNull { it.pluginId == source.pluginId } ?: throw ToolException("Plugin disabled", McpErrorCode.UNAVAILABLE)
+        val collection = current.collections.firstOrNull { it.name == args.string("collection") } ?: throw ToolException("Unknown plugin collection")
+        when (args.operation()) { McpOperation.LIST -> collection.list(args.int("limit", 50, 1..200), args.int("offset", 0, 0..Int.MAX_VALUE)); McpOperation.GET -> collection.get(args.string("id")); else -> throw ToolException("Use list or get") }
+      }
+      val editName = "berill_${source.pluginId}_edit"
+      if (editName in desired && editName !in registered) register(editName, "Create, update or delete ${source.pluginId} records with plugin validation. Updates/deletes require expected fields. Deletion requires confirm=true.", schema(listOf("action", "collection")) { choice("action", "Edit operation", listOf(McpOperation.CREATE, McpOperation.UPDATE, McpOperation.DELETE).map { it.wire }); choice("collection", "Editable plugin collection", source.collections.filter { it.writable }.map { it.name }); string("id", "Record id"); obj("fields", "Field patch"); obj("expected", "Full fields returned by read"); boolean("confirm", "Required for deletion") }, ToolAnnotations(readOnlyHint = false, destructiveHint = true, openWorldHint = false)) { args ->
+        val current = tools.sources().firstOrNull { it.pluginId == source.pluginId } ?: throw ToolException("Plugin disabled", McpErrorCode.UNAVAILABLE)
+        val collection = current.collections.firstOrNull { it.name == args.string("collection") && it.writable } ?: throw ToolException("Collection is not editable")
+        when (args.operation()) { McpOperation.CREATE -> collection.create(args.obj("fields")); McpOperation.UPDATE -> collection.update(args.string("id"), args.obj("fields"), args.obj("expected")); McpOperation.DELETE -> collection.delete(args.string("id"), args.obj("expected"), args.boolean("confirm")); else -> throw ToolException("Unknown edit action") }
+      }
+    }
+    registered = desired
+  }
+  refreshPluginTools()
+  var watcher: kotlinx.coroutines.Job? = null
+  server.onConnect { synchronized(server) { if (watcher == null) watcher = tools.scope.launch { tools.enabled.collect { refreshPluginTools() } } } }
+  server.onClose { watcher?.cancel() }
   return server
 }
 
@@ -116,12 +161,17 @@ private fun Server.tool(
   addTool(name = name, description = description, inputSchema = schema, toolAnnotations = annotations) { request: CallToolRequest ->
     try {
       val result = handler(request.arguments ?: JsonObject(emptyMap()))
-      CallToolResult(content = listOf(TextContent(output.encodeToString(JsonElement.serializer(), result))))
+      CallToolResult(content = listOf(TextContent(output.encodeToString(JsonElement.serializer(), result))), structuredContent = result as? JsonObject ?: buildJsonObject { put("items", result) })
+    } catch (e: CancellationException) { throw e
+    } catch (e: McpException) {
+      toolError(e.code, e.message ?: "Invalid tool arguments")
+    } catch (e: IllegalArgumentException) {
+      toolError(McpErrorCode.INVALID_ARGUMENT, e.message ?: "Invalid tool arguments")
     } catch (e: ToolException) {
-      CallToolResult(content = listOf(TextContent(e.message.orEmpty())), isError = true)
+      toolError(e.code, e.message.orEmpty())
     } catch (e: Exception) {
       AppLog.error("mcp", "tool $name failed", e)
-      CallToolResult(content = listOf(TextContent("$name failed: ${e.message ?: e::class.simpleName}")), isError = true)
+      toolError(McpErrorCode.INTERNAL, "$name failed; check the Berill notification center")
     }
   }
 }
@@ -134,6 +184,12 @@ private class SchemaBuilder {
   fun integer(name: String, description: String) = property(name, "integer", description)
 
   fun boolean(name: String, description: String) = property(name, "boolean", description)
+
+  fun obj(name: String, description: String) = property(name, "object", description)
+
+  fun choice(name: String, description: String, values: List<String>) {
+    properties[name] = buildJsonObject { put("type", "string"); put("description", description); put("enum", JsonArray(values.map(::JsonPrimitive))) }
+  }
 
   private fun property(name: String, type: String, description: String) {
     properties[name] = buildJsonObject {
@@ -162,3 +218,10 @@ private fun JsonObject.int(name: String, default: Int, range: IntRange): Int {
 
 private fun JsonObject.boolean(name: String): Boolean =
   (this[name] as? JsonPrimitive)?.booleanOrNull ?: throw ToolException("Missing boolean argument `$name`.")
+
+private fun JsonObject.obj(name: String): JsonObject = this[name] as? JsonObject ?: throw ToolException("Missing object argument: $name")
+
+private fun JsonObject.operation(): McpOperation = McpOperation.entries.firstOrNull { it.wire == string("action") } ?: throw ToolException("Unknown operation")
+
+private fun toolError(code: McpErrorCode, message: String) = CallToolResult(content = listOf(TextContent(message)), isError = true,
+  structuredContent = buildJsonObject { put("error", buildJsonObject { put("code", code.name); put("message", message) }) })

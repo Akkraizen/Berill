@@ -14,17 +14,17 @@ import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.ui.graphics.vector.ImageVector
 
-val CATEGORY_ICONS: Map<String, ImageVector> = linkedMapOf(
-  "Завтраки" to Icons.Outlined.BreakfastDining,
-  "Супы" to Icons.Outlined.RamenDining,
-  "Основные блюда" to Icons.Outlined.DinnerDining,
-  "Гарниры" to Icons.Outlined.RiceBowl,
-  "Салаты" to Icons.Outlined.Spa,
-  "Перекусы" to Icons.Outlined.LunchDining,
-  "Выпечка" to Icons.Outlined.BakeryDining,
-  "Десерты" to Icons.Outlined.Cake,
-  "Напитки" to Icons.Outlined.LocalCafe,
-  "Соусы" to Icons.Outlined.WaterDrop
+val CATEGORY_ICONS: Map<dev.akkraizen.berill.plugins.recipes.data.RecipeCategory, ImageVector> = linkedMapOf(
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.BREAKFAST to Icons.Outlined.BreakfastDining,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SOUP to Icons.Outlined.RamenDining,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.MAIN to Icons.Outlined.DinnerDining,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SIDE to Icons.Outlined.RiceBowl,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SALAD to Icons.Outlined.Spa,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SNACK to Icons.Outlined.LunchDining,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.BAKING to Icons.Outlined.BakeryDining,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.DESSERT to Icons.Outlined.Cake,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.DRINK to Icons.Outlined.LocalCafe,
+  dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SAUCE to Icons.Outlined.WaterDrop
 )
 
-fun categoryIcon(category: String?): ImageVector = CATEGORY_ICONS[category] ?: Icons.Outlined.Restaurant
+fun categoryIcon(category: String?): ImageVector = CATEGORY_ICONS[dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.parse(category)] ?: Icons.Outlined.Restaurant

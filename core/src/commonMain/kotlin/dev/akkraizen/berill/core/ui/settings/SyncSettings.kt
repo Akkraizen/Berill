@@ -9,6 +9,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -111,11 +112,11 @@ private fun SyncOptionsSettings(core: BerillCore) {
     update { copy(pluginSettings = it) }
   }
 
+  TextButton(onClick = { core.notifications.conflictsOpen.value = true }) { Text(I18n.text("center.conflicts")) }
   SettingsSubtitle(CoreText.data())
 
-  val installed by core.plugins.installed.collectAsState()
   val enabled by core.plugins.enabled.collectAsState()
-  val sections = remember(installed, enabled, I18n.language) {
+  val sections = remember(enabled, I18n.language) {
     listOf(
       DataSection(
         Tab.Notes.title,
@@ -124,7 +125,7 @@ private fun SyncOptionsSettings(core: BerillCore) {
         enabled = true
       )
     ) +
-      installed.mapNotNull { p ->
+      enabled.mapNotNull { p ->
         core.collections
           .of(p)
           .takeIf { it.isNotEmpty() }

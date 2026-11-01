@@ -24,24 +24,24 @@ internal object WatchingText {
   val statusWatching = pluginI18n.tr("watching.statusWatching")
   val statusWatched = pluginI18n.tr("watching.statusWatched")
 
-  fun statusLabel(status: String): String =
+  fun statusLabel(status: dev.akkraizen.berill.plugins.watching.data.WatchStatus): String =
     when (status) {
       PLANNED -> statusPlanned()
       WATCHING -> statusWatching()
       WATCHED -> statusWatched()
-      else -> status
+      else -> status.name
     }
 
   val mediaAnime = pluginI18n.tr("watching.mediaAnime")
   val mediaMovie = pluginI18n.tr("watching.mediaMovie")
   val mediaSeries = pluginI18n.tr("watching.mediaSeries")
 
-  fun mediaLabel(media: String): String =
+  fun mediaLabel(media: dev.akkraizen.berill.plugins.watching.data.MediaKind): String =
     when (media) {
       ANIME -> mediaAnime()
       MOVIE -> mediaMovie()
       SERIES -> mediaSeries()
-      else -> media
+      else -> media.name
     }
 
   val filterAll = pluginI18n.tr("watching.filterAll")
@@ -49,18 +49,8 @@ internal object WatchingText {
   val filterMovies = pluginI18n.tr("watching.filterMovies")
   val filterSeries = pluginI18n.tr("watching.filterSeries")
 
-  fun formatLabel(format: String): String =
-    when (format) {
-      "фильм" -> pluginI18n.tr("watching.formatLabel")()
-      "спешл" -> pluginI18n.tr("watching.formatLabel.2")()
-      "TV-спешл" -> pluginI18n.tr("watching.formatLabel.3")()
-      "клип" -> pluginI18n.tr("watching.formatLabel.4")()
-      "видео" -> pluginI18n.tr("watching.formatLabel.5")()
-      "сериал" -> pluginI18n.tr("watching.formatLabel.6")()
-      "мини-сериал" -> pluginI18n.tr("watching.formatLabel.7")()
-      "ТВ-шоу" -> pluginI18n.tr("watching.formatLabel.8")()
-      else -> format
-    }
+  fun formatLabel(format: String): String = dev.akkraizen.berill.plugins.watching.data.MediaFormat.entries
+    .firstOrNull { it.wire == format || it.name == format }?.let { pluginI18n.tr(it.translationKey)() } ?: format
 
   val findAnime = pluginI18n.tr("watching.findAnime")
   val findMovieOrSeries = pluginI18n.tr("watching.findMovieOrSeries")

@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.BerillIcons
 import dev.akkraizen.berill.api.ui.dialogs.ConfirmDialog
 import dev.akkraizen.berill.api.ui.display.Ic
-import dev.akkraizen.berill.api.ui.feedback.color
 import dev.akkraizen.berill.api.ui.fields.DateTextField
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
@@ -32,7 +31,6 @@ import dev.akkraizen.berill.api.ui.toDateOrNull
 import dev.akkraizen.berill.plugins.finance.data.Account
 import dev.akkraizen.berill.plugins.finance.data.KINDS
 import dev.akkraizen.berill.plugins.finance.data.Operation
-import dev.akkraizen.berill.plugins.finance.data.accounts
 import dev.akkraizen.berill.plugins.finance.data.firstFor
 import dev.akkraizen.berill.plugins.finance.data.kindIcon
 import dev.akkraizen.berill.plugins.finance.data.kindLabel
@@ -43,7 +41,7 @@ import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
 @Composable
 internal fun EditOperationDialog(
   initial: Operation,
-  categories: Map<String, List<String>>,
+  categories: Map<dev.akkraizen.berill.plugins.finance.data.OperationKind, List<String>>,
   accounts: List<String>,
   onDismiss: () -> Unit,
   onSave: (Operation) -> Unit,
@@ -101,7 +99,7 @@ internal fun EditOperationDialog(
           FinanceText.category(),
           categories[kind].orEmpty(),
           category,
-          { it },
+          { FinanceText.categoryLabel(it) },
           { category = it }
         )
         if (mayHaveAccount(kind, category)) {
@@ -114,8 +112,18 @@ internal fun EditOperationDialog(
             { account = it.takeIf { a -> a != NO_ACCOUNT } }
           )
         }
-        DateTextField(date, { date = it }, FinanceText.date(), isError = date.toDateOrNull() == null)
-        BerillTextField(comment, { comment = it }, label = { Text(FinanceText.comment(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
+        DateTextField(
+          date,
+          { date = it },
+          FinanceText.date(),
+          isError = date.toDateOrNull() == null
+        )
+        BerillTextField(
+          comment,
+          { comment = it },
+          label = { Text(FinanceText.comment(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          singleLine = true
+        )
         if (onDelete != null)
           TextButton(onClick = { askDelete = true }) {
             Ic(BerillIcons.Delete, tint = MaterialTheme.colorScheme.error)
@@ -139,7 +147,12 @@ internal fun EditOperationDialog(
 }
 
 @Composable
-internal fun AccountDialog(initial: Account, onDismiss: () -> Unit, onSave: (Account) -> Unit, onDelete: (() -> Unit)?) {
+internal fun AccountDialog(
+  initial: Account,
+  onDismiss: () -> Unit,
+  onSave: (Account) -> Unit,
+  onDelete: (() -> Unit)?
+) {
   var title by remember { mutableStateOf(initial.title) }
   var bank by remember { mutableStateOf(initial.bank ?: "") }
   var start by remember { mutableStateOf(formatPlain(initial.initialBalance)) }
@@ -164,12 +177,28 @@ internal fun AccountDialog(initial: Account, onDismiss: () -> Unit, onSave: (Acc
     title = { Text(if (onDelete == null) FinanceText.newAccount() else FinanceText.account()) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BerillTextField(title, { title = it }, label = { Text(FinanceText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
-        BerillTextField(bank, { bank = it }, label = { Text(FinanceText.bank(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
+        BerillTextField(
+          title,
+          { title = it },
+          label = { Text(FinanceText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          singleLine = true
+        )
+        BerillTextField(
+          bank,
+          { bank = it },
+          label = { Text(FinanceText.bank(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          singleLine = true
+        )
         BerillTextField(
           start,
           { start = it },
-          label = { Text(FinanceText.initialBalance(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          label = {
+            Text(
+              FinanceText.initialBalance(),
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+          },
           singleLine = true,
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )

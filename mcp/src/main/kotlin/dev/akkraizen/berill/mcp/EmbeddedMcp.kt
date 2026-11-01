@@ -7,6 +7,7 @@ import dev.akkraizen.berill.core.platform.McpStatus
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
+import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
@@ -93,6 +94,10 @@ class EmbeddedMcp(
     return pretty.encodeToString(JsonObject.serializer(), JsonObject(mapOf("mcpServers" to JsonObject(mapOf(SERVER_NAME to server)))))
   }
 
+  override fun httpClientConfig(): String = pretty.encodeToString(JsonObject.serializer(), JsonObject(mapOf("mcpServers" to JsonObject(mapOf(SERVER_NAME to JsonObject(mapOf(
+    "type" to JsonPrimitive("http"), "url" to JsonPrimitive(url()), "headers" to JsonObject(mapOf("Authorization" to JsonPrimitive("Bearer ${token()}")))
+  )))))))
+
   override fun claudeCodeCommand(): String {
     val command = bridgeCommand
     return if (command != null)
@@ -132,7 +137,9 @@ class EmbeddedMcp(
   private fun createServer(port: Int, token: String, writable: Boolean): EmbeddedServer<*, *> {
     val tools = BerillTools(core)
     val expected = "Bearer $token".toByteArray()
+    val protocol = createBerillServer(tools, readOnly = !writable)
     return embeddedServer(CIO, host = HOST, port = port) {
+      monitor.subscribe(ApplicationStopped) { runBlocking { protocol.close() } }
       intercept(ApplicationCallPipeline.Plugins) {
         val given = call.request.headers["Authorization"]?.toByteArray() ?: ByteArray(0)
         if (!MessageDigest.isEqual(given, expected)) {
@@ -140,7 +147,7 @@ class EmbeddedMcp(
           finish()
         }
       }
-      mcpStreamableHttp(path = PATH, enableDnsRebindingProtection = true) { createBerillServer(tools, readOnly = !writable) }
+      mcpStreamableHttp(path = PATH, enableDnsRebindingProtection = true) { protocol }
     }
   }
 

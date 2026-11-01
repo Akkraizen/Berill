@@ -68,7 +68,7 @@ class WidgetHub(
 
   fun entry(key: String): WidgetEntry? = all.firstOrNull { it.key == key }
 
-  suspend fun choices(key: String): List<WidgetChoice> = entry(key)?.provider?.choices?.let { guarded("$key choices") { it.list() } }.orEmpty()
+  suspend fun choices(key: String): List<WidgetChoice> = entry(key)?.takeIf(::isEnabled)?.provider?.choices?.let { guarded("$key choices") { it.list() } }.orEmpty()
 
   private suspend fun <T> guarded(what: String, block: suspend () -> T): T? =
     try {
@@ -80,7 +80,7 @@ class WidgetHub(
       null
     }
 
-  fun needsChoice(key: String): Boolean = entry(key)?.provider?.choices?.required == true
+  fun needsChoice(key: String): Boolean = entry(key)?.takeIf(::isEnabled)?.provider?.choices?.required == true
 
   private fun isEnabled(entry: WidgetEntry): Boolean = entry.ownerId == CORE || plugins.enabled.value.any { it.id == entry.ownerId }
 

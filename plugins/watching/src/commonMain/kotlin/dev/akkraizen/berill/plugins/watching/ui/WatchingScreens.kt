@@ -63,34 +63,29 @@ import dev.akkraizen.berill.plugins.watching.data.WATCHING
 import dev.akkraizen.berill.plugins.watching.data.titles
 import dev.akkraizen.berill.plugins.watching.i18n.WatchingText
 
-internal val ICONS: Map<String, ImageVector> =
+internal val ICONS: Map<dev.akkraizen.berill.plugins.watching.data.WatchStatus, ImageVector> =
   mapOf(
     PLANNED to Icons.Outlined.WatchLater,
     WATCHING to Icons.Outlined.PlayCircle,
     WATCHED to Icons.Outlined.TaskAlt
   )
-private val FILTERS = listOf("все", ANIME, MOVIE, SERIES)
-
-private fun filterLabel(f: String) =
-  when (f) {
-    ANIME -> WatchingText.filterAnime()
-    MOVIE -> WatchingText.filterMovies()
-    SERIES -> WatchingText.filterSeries()
-    else -> WatchingText.filterAll()
-  }
-
-private fun filterIcon(f: String): ImageVector =
-  if (f in MEDIA) mediaIcon(f) else Icons.Outlined.AutoAwesome
+private enum class WatchingFilter(val media: dev.akkraizen.berill.plugins.watching.data.MediaKind?) {
+  ALL(null), ANIME(dev.akkraizen.berill.plugins.watching.data.MediaKind.ANIME),
+  MOVIE(dev.akkraizen.berill.plugins.watching.data.MediaKind.MOVIE), SERIES(dev.akkraizen.berill.plugins.watching.data.MediaKind.SERIES)
+}
+private val FILTERS = WatchingFilter.entries
+private fun filterLabel(f: WatchingFilter) = f.media?.let(WatchingText::mediaLabel) ?: WatchingText.filterAll()
+private fun filterIcon(f: WatchingFilter): ImageVector = f.media?.let(::mediaIcon) ?: Icons.Outlined.AutoAwesome
 
 @Composable
 internal fun WatchBoard(ctx: PluginContext) {
   val collection = remember(ctx) { titles(ctx) }
   val all by remember(collection) { collection.observe() }.collectAsState(emptyList())
-  var filter by rememberSaveable { mutableStateOf("все") }
+  var filter by rememberSaveable { mutableStateOf(WatchingFilter.ALL) }
   var adding by remember { mutableStateOf(false) }
   var searching by rememberSaveable { mutableStateOf<String?>(null) }
 
-  val shown = if (filter == "все") all else all.filter { it.value.media == filter }
+  val shown = if (filter == WatchingFilter.ALL) all else all.filter { it.value.media == filter.media }
   val byStatus = shown.groupBy { it.value.normalizedStatus }
   val planned = byStatus[PLANNED].orEmpty().sortedBy { it.value.title.lowercase() }
   val watching = byStatus[WATCHING].orEmpty().sortedByDescending { it.value.started ?: "" }
@@ -133,21 +128,21 @@ internal fun WatchBoard(ctx: PluginContext) {
       KanbanBoard(
         columns = listOf(
           KanbanColumn(
-            PLANNED,
+            PLANNED.name,
             WatchingText.statusLabel(PLANNED),
             planned,
             WatchingText.empty(),
             ICONS[PLANNED]
           ),
           KanbanColumn(
-            WATCHING,
+            WATCHING.name,
             WatchingText.statusLabel(WATCHING),
             watching,
             WatchingText.empty(),
             ICONS[WATCHING]
           ),
           KanbanColumn(
-            WATCHED,
+            WATCHED.name,
             WatchingText.statusLabel(WATCHED),
             watched,
             WatchingText.empty(),
@@ -155,7 +150,8 @@ internal fun WatchBoard(ctx: PluginContext) {
           )
         ),
         itemKey = { it.id },
-        onMove = { item, status ->
+        onMove = { item, statusKey ->
+          val status = dev.akkraizen.berill.plugins.watching.data.WatchStatus.valueOf(statusKey)
           collection
             .get(item.id)
             ?.takeIf { it.normalizedStatus != status }
@@ -177,7 +173,7 @@ internal fun WatchBoard(ctx: PluginContext) {
 
   if (adding)
     AddTitleDialog(
-      initialMedia = if (filter in MEDIA) filter else ANIME,
+      initialMedia = filter.media ?: ANIME,
       onDismiss = { adding = false },
       onAdd = { t ->
         collection.save(ctx.data.newId(), t.moveTo(t.status))
@@ -219,7 +215,7 @@ private fun TitleCard(item: Item<Title>, onOpen: () -> Unit, onPlusOne: () -> Un
 }
 
 @Composable
-private fun AddTitleDialog(initialMedia: String, onDismiss: () -> Unit, onAdd: (Title) -> Unit) {
+private fun AddTitleDialog(initialMedia: dev.akkraizen.berill.plugins.watching.data.MediaKind, onDismiss: () -> Unit, onAdd: (Title) -> Unit) {
   var name by remember { mutableStateOf("") }
   var media by remember { mutableStateOf(initialMedia) }
   var status by remember { mutableStateOf(PLANNED) }

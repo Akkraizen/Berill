@@ -15,7 +15,7 @@ import dev.akkraizen.berill.plugins.finance.data.EXPENSE
 import dev.akkraizen.berill.plugins.finance.data.INCOME
 import dev.akkraizen.berill.plugins.finance.data.Operation
 import dev.akkraizen.berill.plugins.finance.data.kindLabel
-import dev.akkraizen.berill.plugins.finance.i18n.pluginI18n
+import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
 
 @Composable
 internal fun FinanceStatistics(entries: List<Operation>, month: YearMonth) {
@@ -29,7 +29,7 @@ internal fun FinanceStatistics(entries: List<Operation>, month: YearMonth) {
     }
     ChartSeries(kindLabel(kind), values)
   }
-  SectionCard(pluginI18n.text("finance.stats.flow")) {
+  SectionCard(FinanceText.statsFlow()) {
     StatisticsChart(dates.map { it.dayMonthShort() }, series, valueLabel = ::formatRub)
   }
 }

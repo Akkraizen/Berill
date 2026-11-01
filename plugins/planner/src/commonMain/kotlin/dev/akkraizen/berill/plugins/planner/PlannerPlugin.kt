@@ -15,12 +15,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import dev.akkraizen.berill.api.label
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.api.HomeCard
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.PluginPage
 import dev.akkraizen.berill.api.PluginPermissions
 import dev.akkraizen.berill.api.all
+import dev.akkraizen.berill.api.observe
+import dev.akkraizen.berill.api.DeadlineSource
 import dev.akkraizen.berill.api.boolean
 import dev.akkraizen.berill.api.observeBoolean
 import dev.akkraizen.berill.api.set
@@ -37,6 +40,8 @@ import dev.akkraizen.berill.plugins.planner.ui.PlannerScreen
 import dev.akkraizen.berill.plugins.planner.widgets.plannerWidgets
 
 object PlannerPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.planner.mcp.PlannerMcp(ctx)
+
   const val TASKS = "planner"
   const val WEEKS = "planner_weeks"
   const val EVENTS = "planner_events"
@@ -62,7 +67,9 @@ object PlannerPlugin : BerillPlugin {
         ctx.settings.observeBoolean(SHOW_DEADLINES, true)
       }
         .collectAsState(ctx.settings.boolean(SHOW_DEADLINES, true))
-    SectionCard(PlannerText.deadlines(), Icons.Outlined.Alarm) {
+    val deadlineSources by remember(ctx) { ctx.capabilities.observe<DeadlineSource>() }
+      .collectAsState(ctx.capabilities.all<DeadlineSource>())
+    if (deadlineSources.isNotEmpty()) SectionCard(PlannerText.deadlines(), Icons.Outlined.Alarm) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
           Text(PlannerText.showDeadlines(), style = MaterialTheme.typography.bodyLarge)
@@ -87,6 +94,12 @@ object PlannerPlugin : BerillPlugin {
     PluginPage(PAGE_CALENDAR, CalendarText.pageCalendar, Icons.Outlined.CalendarMonth) { ctx -> CalendarPage(ctx) }
   )
 
+  override fun quickActions(ctx: PluginContext) = listOf(
+    dev.akkraizen.berill.api.QuickAction("new-task", dev.akkraizen.berill.api.i18n.Tr("quick.task"), icon) {
+      ctx.nav.openPlugin(id, page = PAGE_PLAN)
+    }.withPopup { close, error -> dev.akkraizen.berill.plugins.planner.ui.QuickTaskDialog(ctx, close, error) }
+  )
+
   override fun homeCards(ctx: PluginContext) =
     listOf(
       HomeCard("today", PlannerText.todayPlans, order = 15) {
@@ -96,6 +109,8 @@ object PlannerPlugin : BerillPlugin {
         DayCard(data, today(), all, deadlines, compact = false, showHeader = false)
       }
     )
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.plugins.planner.data.PlannerReminders(ctx), dev.akkraizen.berill.api.CollectionDaySource(ctx, TASKS, { title }), dev.akkraizen.berill.api.CollectionSearchSource(ctx, TASKS, { title }))
 
   override fun widgets(ctx: PluginContext) = plannerWidgets(ctx)
 }

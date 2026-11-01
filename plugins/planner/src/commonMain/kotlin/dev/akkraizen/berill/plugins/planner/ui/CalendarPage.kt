@@ -150,7 +150,7 @@ internal fun CalendarPage(ctx: PluginContext) {
   val connected by state.google.connected.collectAsState(state.google.isConnected())
   LaunchedEffect(connected) {
     while (connected) {
-      runCatching { state.google.sync() }
+      state.google.syncSafely()
       delay(5 * 60_000L)
     }
   }
@@ -217,7 +217,7 @@ internal fun CalendarEvent.label(day: LocalDate): String {
 private fun SyncButton(state: CalendarState) {
   val sync by state.google.state.collectAsState()
   val scope = rememberCoroutineScope()
-  IconButton(enabled = !sync.running, onClick = { scope.launch { runCatching { state.google.sync() } } }) {
+  IconButton(enabled = !sync.running, onClick = { scope.launch { state.google.syncSafely() } }) {
     if (sync.running)
       CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
     else

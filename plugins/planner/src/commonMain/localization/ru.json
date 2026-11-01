@@ -97,7 +97,7 @@
     "planner.stats.week": "Задачи на неделю",
     "planner.stats.planned": "Запланировано",
     "planner.stats.done": "Выполнено",
-    "planner.stats.hint": "Задачи сгруппированы по дате плана, а не по времени выполнения.",
+    "planner.stats.hint": "Перенесённая задача остаётся в плане исходного дня как незавершённая и учитывается в плане нового дня.",
     "planner.widget.todayTitle": "План на сегодня",
     "planner.widget.todayDescription": "Задачи и события дня, задачи отмечаются прямо на виджете",
     "planner.widget.add": "Добавить",
@@ -113,6 +113,8 @@
     "planner.widget.noEvents": "Событий нет",
     "planner.widget.noUpcoming": "Ближайших событий нет",
     "planner.widget.openDay": "День",
-    "planner.widget.newEvent": "Событие"
+    "planner.widget.newEvent": "Событие",
+    "planner.deferredCount": "Перенесено на другие дни: {count}",
+    "planner.stats.unfinished": "Не завершено"
   }
 }

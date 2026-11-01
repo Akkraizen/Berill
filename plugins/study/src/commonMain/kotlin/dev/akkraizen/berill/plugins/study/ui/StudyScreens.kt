@@ -160,7 +160,7 @@ internal fun StudyScreen(ctx: PluginContext) {
       onDismiss = { addingSubject = false },
       onAdd = { name ->
         val id = ctx.data.newId()
-        subjectCollection.save(id, Subject(title = name, control = "зачёт"))
+        subjectCollection.save(id, Subject(title = name, control = dev.akkraizen.berill.plugins.study.data.SubjectControl.CREDIT.wire))
         addingSubject = false
         ctx.nav.open(StudyPlugin.SUBJECT_ROUTE + id)
       }
@@ -230,8 +230,8 @@ private fun NewTaskForm(
   rememberSaveable(preselected, subjects.isEmpty()) {
     mutableStateOf(preselected ?: subjects.firstOrNull())
   }
-  var type by rememberSaveable { mutableStateOf(types.firstOrNull() ?: "Другое") }
-  if (type !in types) type = types.firstOrNull() ?: "Другое"
+  var type by rememberSaveable { mutableStateOf(types.firstOrNull() ?: dev.akkraizen.berill.plugins.study.i18n.StudyText.otherType()) }
+  if (type !in types) type = types.firstOrNull() ?: dev.akkraizen.berill.plugins.study.i18n.StudyText.otherType()
   var deadline by rememberDraft("study/new-task/deadline", today().plusDays(7).toString())
   var error by remember { mutableStateOf<String?>(null) }
   fun submit() {

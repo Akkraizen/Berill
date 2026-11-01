@@ -31,6 +31,10 @@ class NotesRepository(data: DataAccess, private val now: () -> Long) {
 
   fun all(): List<Item<Note>> = collection.all().sortedByDescending { it.value.updatedAt }
 
+  fun backlinks(id: String, title: String): Flow<List<Item<Note>>> = observe().map { notes ->
+    notes.filter { it.id != id && wikiTargets(it.value.body).any { target -> target.equals(title.trim(), ignoreCase = true) } }
+  }
+
   fun findByTitle(title: String): String? {
     val wanted = title.trim()
     return collection
@@ -48,4 +52,11 @@ class NotesRepository(data: DataAccess, private val now: () -> Long) {
   }
 
   fun delete(id: String) = collection.delete(id)
+}
+
+internal fun wikiTargets(body: String): List<String> {
+  val withoutCode = body.replace(Regex("(?s)```.*?```|~~~.*?~~~|`[^`]*`"), "")
+  return Regex("\\[\\[([^]\\n]+)]]").findAll(withoutCode).map {
+    it.groupValues[1].substringBefore('|').substringBefore('#').trim()
+  }.filter { it.isNotEmpty() }.toList()
 }

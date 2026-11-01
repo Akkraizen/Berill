@@ -29,5 +29,7 @@ interface McpAccess {
 
   fun desktopClientConfig(): String
 
+  fun httpClientConfig(): String = desktopClientConfig()
+
   fun claudeCodeCommand(): String
 }

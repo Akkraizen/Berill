@@ -79,6 +79,20 @@
     "watching.stats.months": "Просмотрено по месяцам",
     "watching.stats.completed": "Завершено",
     "watching.widget.nowTitle": "Смотрю сейчас",
-    "watching.widget.nowDescription": "Тайтлы в просмотре и кнопка «+1 серия»"
+    "watching.widget.nowDescription": "Тайтлы в просмотре и кнопка «+1 серия»",
+    "legacy.WatchStatus.PLANNED": "в планах",
+    "legacy.WatchStatus.WATCHING": "смотрю",
+    "legacy.WatchStatus.WATCHED": "просмотрено",
+    "legacy.MediaKind.ANIME": "аниме",
+    "legacy.MediaKind.MOVIE": "фильм",
+    "legacy.MediaKind.SERIES": "сериал",
+    "legacy.MediaFormat.MOVIE": "фильм",
+    "legacy.MediaFormat.SPECIAL": "спешл",
+    "legacy.MediaFormat.TV_SPECIAL": "TV-спешл",
+    "legacy.MediaFormat.MUSIC": "клип",
+    "legacy.MediaFormat.VIDEO": "видео",
+    "legacy.MediaFormat.SERIES": "сериал",
+    "legacy.MediaFormat.MINI_SERIES": "мини-сериал",
+    "legacy.MediaFormat.TV_SHOW": "ТВ-шоу"
   }
 }

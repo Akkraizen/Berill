@@ -265,7 +265,7 @@ internal fun LanguageDialog(
         flag = flag.trim().ifEmpty { key.uppercase() },
         name = name.trim(),
         nativeName = nativeName.trim().ifEmpty { name.trim() },
-        lessonWord = lessonWord.trim().ifEmpty { "Урок" }
+        lessonWord = lessonWord.trim().ifEmpty { dev.akkraizen.berill.plugins.languages.i18n.pluginI18n.tr("languages.defaultLesson")() }
       )
     )
   }

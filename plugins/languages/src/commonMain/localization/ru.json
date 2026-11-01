@@ -81,6 +81,11 @@
     "languages.widget.cardChoose": "Язык карточек",
     "languages.widget.noWords": "Добавьте слова с переводом в словарь",
     "languages.widget.show": "Показать",
-    "languages.widget.next": "Дальше"
+    "languages.widget.next": "Дальше",
+    "languages.reviewDone": "На сегодня все карточки повторены",
+    "languages.defaultLesson": "Урок",
+    "languages.englishName": "Английский",
+    "legacy.WordSection.WORDS": "Слова",
+    "legacy.WordSection.PHRASES": "Фразы"
   }
 }

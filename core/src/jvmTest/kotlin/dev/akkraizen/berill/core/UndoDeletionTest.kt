@@ -24,6 +24,31 @@ class UndoDeletionTest {
   @AfterTest fun close() { driver.close() }
 
   @Test
+  fun purgeKeepsTombstoneErasesContentAndCannotDeleteRestoredRecords() {
+    store.put("notes", "old", mapOf("body" to JsonPrimitive("private text")))
+    val stale = store.get("notes", "old")!!
+    store.delete("notes", "old")
+    val batch = store.deletedRecords()
+    store.purgeDeleted(batch)
+    assertTrue(store.deletedRecords().isEmpty())
+    val purged = store.get("notes", "old")!!
+    assertTrue(purged.deleted)
+    assertEquals(kotlinx.serialization.json.JsonNull, purged.fields["body"])
+    assertTrue(store.dirty().any { it.first == purged })
+    store.applyRemote(listOf(stale))
+    assertTrue(store.deletedRecords().isEmpty())
+    store.restore("notes", "old")
+    assertTrue(store.get("notes", "old")!!.deleted)
+    store.put("notes", "active", mapOf("body" to JsonPrimitive("keep")))
+    store.delete("notes", "active")
+    val pending = store.deletedRecords()
+    store.restore("notes", "active")
+    store.purgeDeleted(pending)
+    assertFalse(store.get("notes", "active")!!.deleted)
+    assertEquals(JsonPrimitive("keep"), store.get("notes", "active")!!.fields["body"])
+  }
+
+  @Test
   fun restoresParentAndAssociatedRecordsAndSyncsResurrection() {
     store.put("recipes", "recipe", mapOf("title" to JsonPrimitive("Soup")))
     store.put("images", "photo", mapOf("recipe" to JsonPrimitive("recipe"), "data" to JsonPrimitive("image")))

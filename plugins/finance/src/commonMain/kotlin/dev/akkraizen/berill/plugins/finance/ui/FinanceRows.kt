@@ -28,7 +28,6 @@ import dev.akkraizen.berill.api.ui.interaction.interactive
 import dev.akkraizen.berill.api.ui.toDateOrNull
 import dev.akkraizen.berill.plugins.finance.data.Account
 import dev.akkraizen.berill.plugins.finance.data.Operation
-import dev.akkraizen.berill.plugins.finance.data.balance
 import dev.akkraizen.berill.plugins.finance.data.kindIcon
 import dev.akkraizen.berill.plugins.finance.data.kindLabel
 import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
@@ -47,9 +46,17 @@ internal fun AccountRow(account: Account, balance: Double, onClick: () -> Unit) 
         Text(account.title, style = MaterialTheme.typography.titleSmall)
         val meta = listOfNotNull(account.bank, account.rate?.let { "$it%" }).joinToString(" · ")
         if (meta.isNotEmpty())
-          Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+          Text(
+            meta,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
       }
-      Text(formatRub(balance), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+      Text(
+        formatRub(balance),
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary
+      )
     }
     val goal = account.goal
     if (goal != null && goal > 0) {
@@ -68,7 +75,11 @@ internal fun AccountRow(account: Account, balance: Double, onClick: () -> Unit) 
 internal fun CategoryBar(category: String, sum: Double, fraction: Float) {
   Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
     Row {
-      Text(category, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+      Text(
+        FinanceText.categoryLabel(category),
+        modifier = Modifier.weight(1f),
+        style = MaterialTheme.typography.bodyMedium
+      )
       Text(formatRub(sum), style = MaterialTheme.typography.bodyMedium)
     }
     Box(
@@ -102,7 +113,11 @@ internal fun OperationRow(op: Operation, onClick: () -> Unit) {
     )
     Ic(kindIcon(op.kind), tint = kindTone(op.kind).color())
     Text(
-      listOfNotNull(op.category ?: kindLabel(op.kind), op.account, op.comment)
+      listOfNotNull(
+        op.category?.let(FinanceText::categoryLabel) ?: kindLabel(op.kind),
+        op.account,
+        op.comment
+      )
         .joinToString(" · "),
       modifier = Modifier.weight(1f),
       maxLines = 2,

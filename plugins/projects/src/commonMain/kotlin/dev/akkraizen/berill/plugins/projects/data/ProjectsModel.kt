@@ -6,16 +6,16 @@ import dev.akkraizen.berill.api.ui.today
 import dev.akkraizen.berill.plugins.projects.ProjectsPlugin
 import kotlinx.serialization.Serializable
 
-const val IDEA = "идея"
-const val IN_PROGRESS = "в работе"
-const val PAUSED = "на паузе"
-const val READY = "готово"
+val IDEA = ProjectStatus.IDEA
+val IN_PROGRESS = ProjectStatus.IN_PROGRESS
+val PAUSED = ProjectStatus.PAUSED
+val READY = ProjectStatus.READY
 val STATUSES = listOf(IDEA, IN_PROGRESS, PAUSED, READY)
 
 @Serializable
 data class Project(
   val title: String = "",
-  val status: String = IDEA,
+  val status: ProjectStatus = IDEA,
   val description: String? = null,
   @Serializable(with = FlexibleStringList::class) val stack: List<String> = emptyList(),
   val repo: String? = null,
@@ -25,10 +25,10 @@ data class Project(
   val finished: String? = null,
   val body: String? = null
 ) {
-  val normalizedStatus: String
+  val normalizedStatus: ProjectStatus
     get() = if (status in STATUSES) status else IDEA
 
-  fun moveTo(target: String): Project {
+  fun moveTo(target: ProjectStatus): Project {
     val now = today().toString()
     return when (target) {
       IN_PROGRESS -> copy(status = target, started = started ?: now, finished = null)
@@ -65,10 +65,10 @@ fun toggleCheck(body: String, line: Int, expectedText: String): String {
 
 fun addCheck(body: String?, text: String): String {
   val lines = body.orEmpty().lines().toMutableList()
-  val header = lines.indexOfFirst { it.trim().startsWith("## Задачи") }
+  val header = lines.indexOfFirst { dev.akkraizen.berill.plugins.projects.i18n.pluginI18n.tr("projects.taskHeading").translations.values.any { heading -> it.trim().startsWith(heading) } }
   if (header < 0) {
     if (lines.isNotEmpty() && lines.last().isNotBlank()) lines += ""
-    lines += listOf("## Задачи", "- [ ] $text")
+    lines += listOf(dev.akkraizen.berill.plugins.projects.i18n.pluginI18n.tr("projects.taskHeading")(), "- [ ] $text")
     return lines.joinToString("\n")
   }
   var insertAt = header + 1
@@ -81,7 +81,7 @@ fun addCheck(body: String?, text: String): String {
   return lines.joinToString("\n")
 }
 
-const val TEMPLATE = "## Идея\n\n\n## Задачи\n\n\n## Заметки\n"
+val TEMPLATE: String get() = dev.akkraizen.berill.plugins.projects.i18n.pluginI18n.tr("projects.template")()
 
 internal fun projects(ctx: PluginContext) =
   ctx.data.collection(ProjectsPlugin.PROJECTS, Project.serializer())

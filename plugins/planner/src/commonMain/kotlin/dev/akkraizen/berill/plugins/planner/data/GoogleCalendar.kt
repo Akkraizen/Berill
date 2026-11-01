@@ -75,7 +75,7 @@ data class GoogleSyncState(val running: Boolean = false, val lastSync: Long? = n
 
 data class GoogleSignInState(val running: Boolean = false, val error: String? = null)
 
-class GoogleApiException(val status: Int, message: String) : Exception(message)
+class GoogleApiException(status: Int, message: String) : dev.akkraizen.berill.api.HttpException(status, message)
 
 private val json = Json { ignoreUnknownKeys = true }
 private val calendarsSerializer = ListSerializer(GoogleCalendarInfo.serializer())
@@ -310,7 +310,7 @@ internal class GoogleCalendarSync private constructor(private val ctx: PluginCon
         _signIn.value = GoogleSignInState()
         throw e
       } catch (e: Exception) {
-        _signIn.value = GoogleSignInState(error = e.message ?: e.toString())
+        _signIn.value = GoogleSignInState(error = dev.akkraizen.berill.api.ui.search.networkErrorText(e))
       }
     }
   }
@@ -383,7 +383,7 @@ internal class GoogleCalendarSync private constructor(private val ctx: PluginCon
       if (error == "invalid_grant") listOf(REFRESH_TOKEN, ACCESS_TOKEN, ACCESS_EXPIRES).forEach { ctx.secrets.set(it, null) }
       throw GoogleApiException(r.status, error)
     }
-    return body ?: throw GoogleApiException(r.status, "bad token response")
+    return body ?: throw dev.akkraizen.berill.api.HttpException(r.status, kind = dev.akkraizen.berill.api.HttpFailureKind.INVALID_RESPONSE)
   }
 
   private fun storeAccess(tokens: JsonElement) {
@@ -453,8 +453,15 @@ internal class GoogleCalendarSync private constructor(private val ctx: PluginCon
     scheduled?.cancel()
     scheduled = ctx.scope.launch {
       delay(delayMillis)
-      runCatching { sync() }
+      syncSafely()
     }
+  }
+
+  /** UI/background entry point: failures remain visible in state; cancellation propagates. */
+  suspend fun syncSafely() {
+    try { sync() }
+    catch (e: CancellationException) { throw e }
+    catch (e: Exception) { _state.value = _state.value.copy(running = false, error = dev.akkraizen.berill.api.ui.search.networkErrorText(e)) }
   }
 
   suspend fun sync() {
@@ -467,8 +474,11 @@ internal class GoogleCalendarSync private constructor(private val ctx: PluginCon
         push(zone)
         pull(zone)
         _state.value = GoogleSyncState(lastSync = nowMillis())
+      } catch (e: CancellationException) {
+        _state.value = _state.value.copy(running = false, error = null)
+        throw e
       } catch (e: Exception) {
-        _state.value = _state.value.copy(running = false, error = e.message ?: e.toString())
+        _state.value = _state.value.copy(running = false, error = dev.akkraizen.berill.api.ui.search.networkErrorText(e))
         throw e
       }
     }

@@ -46,20 +46,31 @@ import dev.akkraizen.berill.api.ui.state.rememberDraft
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-fun networkErrorText(e: Throwable): String =
-  when (e) {
-    is NetworkNotAllowedException -> UiText.networkNotAllowed(e.host)()
-    is HttpException ->
-      when (e.status) {
-        401,
-        403 -> UiText.accessDenied(e.status)()
-
-        429 -> UiText.tooManyRequests()
-        else -> UiText.serverResponded(e.status)()
+fun networkErrorText(e: Throwable): String {
+  if (e is CancellationException) throw e
+  val key = when (e) {
+    is NetworkNotAllowedException -> return UiText.networkNotAllowed(e.host)()
+    is dev.akkraizen.berill.api.HttpException -> when (e.kind) {
+      dev.akkraizen.berill.api.HttpFailureKind.NETWORK -> "ui.apiNetwork"
+      dev.akkraizen.berill.api.HttpFailureKind.TIMEOUT -> "ui.apiTimeout"
+      dev.akkraizen.berill.api.HttpFailureKind.INVALID_RESPONSE -> "ui.apiInvalidResponse"
+      dev.akkraizen.berill.api.HttpFailureKind.INVALID_REQUEST -> "ui.apiInvalidRequest"
+      dev.akkraizen.berill.api.HttpFailureKind.STATUS -> when (e.status) {
+        0 -> "ui.apiFailed"
+        401 -> "ui.apiAuth"
+        403 -> "ui.apiForbidden"
+        404 -> "ui.apiNotFound"
+        408 -> "ui.apiTimeout"
+        429 -> return UiText.tooManyRequests()
+        in 500..599 -> "ui.apiUnavailable"
+        else -> return UiText.serverResponded(e.status)()
       }
-
-    else -> UiText.noConnection(e.message ?: e::class.simpleName)()
+    }
+    is kotlinx.serialization.SerializationException -> "ui.apiInvalidResponse"
+    else -> "ui.apiFailed"
   }
+  return dev.akkraizen.berill.api.i18n.I18n.text(key)
+}
 
 @Composable
 fun OnlineSearchPanel(
@@ -92,7 +103,7 @@ fun OnlineSearchPanel(
         if (results.isEmpty()) message = UiText.nothingFound()
       } catch (e: CancellationException) {
         throw e
-      } catch (e: Throwable) {
+      } catch (e: Exception) {
         results = emptyList()
         message = errorText(e)
       } finally {
@@ -157,7 +168,7 @@ fun OnlineSearchPanel(
                               message = onPick(hit)
                             } catch (e: CancellationException) {
                               throw e
-                            } catch (e: Throwable) {
+                            } catch (e: Exception) {
                               message = errorText(e)
                             } finally {
                               picking = null

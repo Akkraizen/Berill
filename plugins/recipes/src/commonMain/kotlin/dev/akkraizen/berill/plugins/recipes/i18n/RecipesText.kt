@@ -8,19 +8,19 @@ internal object RecipesText {
   val description = pluginI18n.tr("recipes.description")
 
   private val categories = mapOf(
-    "Завтраки" to pluginI18n.tr("recipes.categories"),
-    "Супы" to pluginI18n.tr("recipes.categories.2"),
-    "Основные блюда" to pluginI18n.tr("recipes.categories.3"),
-    "Гарниры" to pluginI18n.tr("recipes.categories.4"),
-    "Салаты" to pluginI18n.tr("recipes.categories.5"),
-    "Перекусы" to pluginI18n.tr("recipes.categories.6"),
-    "Выпечка" to pluginI18n.tr("recipes.categories.7"),
-    "Десерты" to pluginI18n.tr("recipes.categories.8"),
-    "Напитки" to pluginI18n.tr("recipes.categories.9"),
-    "Соусы" to pluginI18n.tr("recipes.categories.10")
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.BREAKFAST to pluginI18n.tr("recipes.categories"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SOUP to pluginI18n.tr("recipes.categories.2"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.MAIN to pluginI18n.tr("recipes.categories.3"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SIDE to pluginI18n.tr("recipes.categories.4"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SALAD to pluginI18n.tr("recipes.categories.5"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SNACK to pluginI18n.tr("recipes.categories.6"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.BAKING to pluginI18n.tr("recipes.categories.7"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.DESSERT to pluginI18n.tr("recipes.categories.8"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.DRINK to pluginI18n.tr("recipes.categories.9"),
+    dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.SAUCE to pluginI18n.tr("recipes.categories.10")
   )
 
-  fun categoryLabel(category: String): String = categories[category]?.invoke() ?: category
+  fun categoryLabel(category: String): String = categories[dev.akkraizen.berill.plugins.recipes.data.RecipeCategory.parse(category)]?.invoke() ?: category
 
   val searchPlaceholder = pluginI18n.tr("recipes.searchPlaceholder")
   val favorites = pluginI18n.tr("recipes.favorites")

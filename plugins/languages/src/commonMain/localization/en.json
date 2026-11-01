@@ -85,6 +85,11 @@
     "languages.widget.cardChoose": "Card language",
     "languages.widget.noWords": "Add words with translations to your dictionary",
     "languages.widget.show": "Show",
-    "languages.widget.next": "Next"
+    "languages.widget.next": "Next",
+    "languages.reviewDone": "All cards reviewed for today",
+    "languages.defaultLesson": "Lesson",
+    "languages.englishName": "English",
+    "legacy.WordSection.WORDS": "Слова",
+    "legacy.WordSection.PHRASES": "Фразы"
   }
 }

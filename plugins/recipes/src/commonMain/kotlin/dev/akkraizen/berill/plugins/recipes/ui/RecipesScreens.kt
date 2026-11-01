@@ -225,7 +225,7 @@ private fun AddRecipeDialog(onDismiss: () -> Unit, onAdd: (Recipe) -> Unit) {
         BerillTextField(title, { title = it }, label = { Text(RecipesText.name(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = true)
         DropdownField(
           RecipesText.category(),
-          CATEGORY_ICONS.keys.toList(),
+          CATEGORY_ICONS.keys.map { it.wire },
           category,
           { RecipesText.categoryLabel(it) },
           { category = it },
@@ -284,7 +284,7 @@ internal fun RecipeScreen(ctx: PluginContext, id: String) {
             CommitTextField(r.title, { v -> update { it.copy(title = v.trim()) } }, RecipesText.name())
             DropdownField(
               RecipesText.category(),
-              CATEGORY_ICONS.keys.toList(),
+              CATEGORY_ICONS.keys.map { it.wire },
               r.category,
               { RecipesText.categoryLabel(it) },
               { c -> update { it.copy(category = c) } },

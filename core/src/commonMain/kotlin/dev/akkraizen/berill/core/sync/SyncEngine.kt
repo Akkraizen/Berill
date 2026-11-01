@@ -1,5 +1,8 @@
 package dev.akkraizen.berill.core.sync
 
+import dev.akkraizen.berill.core.connections.checkServiceStatus
+import dev.akkraizen.berill.core.connections.failureMessage
+import kotlinx.coroutines.CancellationException
 import dev.akkraizen.berill.core.BuildInfo
 import dev.akkraizen.berill.core.data.LocalStore
 import dev.akkraizen.berill.core.log.AppLog
@@ -51,7 +54,8 @@ class SyncEngine(
   private val deviceId: String,
   private val scope: CoroutineScope,
   val encryption: SyncEncryption,
-  private val vault: SecretVault = MemoryVault()
+  private val vault: SecretVault = MemoryVault(),
+  private val beforeUpload: suspend () -> Unit = {}
 ) {
   private val http = createHttpClient()
   private val mutex = Mutex()
@@ -129,20 +133,20 @@ class SyncEngine(
 
   suspend fun syncNow(reconcile: Boolean = false) {
     mutex.withLock {
-      if (reconcile) store.setMeta(KEY_RECONCILED, "")
-      syncLocked()
+      syncLocked(reconcile)
     }
   }
 
-  private suspend fun syncLocked() {
-    val url = serverUrl()
-    val token = token()
-    if (url == null || token == null) {
-      _state.value = SyncState.NotConfigured
-      return
-    }
+  private suspend fun syncLocked(reconcile: Boolean = false) {
     _state.value = SyncState.Syncing
     try {
+      if (reconcile) store.setMeta(KEY_RECONCILED, "")
+      val url = serverUrl()
+      val token = token()
+      if (url == null || token == null) {
+        _state.value = SyncState.NotConfigured
+        return
+      }
       var result = runPass(url, token)
       if (result == null) {
         store.setMeta(KEY_RECONCILED, "")
@@ -157,11 +161,16 @@ class SyncEngine(
         skipped > 0 -> SyncState.Failed(CoreText.e2eSkipped(skipped)())
         else -> SyncState.Done(Clock.System.now().toEpochMilliseconds(), received, sent)
       }
+    } catch (e: CancellationException) {
+      _state.value = SyncState.Idle
+      throw e
     } catch (e: Exception) {
-      val message = e.message ?: e::class.simpleName ?: CoreText.errorFallback()
+      val message = failureMessage(e)
       AppLog.warn(TAG, "failed: $message", e)
-      store.setMeta(KEY_LAST_ERROR, "${Clock.System.now().toEpochMilliseconds()}|$message")
       _state.value = SyncState.Failed(message)
+      try { store.setMeta(KEY_LAST_ERROR, "${Clock.System.now().toEpochMilliseconds()}|$message") }
+      catch (cancelled: CancellationException) { throw cancelled }
+      catch (metadataError: Exception) { AppLog.warn(TAG, "failed to save error state", metadataError) }
     }
   }
 
@@ -184,7 +193,7 @@ class SyncEngine(
         contentType(ContentType.Application.Json)
         setBody(SyncRequest(deviceId, cursor, records, client))
       }
-      if (!response.status.isSuccess()) error(CoreText.serverResponded(response.status.toString())())
+      checkServiceStatus(response.status.value)
       val body: SyncResponse = response.body()
       body.user?.let { if (store.meta(KEY_USER) != it) store.setMeta(KEY_USER, it) }
       body.dataset?.let { dataset ->
@@ -214,6 +223,7 @@ class SyncEngine(
         val body = exchange(emptyList())
       } while (body.hasMore)
 
+      beforeUpload()
       val dirty = store.dirty().filter { (record, _) -> options.includes(record.collection, record.id) || isE2eParams(record) }
       val outgoing = dirty.mapNotNull { (record, version) -> encryption.encryptOutgoing(record)?.let { Triple(record, version, it) } }
       for (batch in batches(outgoing)) {
@@ -295,7 +305,7 @@ class SyncEngine(
   }
 
   companion object {
-    private const val KEY_RECONCILED = "sync_reconciled_v1"
+    internal const val KEY_RECONCILED = "sync_reconciled_v1"
     private const val KEY_DATASET = "sync_dataset"
     private const val KEY_USER = "sync_server_user"
     private const val KEY_LAST_OK = "sync_last_ok"

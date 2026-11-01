@@ -16,11 +16,11 @@ data class Language(
   val flag: String = code.uppercase(),
   val name: String = code,
   val nativeName: String = name,
-  val lessonWord: String = "Урок"
+  val lessonWord: String = dev.akkraizen.berill.plugins.languages.i18n.pluginI18n.tr("languages.defaultLesson")()
 )
 
-val BUILT_IN_LANGUAGES = listOf(
-  Language("en", "EN", "English", "Английский", "Lesson")
+val BUILT_IN_LANGUAGES get() = listOf(
+  Language("en", "EN", "English", dev.akkraizen.berill.plugins.languages.i18n.pluginI18n.tr("languages.englishName")(), "Lesson")
 )
 
 internal const val LANGUAGES_KEY = "languages"

@@ -60,7 +60,7 @@ import dev.akkraizen.berill.plugins.books.data.STATUSES
 import dev.akkraizen.berill.plugins.books.data.books
 import dev.akkraizen.berill.plugins.books.i18n.BooksText
 
-internal val ICONS: Map<String, ImageVector> = mapOf(
+internal val ICONS: Map<dev.akkraizen.berill.plugins.books.data.BookStatus, ImageVector> = mapOf(
   NOT_STARTED to Icons.Outlined.BookmarkBorder,
   READING to Icons.Outlined.MenuBook,
   DONE to Icons.Outlined.TaskAlt
@@ -105,21 +105,21 @@ internal fun BooksBoard(ctx: PluginContext) {
       KanbanBoard(
         columns = listOf(
           KanbanColumn(
-            NOT_STARTED,
+            NOT_STARTED.name,
             BooksText.statusLabel(NOT_STARTED),
             notStarted,
             BooksText.noBooks(),
             ICONS[NOT_STARTED]
           ),
           KanbanColumn(
-            READING,
+            READING.name,
             BooksText.statusLabel(READING),
             reading,
             BooksText.noBooks(),
             ICONS[READING]
           ),
           KanbanColumn(
-            DONE,
+            DONE.name,
             BooksText.statusLabel(DONE),
             done,
             BooksText.noBooks(),
@@ -127,7 +127,8 @@ internal fun BooksBoard(ctx: PluginContext) {
           )
         ),
         itemKey = { it.id },
-        onMove = { item, status ->
+        onMove = { item, statusKey ->
+          val status = dev.akkraizen.berill.plugins.books.data.BookStatus.valueOf(statusKey)
           collection
             .get(item.id)
             ?.takeIf { it.normalizedStatus != status }

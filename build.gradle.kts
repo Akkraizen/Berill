@@ -132,3 +132,24 @@ allprojects {
     }
   }
 }
+
+// UI and diagnostic text belongs in locale catalogs; legacy values belong in resource-backed enum codecs.
+tasks.register("verifySourceLocalization") {
+  group = "verification"
+  description = "Rejects hardcoded Cyrillic in production Kotlin and Android layouts"
+  val repositoryRoot = layout.projectDirectory.asFile
+  val sources = fileTree(repositoryRoot) {
+    include("**/src/*Main/**/*.kt", "**/src/main/**/*.kt", "**/src/main/res/layout/*.xml")
+    exclude("**/build/**")
+  }
+  inputs.files(sources)
+  doLast {
+    val cyrillic = Regex("""\p{IsCyrillic}""")
+    val violations = sources.files.sorted().flatMap { file ->
+      file.readLines(Charsets.UTF_8).mapIndexedNotNull { index, line ->
+        if (cyrillic.containsMatchIn(line)) "${file.relativeTo(repositoryRoot)}:${index + 1}" else null
+      }
+    }
+    check(violations.isEmpty()) { "Hardcoded Cyrillic must be moved to localization resources:\n${violations.joinToString("\n")}" }
+  }
+}

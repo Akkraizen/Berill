@@ -5,6 +5,7 @@ import dev.akkraizen.berill.plugins.study.data.SUBMITTED
 import dev.akkraizen.berill.plugins.study.data.TODO
 
 internal object StudyText {
+ val otherType = pluginI18n.tr("study.otherType")
 
   val title = pluginI18n.tr("study.title")
   val description = pluginI18n.tr("study.description")
@@ -18,20 +19,20 @@ internal object StudyText {
   private val statusDoing = pluginI18n.tr("study.statusDoing")
   private val statusSubmitted = pluginI18n.tr("study.statusSubmitted")
 
-  fun statusLabel(status: String): String =
+  fun statusLabel(status: dev.akkraizen.berill.plugins.study.data.TaskStatus): String =
     when (status) {
       TODO -> statusTodo()
       DOING -> statusDoing()
       SUBMITTED -> statusSubmitted()
-      else -> status
+      else -> status.name
     }
 
-  fun statusDescription(status: String) = pluginI18n.tr("study.statusDescription", "p0" to statusLabel(status))
+  fun statusDescription(status: dev.akkraizen.berill.plugins.study.data.TaskStatus) = pluginI18n.tr("study.statusDescription", "p0" to statusLabel(status))
 
   fun controlLabel(control: String): String =
     when (control) {
-      "экзамен" -> exam()
-      "зачёт" -> credit()
+      dev.akkraizen.berill.plugins.study.data.SubjectControl.EXAM.wire -> exam()
+      dev.akkraizen.berill.plugins.study.data.SubjectControl.CREDIT.wire -> credit()
       else -> control.replaceFirstChar(Char::uppercase)
     }
 

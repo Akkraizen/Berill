@@ -25,7 +25,7 @@ class AndroidExternalPlugins(context: Context, dir: File) : PluginPackageStore(d
   private val app = context.applicationContext
 
   override fun codeProblems(code: ByteArray?): List<String> =
-    if (code == null) listOf("нет $PLUGIN_DEX — плагин собран без поддержки Android") else emptyList()
+    if (code == null) listOf(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.AndroidExternalPlugins.m0", "p0" to (PLUGIN_DEX))) else emptyList()
 
   override val launcher: RunnerLauncher = object : RunnerLauncher {
     override fun start(manifest: PluginManifest, language: String, listener: RunnerListener): RunnerConnection =

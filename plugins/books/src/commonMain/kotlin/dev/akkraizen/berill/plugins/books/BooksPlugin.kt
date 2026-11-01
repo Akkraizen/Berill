@@ -19,6 +19,8 @@ import dev.akkraizen.berill.plugins.books.ui.ReadingNow
 import dev.akkraizen.berill.plugins.books.widgets.booksWidgets
 
 object BooksPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.books.mcp.BooksMcp(ctx)
+
   const val BOOKS = "books"
 
   override val id = "books"
@@ -57,6 +59,8 @@ object BooksPlugin : BerillPlugin {
     listOf(HomeCard("reading", BooksText.readingNowCard, order = 30) { ReadingNow(ctx) })
 
   internal const val BOOK_ROUTE = "book:"
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionShareSource(ctx, BOOKS, title, "book:"), dev.akkraizen.berill.api.CollectionSearchSource(ctx, BOOKS, { title }, { "book:$it" }))
 
   override fun widgets(ctx: PluginContext) = booksWidgets(ctx)
 }

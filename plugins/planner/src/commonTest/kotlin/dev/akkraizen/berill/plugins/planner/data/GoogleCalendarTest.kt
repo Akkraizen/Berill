@@ -65,7 +65,7 @@ private class MemoryCollection<T>(override val name: String) : DataCollection<T>
   }
 }
 
-private class MemoryContext(override val pluginId: String, override val http: HttpAccess) : PluginContext {
+internal class MemoryContext(override val pluginId: String, override val http: HttpAccess) : PluginContext {
   private val collections = HashMap<String, MemoryCollection<*>>()
   private val values = MutableStateFlow<Map<String, JsonElement>>(emptyMap())
   private val secretValues = MutableStateFlow<Map<String, String>>(emptyMap())

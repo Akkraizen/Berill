@@ -74,11 +74,11 @@ class LoopbackRedirects(
       }
 
   private companion object {
-    const val PAGE =
+    val PAGE: String get() =
       "<!doctype html><html><head><meta charset=\"utf-8\"><title>Berill</title></head>" +
         "<body style=\"font-family:sans-serif;background:#111614;color:#e1e3df;display:flex;" +
         "align-items:center;justify-content:center;height:100vh;margin:0\">" +
-        "<div style=\"text-align:center\"><h2>Berill</h2><p>Можно вернуться в приложение.</p>" +
-        "<p style=\"opacity:.7\">You can return to the app.</p></div></body></html>"
+        "<div style=\"text-align:center\"><h2>Berill</h2><p>${dev.akkraizen.berill.api.i18n.I18n.text("oauth.returnToApp")}</p>" +
+        "</div></body></html>"
   }
 }

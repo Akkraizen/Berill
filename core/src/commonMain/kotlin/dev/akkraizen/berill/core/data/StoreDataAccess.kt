@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -67,6 +68,15 @@ class TypedCollection<T>(
 }
 
 class StoreRawCollection(private val store: LocalStore, override val name: String) : RawCollection {
+  override fun createIfAbsent(id: String, fields: JsonObject): Boolean = store.createIfAbsent(name, id, fields)
+
+  override fun mutateIfCurrent(id: String, expected: kotlinx.serialization.json.JsonObject, patch: kotlinx.serialization.json.JsonObject?, delete: Boolean): Boolean = store.mutateIfCurrent(name, id, expected, patch, delete)
+
+  override fun patchIfCurrent(id: String, field: String, expected: JsonElement, value: JsonElement): Boolean =
+    store.putIfCurrent(name, id, field, expected, value)
+
+  override fun isDeleted(id: String): Boolean = store.get(name, id)?.deleted == true
+
   override fun observe(): Flow<List<RawRecord>> = store.observe(name).map { records -> records.map { RawRecord(it.id, it.fields) } }
 
   override fun get(id: String): RawRecord? = store.get(name, id)?.takeUnless { it.deleted }?.let { RawRecord(it.id, it.fields) }

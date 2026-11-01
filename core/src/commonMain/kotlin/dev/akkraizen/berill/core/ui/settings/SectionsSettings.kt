@@ -48,7 +48,7 @@ internal fun InstalledPlugins(core: BerillCore) {
   installed.forEach { p ->
     val on = enabled.any { it.id == p.id }
     PluginRow(p) {
-      if (p.hasSettings)
+      if (p.hasSettings && on)
         IconButton(onClick = { core.nav.openPluginSettings(p.id) }) {
           Icon(Icons.Outlined.Settings, contentDescription = CoreText.sectionSettingsOf(p.title)())
         }
@@ -135,9 +135,9 @@ internal fun PluginSettingsScreen(core: BerillCore, pluginId: String) {
   ) {
     when {
       plugin == null -> EmptyHint(CoreText.sectionMissing())
+      enabled.none { it.id == plugin.id } -> EmptyHint(CoreText.sectionDisabledSettingsHint())
       !plugin.hasSettings -> EmptyHint(CoreText.sectionNoSettings())
       else -> {
-        if (enabled.none { it.id == plugin.id }) EmptyHint(CoreText.sectionDisabledSettingsHint())
         PluginScope(plugin) { plugin.Settings(core.plugins.context(plugin)) }
       }
     }

@@ -12,6 +12,11 @@ interface FileAccess {
   fun imageDropTarget(enabled: Boolean = true, onDrop: (List<PickedFile>) -> Unit): Modifier =
     Modifier
 
+  suspend fun storeAttachment(bytes: ByteArray): String? = null
+  suspend fun loadAttachment(hash: String): ByteArray? = null
+
+  suspend fun saveFile(name: String, bytes: ByteArray, mimeType: String): Boolean = false
+
   suspend fun pickImage(maxSide: Int = 1600): PickedFile?
 
   suspend fun pickImages(maxSide: Int = 1600): List<PickedFile> = listOfNotNull(pickImage(maxSide))

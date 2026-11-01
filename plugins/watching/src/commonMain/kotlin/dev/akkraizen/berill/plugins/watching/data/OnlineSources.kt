@@ -102,12 +102,12 @@ internal class Shikimori(private val ctx: PluginContext) {
   companion object {
     private val KINDS = mapOf(
       "tv" to "TV",
-      "movie" to "фильм",
+      "movie" to MediaFormat.MOVIE.wire,
       "ova" to "OVA",
       "ona" to "ONA",
-      "special" to "спешл",
-      "tv_special" to "TV-спешл",
-      "music" to "клип"
+      "special" to MediaFormat.SPECIAL.wire,
+      "tv_special" to MediaFormat.TV_SPECIAL.wire,
+      "music" to MediaFormat.MUSIC.wire
     )
 
     fun kindLabel(kind: String?): String? = kind?.let { KINDS[it] ?: it }
@@ -199,7 +199,7 @@ internal class Kinopoisk(private val ctx: PluginContext) {
     )
   }
 
-  class MissingKeyException : Exception("нет ключа API")
+  class MissingKeyException : Exception(WatchingText.kpMissingKey())
 
   companion object {
     private val TYPES = mapOf(
@@ -210,11 +210,11 @@ internal class Kinopoisk(private val ctx: PluginContext) {
       "TV_SHOW" to SERIES
     )
     private val TYPE_LABELS = mapOf(
-      "FILM" to "фильм",
-      "VIDEO" to "видео",
-      "TV_SERIES" to "сериал",
-      "MINI_SERIES" to "мини-сериал",
-      "TV_SHOW" to "ТВ-шоу"
+      "FILM" to MediaFormat.MOVIE.wire,
+      "VIDEO" to MediaFormat.VIDEO.wire,
+      "TV_SERIES" to MediaFormat.SERIES.wire,
+      "MINI_SERIES" to MediaFormat.MINI_SERIES.wire,
+      "TV_SHOW" to MediaFormat.TV_SHOW.wire
     )
 
     fun errorText(e: Throwable): String =

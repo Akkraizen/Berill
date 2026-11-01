@@ -23,13 +23,13 @@ import dev.akkraizen.berill.plugins.finance.data.categoriesKey
 import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
 
 @Composable
-internal fun rememberCategories(ctx: PluginContext): Map<String, List<String>> {
+internal fun rememberCategories(ctx: PluginContext): Map<dev.akkraizen.berill.plugins.finance.data.OperationKind, List<String>> {
   val expense by
-    remember(ctx) { ctx.settings.observeStringList(categoriesKey(EXPENSE)) }
-      .collectAsState(ctx.settings.stringList(categoriesKey(EXPENSE)))
+  remember(ctx) { ctx.settings.observeStringList(categoriesKey(EXPENSE)) }
+    .collectAsState(ctx.settings.stringList(categoriesKey(EXPENSE)))
   val income by
-    remember(ctx) { ctx.settings.observeStringList(categoriesKey(INCOME)) }
-      .collectAsState(ctx.settings.stringList(categoriesKey(INCOME)))
+  remember(ctx) { ctx.settings.observeStringList(categoriesKey(INCOME)) }
+    .collectAsState(ctx.settings.stringList(categoriesKey(INCOME)))
   return CATEGORIES +
     mapOf(
       EXPENSE to (expense?.takeIf { it.isNotEmpty() } ?: CATEGORIES.getValue(EXPENSE)),
@@ -56,7 +56,7 @@ internal fun FinanceSettings(ctx: PluginContext) {
       )
       if (kind == INCOME)
         Text(
-          FinanceText.interestHint(INTEREST)(),
+          FinanceText.interestHint(FinanceText.categoryLabel(INTEREST))(),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -69,9 +69,11 @@ internal fun FinanceSettings(ctx: PluginContext) {
   )
 }
 
-internal fun categoriesOf(ctx: PluginContext): Map<String, List<String>> =
+internal fun categoriesOf(ctx: PluginContext): Map<dev.akkraizen.berill.plugins.finance.data.OperationKind, List<String>> =
   CATEGORIES +
     mapOf(
-      EXPENSE to (ctx.settings.stringList(categoriesKey(EXPENSE))?.takeIf { it.isNotEmpty() } ?: CATEGORIES.getValue(EXPENSE)),
-      INCOME to (ctx.settings.stringList(categoriesKey(INCOME))?.takeIf { it.isNotEmpty() } ?: CATEGORIES.getValue(INCOME))
+      EXPENSE to (ctx.settings.stringList(categoriesKey(EXPENSE))?.takeIf { it.isNotEmpty() }
+        ?: CATEGORIES.getValue(EXPENSE)),
+      INCOME to (ctx.settings.stringList(categoriesKey(INCOME))?.takeIf { it.isNotEmpty() }
+        ?: CATEGORIES.getValue(INCOME))
     )

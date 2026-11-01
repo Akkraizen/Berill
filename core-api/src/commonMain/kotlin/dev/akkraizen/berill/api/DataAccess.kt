@@ -35,6 +35,15 @@ interface DataCollection<T> {
 data class Item<T>(val id: String, val value: T)
 
 interface RawCollection {
+  fun createIfAbsent(id: String, fields: JsonObject): Boolean = false
+
+  fun mutateIfCurrent(id: String, expected: JsonObject, patch: JsonObject?, delete: Boolean = false): Boolean = false
+
+  // Unsupported stores keep the old value; implementations must compare atomically.
+  fun patchIfCurrent(id: String, field: String, expected: JsonElement, value: JsonElement): Boolean = false
+
+  fun isDeleted(id: String): Boolean = false
+
   val name: String
 
   fun observe(): Flow<List<RawRecord>>

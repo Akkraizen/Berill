@@ -1,7 +1,6 @@
 package dev.akkraizen.berill.api.ui.layout
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +40,12 @@ fun DetailHeader(
           overflow = TextOverflow.Ellipsis
         )
       }
-      Box { trailing?.invoke() }
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        trailing?.invoke()
+      }
     }
   ) { measurables, constraints ->
     val width = constraints.maxWidth

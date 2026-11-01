@@ -49,6 +49,7 @@ import dev.akkraizen.berill.api.ui.plusDays
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
 import dev.akkraizen.berill.api.ui.today
 import dev.akkraizen.berill.api.ui.weekdayIndex
+import dev.akkraizen.berill.plugins.planner.data.plannerDayTotals
 import dev.akkraizen.berill.plugins.planner.data.PlannerData
 import dev.akkraizen.berill.plugins.planner.data.parse
 import dev.akkraizen.berill.plugins.planner.data.taskOrder
@@ -126,7 +127,7 @@ internal fun PlannerScreen(ctx: PluginContext) {
           verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
           days.forEachIndexed { i, d ->
-            val undone = byDate[d.toString()].orEmpty().count { !it.value.done }
+            val undone = plannerDayTotals(all.map { it.value }, d).unfinished
             BerillChip(
               selected = i == selectedIndex,
               onClick = { selectedIndex = i },
@@ -163,7 +164,7 @@ internal fun PlannerScreen(ctx: PluginContext) {
                     TextButton(
                       onClick = {
                         tails.forEach { (_, t) ->
-                          data.edit(t.id) { it.copy(date = now.toString()) }
+                          data.edit(t.id) { it.rescheduled(now) }
                         }
                       }
                     ) {
@@ -173,20 +174,23 @@ internal fun PlannerScreen(ctx: PluginContext) {
                 } else
                   null
               ) {
-                tails.forEach { (d, t) ->
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                      "${DAYS_SHORT[d.weekdayIndex]}, ${parse(t.value.text).title}",
-                      modifier = Modifier.weight(1f)
-                    )
-                    if (isCurrentWeek)
-                      TextButton(onClick = { data.edit(t.id) { it.copy(date = now.toString()) } }) {
-                        Ic(BerillIcons.Forward, size = 16.dp)
-                        Spacer(Modifier.width(4.dp))
-                        Text(PlannerText.toToday())
-                      }
+                dev.akkraizen.berill.api.ui.layout.BoundedList {
+                  tails.forEach { (d, t) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                      Text(
+                        "${DAYS_SHORT[d.weekdayIndex]}, ${parse(t.value.text).title}",
+                        modifier = Modifier.weight(1f)
+                      )
+                      if (isCurrentWeek)
+                        TextButton(onClick = { data.edit(t.id) { it.rescheduled(now) } }) {
+                          Ic(BerillIcons.Forward, size = 16.dp)
+                          Spacer(Modifier.width(4.dp))
+                          Text(PlannerText.toToday())
+                        }
+                    }
                   }
                 }
+
               }
             WeekSummary(data, weekId)
           }

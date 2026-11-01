@@ -87,6 +87,35 @@
     "habits.widget.weekTitle": "Habit week",
     "habits.widget.weekDescription": "A 7-day grid and the streak for each habit",
     "habits.widget.perfectStreak": "Perfect days in a row: {n}",
-    "habits.widget.streak": "{n} d"
+    "habits.widget.streak": "{n} d",
+    "lexicon.habitIcon.PUZZLE": [
+      "chess",
+      "шахмат"
+    ],
+    "lexicon.habitIcon.CODE": [
+      "leetcode",
+      "code",
+      "код"
+    ],
+    "lexicon.habitIcon.FIRE": [
+      "flame",
+      "fire",
+      "огон"
+    ],
+    "lexicon.habitIcon.TRANSLATE": [
+      "deutsch",
+      "english",
+      "немец",
+      "англ"
+    ],
+    "lexicon.habitIcon.FITNESS": [
+      "warmup",
+      "размин",
+      "sport"
+    ],
+    "lexicon.habitIcon.BOOK": [
+      "read",
+      "чтен"
+    ]
   }
 }

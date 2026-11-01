@@ -5,6 +5,7 @@ import dev.akkraizen.berill.api.DeadlineSource
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.all
+import dev.akkraizen.berill.api.observe
 import dev.akkraizen.berill.api.observeBoolean
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.plugins.planner.PlannerPlugin
@@ -14,6 +15,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.datetime.LocalDate
 
 @Serializable
 data class PlannerTask(
@@ -21,8 +24,28 @@ data class PlannerTask(
   val date: String? = null,
   val week: String? = null,
   val done: Boolean = false,
-  val order: Long? = null
-)
+  val order: Long? = null,
+  @SerialName("deferred_dates") val deferredDates: List<String> = emptyList()
+) {
+  fun rescheduled(to: LocalDate): PlannerTask {
+    val target = to.toString()
+    if (date == target) return this
+    return copy(date = target, done = false, deferredDates = (deferredDates + listOfNotNull(date)).distinct())
+  }
+}
+
+data class PlannerDayTotals(val planned: Int, val completed: Int, val deferred: Int) {
+  val unfinished: Int get() = planned - completed
+}
+
+fun plannerDayTotals(tasks: List<PlannerTask>, day: LocalDate): PlannerDayTotals {
+  val date = day.toString()
+  return PlannerDayTotals(
+    planned = tasks.count { it.date == date || date in it.deferredDates },
+    completed = tasks.count { it.date == date && it.done },
+    deferred = tasks.count { it.date != date && date in it.deferredDates }
+  )
+}
 
 @Serializable
 data class WeekNotes(val summary: String = "")
@@ -74,8 +97,9 @@ internal class PlannerData(val ctx: PluginContext) {
 
   @OptIn(ExperimentalCoroutinesApi::class)
   fun deadlines(): Flow<List<Deadline>> =
-    ctx.settings.observeBoolean(SHOW_DEADLINES, true).flatMapLatest { show ->
-      val sources = if (show) ctx.capabilities.all<DeadlineSource>() else emptyList()
+    combine(ctx.settings.observeBoolean(SHOW_DEADLINES, true), ctx.capabilities.observe<DeadlineSource>()) { show, sources ->
+      if (show) sources else emptyList()
+    }.flatMapLatest { sources ->
       if (sources.isEmpty())
         flowOf(emptyList())
       else

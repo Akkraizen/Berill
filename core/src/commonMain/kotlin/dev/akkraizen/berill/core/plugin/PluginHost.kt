@@ -42,22 +42,23 @@ class PluginHost(
   private val scope: CoroutineScope,
   private val files: FileAccess = NoFileAccess,
   private val vault: SecretVault = MemoryVault(),
-  private val redirects: OAuthRedirects = NoOAuthRedirects
+  private val redirects: OAuthRedirects = NoOAuthRedirects,
+  private val reminderAccess: dev.akkraizen.berill.api.ReminderAccess = dev.akkraizen.berill.api.NoReminders
 ) {
 
   val all: List<BerillPlugin> = plugins.sortedWith(compareBy({ it.order }, { it.title }))
 
   init {
     val duplicates = all.groupBy { it.id }.filterValues { it.size > 1 }.keys
-    require(duplicates.isEmpty()) { "Повторяются id плагинов: $duplicates" }
+    require(duplicates.isEmpty()) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginHost.m0", "p0" to (duplicates)) }
     all.forEach { p ->
-      require(ID.matches(p.id)) { "Некорректный id плагина `${p.id}`: только a-z, 0-9 и _" }
-      require(p.id !in RESERVED) { "id `${p.id}` зарезервирован ядром" }
+      require(ID.matches(p.id)) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginHost.m1", "p0" to (p.id)) }
+      require(p.id !in RESERVED) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginHost.m2", "p0" to (p.id)) }
       val pageIds = p.pages.map { it.id }
       require(pageIds.all { PAGE_ID.matches(it) }) {
-        "`${p.id}`: некорректный id страницы в $pageIds"
+        dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginHost.m3", "p0" to (p.id), "p1" to (pageIds))
       }
-      require(pageIds.size == pageIds.toSet().size) { "`${p.id}`: повторяются id страниц $pageIds" }
+      require(pageIds.size == pageIds.toSet().size) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginHost.m4", "p0" to (p.id), "p1" to (pageIds)) }
     }
   }
 
@@ -113,7 +114,16 @@ class PluginHost(
 
   fun byId(id: String): BerillPlugin? = all.firstOrNull { it.id == id }
 
+  val capabilities: CapabilityLookup get() = lookup
+
   private val lookup = object : CapabilityLookup {
+    override fun <T : Capability> observe(type: KClass<T>): Flow<List<T>> = enabled.map { active ->
+      active.flatMap { provided[it.id].orEmpty() }.filter { type.isInstance(it) }.map {
+        @Suppress("UNCHECKED_CAST")
+        it as T
+      }
+    }.distinctUntilChanged()
+
     override fun <T : Capability> all(type: KClass<T>): List<T> =
       enabled.value
         .flatMap { provided[it.id].orEmpty() }
@@ -133,6 +143,10 @@ class PluginHost(
   }
 
   private inner class Context(plugin: BerillPlugin) : PluginContext {
+    override val reminders = object : dev.akkraizen.berill.api.ReminderAccess {
+      override suspend fun schedule(reminder: dev.akkraizen.berill.api.Reminder) = reminderAccess.schedule(reminder.copy(pluginId = plugin.id))
+      override fun cancel(id: String) = reminderAccess.cancel(id)
+    }
     override val pluginId: String = plugin.id
 
     override val data: DataAccess = ScopedDataAccess(this@PluginHost.data, plugin.id, plugin.collections.toSet())

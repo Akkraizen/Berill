@@ -89,6 +89,35 @@
     "habits.widget.weekTitle": "Неделя привычек",
     "habits.widget.weekDescription": "Сетка за 7 дней и серии по каждой привычке",
     "habits.widget.perfectStreak": "Идеальных дней подряд: {n}",
-    "habits.widget.streak": "{n} дн."
+    "habits.widget.streak": "{n} дн.",
+    "lexicon.habitIcon.PUZZLE": [
+      "chess",
+      "шахмат"
+    ],
+    "lexicon.habitIcon.CODE": [
+      "leetcode",
+      "code",
+      "код"
+    ],
+    "lexicon.habitIcon.FIRE": [
+      "flame",
+      "fire",
+      "огон"
+    ],
+    "lexicon.habitIcon.TRANSLATE": [
+      "deutsch",
+      "english",
+      "немец",
+      "англ"
+    ],
+    "lexicon.habitIcon.FITNESS": [
+      "warmup",
+      "размин",
+      "sport"
+    ],
+    "lexicon.habitIcon.BOOK": [
+      "read",
+      "чтен"
+    ]
   }
 }

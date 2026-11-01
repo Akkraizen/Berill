@@ -40,6 +40,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.akkraizen.berill.plugins.languages.data.reviews
+import dev.akkraizen.berill.plugins.languages.data.WordReview
+import dev.akkraizen.berill.plugins.languages.data.answer
+import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.BerillIcons
@@ -176,7 +180,7 @@ internal fun LanguagesHome(ctx: PluginContext) {
     item {
       TwoPane(
         left = {
-          Trainer(entries, current, allLessons) { id ->
+          Trainer(ctx, allWords.filter { it.value.language == lang }, current, allLessons) { id ->
             ctx.nav.open(LanguagesPlugin.LESSON_ROUTE + id)
           }
         },
@@ -263,7 +267,8 @@ internal fun LanguagesHome(ctx: PluginContext) {
 
 @Composable
 private fun Trainer(
-  entries: List<Word>,
+  ctx: PluginContext,
+  items: List<Item<Word>>,
   lang: Language,
   lessons: List<Item<Lesson>>,
   openLesson: (String) -> Unit
@@ -272,14 +277,20 @@ private fun Trainer(
   var onlyWords by rememberSaveable { mutableStateOf(false) }
   var ok by remember { mutableIntStateOf(0) }
   var bad by remember { mutableIntStateOf(0) }
-  val pool = if (onlyWords) entries.filter { it.section == WORDS_SECTION } else entries
+  val reviewStore = remember(ctx) { reviews(ctx) }
+  val reviewRows by remember(reviewStore) { reviewStore.observe() }.collectAsState(emptyList())
+  val reviewMap = reviewRows.associate { it.id to it.value }
+  val due = items.filter { (reviewMap[it.id]?.dueAt ?: 0L) <= nowMillis() }
+  val dueItems = if (onlyWords) due.filter { it.value.section == WORDS_SECTION } else due
+  val pool = dueItems.map { it.value }
   var index by
   remember(pool.size) {
-    mutableIntStateOf(if (pool.isEmpty()) 0 else Random.nextInt(pool.size))
+    mutableIntStateOf(0)
   }
   var revealed by remember(index) { mutableStateOf(false) }
 
   fun next(known: Boolean) {
+    dueItems.getOrNull(index)?.let { item -> reviewStore.save(item.id, (reviewStore.get(item.id) ?: WordReview()).answer(if (known) 4 else 1, nowMillis())) }
     if (known) ok++ else bad++
     if (pool.size > 1) {
       var n: Int
@@ -319,7 +330,7 @@ private fun Trainer(
     }
     val card = pool.getOrNull(index.coerceIn(0, (pool.size - 1).coerceAtLeast(0)))
     if (card == null) {
-      EmptyHint(LanguagesText.dictionaryEmpty())
+      EmptyHint(if (items.isEmpty()) LanguagesText.dictionaryEmpty() else LanguagesText.reviewDone())
       return@SectionCard
     }
     Surface(

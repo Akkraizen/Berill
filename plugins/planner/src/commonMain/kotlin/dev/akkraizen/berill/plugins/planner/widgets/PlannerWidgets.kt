@@ -25,6 +25,8 @@ import dev.akkraizen.berill.plugins.planner.data.PlannerTask
 import dev.akkraizen.berill.plugins.planner.data.eventsOn
 import dev.akkraizen.berill.plugins.planner.data.parse
 import dev.akkraizen.berill.plugins.planner.data.taskOrder
+import dev.akkraizen.berill.plugins.planner.data.plannerDayTotals
+import dev.akkraizen.berill.plugins.planner.i18n.pluginI18n
 import dev.akkraizen.berill.plugins.planner.i18n.CalendarText
 import dev.akkraizen.berill.plugins.planner.i18n.PlannerText
 import kotlinx.datetime.LocalDate
@@ -38,17 +40,20 @@ private class PlannerTodayWidget(private val tasks: PlannerData, private val cal
   override val description: Tr = PlannerText.widgetTodayDescription
   override val size = WidgetSize.Medium
 
-  private fun tasksOn(day: LocalDate): List<Item<PlannerTask>> =
-    tasks.tasks.all().filter { it.value.date == day.toString() }.sortedWith(taskOrder)
+  private fun tasksOn(day: LocalDate, all: List<Item<PlannerTask>>): List<Item<PlannerTask>> =
+    all.filter { it.value.date == day.toString() }.sortedWith(taskOrder)
 
   private fun eventsToday(day: LocalDate): List<Item<CalendarEvent>> = eventsOn(calendar.events.all(), day)
 
   override suspend fun content(request: WidgetRequest): WidgetContent {
     val day = today()
-    val dayTasks = tasksOn(day)
+    val allTasks = tasks.tasks.all()
+    val dayTasks = tasksOn(day, allTasks)
+    val totals = plannerDayTotals(allTasks.map { it.value }, day)
     val events = eventsToday(day)
-    val done = dayTasks.count { it.value.done }
+    val done = totals.completed
     val blocks = buildList {
+      if (totals.deferred > 0) add(WidgetBlock.Text(pluginI18n.text("planner.deferredCount", "count" to totals.deferred)))
       if (events.isNotEmpty())
         add(
           WidgetBlock.Rows(
@@ -81,7 +86,7 @@ private class PlannerTodayWidget(private val tasks: PlannerData, private val cal
     }
     return WidgetContent(
       title = PlannerText.today(),
-      subtitle = listOfNotNull(day.dayMonth(), dayTasks.takeIf { it.isNotEmpty() }?.let { PlannerText.widgetDone(done, it.size)() }).joinToString(" · "),
+      subtitle = listOfNotNull(day.dayMonth(), totals.takeIf { it.planned > 0 }?.let { PlannerText.widgetDone(done, it.planned)() }).joinToString(" · "),
       icon = WidgetIcon.Calendar,
       open = WidgetAction.Open(page = PlannerPlugin.PAGE_PLAN),
       buttons = listOf(WidgetButton(PlannerText.widgetAdd(), WidgetAction.Open(page = PlannerPlugin.PAGE_PLAN), WidgetIcon.Add)),
@@ -99,17 +104,19 @@ private class PlannerTodayWidget(private val tasks: PlannerData, private val cal
 
   override suspend fun summary(request: WidgetRequest): WidgetRow? {
     val day = today()
-    val dayTasks = tasksOn(day)
+    val allTasks = tasks.tasks.all()
+    val dayTasks = tasksOn(day, allTasks)
+    val totals = plannerDayTotals(allTasks.map { it.value }, day)
     val events = eventsToday(day)
-    if (dayTasks.isEmpty() && events.isEmpty()) return null
+    if (totals.planned == 0 && events.isEmpty()) return null
     val next = dayTasks.firstOrNull { !it.value.done }?.let { parse(it.value.text).title }
       ?: events.firstOrNull()?.value?.let { "${eventTimeLabel(it)} ${it.title}" }
     return WidgetRow(
       title = PlannerText.title(),
       subtitle = next,
-      trailing = if (dayTasks.isEmpty()) PlannerText.widgetEvents(events.size)() else PlannerText.widgetDone(dayTasks.count { it.value.done }, dayTasks.size)(),
+      trailing = if (totals.planned == 0) PlannerText.widgetEvents(events.size)() else PlannerText.widgetDone(totals.completed, totals.planned)(),
       action = WidgetAction.Open(pluginId = PlannerPlugin.id, page = PlannerPlugin.PAGE_PLAN),
-      tone = if (dayTasks.isNotEmpty() && dayTasks.all { it.value.done }) WidgetTone.Good else WidgetTone.Normal,
+      tone = if (totals.planned > 0 && totals.unfinished == 0) WidgetTone.Good else WidgetTone.Normal,
       icon = WidgetIcon.Calendar
     )
   }

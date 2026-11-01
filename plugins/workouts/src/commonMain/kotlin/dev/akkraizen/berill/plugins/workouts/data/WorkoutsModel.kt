@@ -292,9 +292,27 @@ internal fun cycles(ctx: PluginContext) = linkedCycles(ctx)
 
 internal fun logs(ctx: PluginContext) = ctx.data.collection(WorkoutsPlugin.LOGS, WorkoutLog.serializer())
 
-internal fun startWorkout(ctx: PluginContext, title: String, source: String?, exercises: List<LoggedExercise>) {
+internal fun createWorkout(ctx: PluginContext, title: String, source: String?, exercises: List<LoggedExercise>, date: String = today().toString()): String {
   val id = ctx.data.newId()
-  logs(ctx)
-    .save(id, WorkoutLog(today().toString(), title, source, exercises, createdAt = nowMillis()))
+  val suggested = withPreviousWeights(exercises, logs(ctx).all().map { it.value })
+  logs(ctx).save(id, WorkoutLog(date, title, source, suggested, createdAt = nowMillis()))
+  return id
+}
+
+internal fun startWorkout(ctx: PluginContext, title: String, source: String?, exercises: List<LoggedExercise>) {
+  val id = createWorkout(ctx, title, source, exercises)
   ctx.nav.openPlugin(WorkoutsPlugin.id, WorkoutsPlugin.LOG_ROUTE + id, WorkoutsPlugin.PAGE_JOURNAL)
+}
+
+internal fun withPreviousWeights(exercises: List<LoggedExercise>, history: List<WorkoutLog>): List<LoggedExercise> {
+  val completed = history.filter { it.finished }.sortedWith(compareByDescending<WorkoutLog> { it.date }.thenByDescending { it.createdAt })
+  return exercises.map { exercise ->
+    val previous = completed.firstNotNullOfOrNull { log -> log.exercises.firstOrNull {
+      it.name.equals(exercise.name, ignoreCase = true) && it.sets.any { set -> set.done && set.weight != null }
+    } }
+    exercise.copy(sets = exercise.sets.mapIndexed { index, set ->
+      val old = previous?.sets?.getOrNull(index)?.takeIf { it.done } ?: previous?.sets?.lastOrNull { it.done }
+      if (set.weight == null && set.durationSeconds == null && old?.weight != null) set.copy(weight = old.weight) else set
+    })
+  }
 }

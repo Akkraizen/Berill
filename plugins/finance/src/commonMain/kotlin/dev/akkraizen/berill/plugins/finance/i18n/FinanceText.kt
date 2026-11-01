@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.finance.i18n
 
+import dev.akkraizen.berill.plugins.finance.data.FinanceCategory
+
 internal object FinanceText {
 
   val title = pluginI18n.tr("finance.title")
@@ -12,6 +14,31 @@ internal object FinanceText {
   val addExpense = pluginI18n.tr("finance.addExpense")
   val category = pluginI18n.tr("finance.category")
 
+  private val categories = mapOf(
+    FinanceCategory.GROCERIES to pluginI18n.tr("finance.categories.groceries"),
+    FinanceCategory.CAFES to pluginI18n.tr("finance.categories.cafes"),
+    FinanceCategory.TRANSPORT to pluginI18n.tr("finance.categories.transport"),
+    FinanceCategory.HOUSING to pluginI18n.tr("finance.categories.housing"),
+    FinanceCategory.MOBILE to pluginI18n.tr("finance.categories.mobile"),
+    FinanceCategory.HEALTH to pluginI18n.tr("finance.categories.health"),
+    FinanceCategory.CLOTHES to pluginI18n.tr("finance.categories.clothes"),
+    FinanceCategory.ENTERTAINMENT to pluginI18n.tr("finance.categories.entertainment"),
+    FinanceCategory.GIFTS to pluginI18n.tr("finance.categories.gifts"),
+    FinanceCategory.EDUCATION to pluginI18n.tr("finance.categories.education"),
+    FinanceCategory.OTHER to pluginI18n.tr("finance.categories.other"),
+    FinanceCategory.SALARY to pluginI18n.tr("finance.categories.salary"),
+    FinanceCategory.SIDE_JOB to pluginI18n.tr("finance.categories.sideJob"),
+    FinanceCategory.INTEREST to pluginI18n.tr("finance.categories.interest"),
+    FinanceCategory.REFUND to pluginI18n.tr("finance.categories.refund"),
+    FinanceCategory.SAVINGS to pluginI18n.tr("finance.categories.savings")
+  )
+
+  fun categoryLabel(category: FinanceCategory): String =
+    categories[category]?.invoke() ?: category.name
+
+  fun categoryLabel(category: String): String =
+    FinanceCategory.fromName(category)?.let { categoryLabel(it) } ?: category
+
   val kindExpense = pluginI18n.tr("finance.kindExpense")
   val kindIncome = pluginI18n.tr("finance.kindIncome")
   val kindDeposit = pluginI18n.tr("finance.kindDeposit")
@@ -20,6 +47,7 @@ internal object FinanceText {
   val noAccount = pluginI18n.tr("finance.noAccount")
   val newOperation = pluginI18n.tr("finance.newOperation")
 
+  val savingsAccounts = pluginI18n.tr("finance.savingsAccounts")
   fun savingsAccounts(total: String) = pluginI18n.tr("finance.savingsAccounts", "total" to total)
 
   val account = pluginI18n.tr("finance.account")
@@ -27,6 +55,7 @@ internal object FinanceText {
   val savedToAccounts = pluginI18n.tr("finance.savedToAccounts")
   val leftFree = pluginI18n.tr("finance.leftFree")
   val expensesByCategory = pluginI18n.tr("finance.expensesByCategory")
+  val statsFlow = pluginI18n.tr("finance.stats.flow")
 
   fun monthOperations(n: Int) = pluginI18n.tr("finance.monthOperations", "n" to n)
 

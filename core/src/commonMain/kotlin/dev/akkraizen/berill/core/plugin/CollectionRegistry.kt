@@ -15,25 +15,25 @@ class CollectionRegistry(plugins: List<BerillPlugin>) {
 
   init {
     val problems = mutableListOf<String>()
-    val taken = core.associateWith { "ядро" }.toMutableMap()
+    val taken = core.associateWith { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.CollectionRegistry.m0") }.toMutableMap()
     val owners = linkedMapOf<String, BerillPlugin>()
     for (plugin in plugins) {
       for (name in plugin.collections.distinct()) {
         if (!NAME.matches(name)) {
           problems +=
-            "`${plugin.id}`: некорректное имя коллекции `$name` (a-z, 0-9, _; до 40 символов)"
+            dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.CollectionRegistry.m1", "p0" to (plugin.id), "p1" to (name))
           continue
         }
         val other = taken[name]
         if (other != null) {
-          problems += "коллекция `$name` объявлена и в `$other`, и в `${plugin.id}`"
+          problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.CollectionRegistry.m2", "p0" to (name), "p1" to (other), "p2" to (plugin.id))
           continue
         }
         taken[name] = plugin.id
         owners[name] = plugin
       }
     }
-    require(problems.isEmpty()) { "Ошибки в коллекциях плагинов:\n" + problems.joinToString("\n") }
+    require(problems.isEmpty()) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.CollectionRegistry.m3") + problems.joinToString("\n") }
     this.owners = owners
   }
 
@@ -59,7 +59,7 @@ internal class ScopedDataAccess(
 ) : DataAccess {
   private fun check(name: String) =
     require(name in allowed) {
-      "Плагин `$pluginId` обращается к коллекции `$name`, но не объявил её в collections (объявлены: ${allowed.sorted()})"
+      dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.CollectionRegistry.m4", "p0" to (pluginId), "p1" to (name), "p2" to (allowed.sorted()))
     }
 
   override fun <T> collection(name: String, serializer: KSerializer<T>): DataCollection<T> {

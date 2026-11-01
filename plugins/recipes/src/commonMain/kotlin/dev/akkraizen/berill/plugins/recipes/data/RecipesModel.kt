@@ -19,4 +19,4 @@ data class Recipe(
 
 internal fun recipes(ctx: PluginContext) = ctx.data.collection(RecipesPlugin.RECIPES, Recipe.serializer())
 
-internal const val ALL = "все"
+internal val ALL = RecipeFilter.ALL.name

@@ -17,6 +17,8 @@ interface PluginContext {
 
   val files: FileAccess
 
+  val reminders: ReminderAccess get() = NoReminders
+
   val scope: CoroutineScope
 
   val secrets: SecretStore

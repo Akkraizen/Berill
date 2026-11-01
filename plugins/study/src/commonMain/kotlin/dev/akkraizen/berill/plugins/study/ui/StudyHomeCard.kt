@@ -30,7 +30,7 @@ import dev.akkraizen.berill.plugins.study.data.activeSorted
 import dev.akkraizen.berill.plugins.study.data.tasks
 import dev.akkraizen.berill.plugins.study.i18n.StudyText
 
-fun statusIcon(status: String): ImageVector =
+fun statusIcon(status: dev.akkraizen.berill.plugins.study.data.TaskStatus): ImageVector =
   when (status) {
     DOING -> Icons.Outlined.Pending
     SUBMITTED -> Icons.Outlined.CheckCircle

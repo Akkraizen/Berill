@@ -112,7 +112,7 @@ internal fun GoogleCalendarSettings(ctx: PluginContext) {
       color = if (sync.error != null) MaterialTheme.colorScheme.error else muted
     )
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-      Button(enabled = !sync.running, onClick = { scope.launch { runCatching { google.sync() } } }) { Text(CalendarText.syncNow()) }
+      Button(enabled = !sync.running, onClick = { scope.launch { google.syncSafely() } }) { Text(CalendarText.syncNow()) }
       OutlinedButton(onClick = { scope.launch { google.signOut() } }) { Text(CalendarText.signOut()) }
     }
     if (calendars.isNotEmpty()) {

@@ -13,13 +13,13 @@ import kotlin.concurrent.thread
 
 class DesktopExternalPlugins(dir: File) : PluginPackageStore(dir, PLUGIN_JAR) {
   override fun codeProblems(code: ByteArray?): List<String> =
-    if (code == null) listOf("нет $PLUGIN_JAR") else BytecodeVerifier.verifyJar(code)
+    if (code == null) listOf(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.DesktopExternalPlugins.m0", "p0" to (PLUGIN_JAR))) else BytecodeVerifier.verifyJar(code)
 
   override val launcher: RunnerLauncher = object : RunnerLauncher {
     override fun start(manifest: PluginManifest, language: String, listener: RunnerListener): RunnerConnection {
       val pluginDir = File(dir, manifest.id)
       val jar = File(pluginDir, PLUGIN_JAR)
-      require(jar.isFile) { "нет $PLUGIN_JAR" }
+      require(jar.isFile) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.DesktopExternalPlugins.m1", "p0" to (PLUGIN_JAR)) }
       val process = ProcessBuilder(runnerCommand(pluginDir))
         .directory(pluginDir)
         .redirectErrorStream(false)
@@ -65,7 +65,7 @@ class DesktopExternalPlugins(dir: File) : PluginPackageStore(dir, PLUGIN_JAR) {
       }
       thread(isDaemon = true, name = "plugin-${manifest.id}-wait") {
         val code = runCatching { process.waitFor() }.getOrDefault(-1)
-        listener.onExit("код $code")
+        listener.onExit(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.DesktopExternalPlugins.m2", "p0" to (code)))
       }
       Runtime.getRuntime().addShutdownHook(Thread { process.destroyForcibly() })
       connection.send(ToRunner.Load(manifest.entry, language, code = jar.absolutePath))
@@ -94,6 +94,6 @@ private fun runnerCommand(workDir: File): List<String> {
     )
   }
   val self = ProcessHandle.current().info().command().orElse(null)
-    ?: error("не найден исполняемый файл приложения")
+    ?: error(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.DesktopExternalPlugins.m3"))
   return listOf(self, PLUGIN_RUNNER_FLAG)
 }

@@ -14,12 +14,12 @@ import dev.akkraizen.berill.plugins.study.StudyPlugin
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-const val TODO = "не начато"
-const val DOING = "в работе"
-const val SUBMITTED = "сдано"
+val TODO = TaskStatus.TODO
+val DOING = TaskStatus.DOING
+val SUBMITTED = TaskStatus.SUBMITTED
 val TASK_STATUSES = listOf(TODO, DOING, SUBMITTED)
 
-fun nextStatus(status: String) = TASK_STATUSES[(TASK_STATUSES.indexOf(status).coerceAtLeast(0) + 1) % TASK_STATUSES.size]
+fun nextStatus(status: TaskStatus) = TASK_STATUSES[(TASK_STATUSES.indexOf(status).coerceAtLeast(0) + 1) % TASK_STATUSES.size]
 
 internal const val TASK_TYPES_KEY = "taskTypes"
 
@@ -31,18 +31,7 @@ internal fun rememberTaskTypes(ctx: PluginContext): List<String> {
   return custom?.takeIf { it.isNotEmpty() } ?: TASK_TYPES
 }
 
-val TASK_TYPES = listOf(
-  "Лабораторная",
-  "Практическая",
-  "Курсовая",
-  "Реферат",
-  "Доклад",
-  "Контрольная",
-  "Зачёт",
-  "Экзамен",
-  "Проект",
-  "Другое"
-)
+val TASK_TYPES: List<String> get() = dev.akkraizen.berill.plugins.study.i18n.pluginI18n.list("study.defaultTaskTypes")
 
 @Serializable
 data class Subject(
@@ -62,12 +51,11 @@ data class Subject(
   val body: String? = null
 ) {
   val isExam: Boolean
-    get() = control?.contains("экзамен", ignoreCase = true) == true
+    get() = SubjectControl.EXAM.matches(control)
 
   val isCredit: Boolean
     get() =
-      control?.contains("зачёт", ignoreCase = true) == true ||
-        control?.contains("зачет", ignoreCase = true) == true
+      SubjectControl.CREDIT.matches(control)
 }
 
 @Serializable
@@ -76,11 +64,11 @@ data class StudyTask(
   val subject: String? = null,
   val type: String? = null,
   val deadline: String? = null,
-  val status: String = TODO,
+  val status: TaskStatus = TODO,
   val grade: String? = null,
   val body: String? = null
 ) {
-  val normalizedStatus: String
+  val normalizedStatus: TaskStatus
     get() = if (status in TASK_STATUSES) status else TODO
 
   val shortTitle: String

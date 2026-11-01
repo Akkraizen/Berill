@@ -31,6 +31,7 @@ import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 import javax.imageio.stream.MemoryCacheImageOutputStream
 import kotlin.math.roundToInt
+import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,6 +39,17 @@ import kotlinx.coroutines.withContext
 internal val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "gif", "bmp")
 
 internal class DesktopFileAccess : FileAccess {
+  override suspend fun saveFile(name: String, bytes: ByteArray, mimeType: String): Boolean {
+    val target = withContext(Dispatchers.Swing) {
+      val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Berill", java.awt.FileDialog.SAVE)
+      try {
+        dialog.file = name; dialog.isVisible = true
+        dialog.file?.let { java.io.File(dialog.directory, it) }
+      } finally { dialog.dispose() }
+    } ?: return false
+    return withContext(Dispatchers.IO) { target.writeBytes(bytes); true }
+  }
+
   override val supportsImageDrop: Boolean get() = true
 
   @OptIn(ExperimentalComposeUiApi::class)

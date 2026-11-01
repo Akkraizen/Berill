@@ -3,6 +3,7 @@ package dev.akkraizen.berill.api.ui.selection
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -10,11 +11,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.*
@@ -31,7 +35,9 @@ fun <T> DropdownField(
   icon: ((T) -> ImageVector?)? = null
 ) {
   var open by remember { mutableStateOf(false) }
-  Box(modifier) {
+  var anchorWidth by remember { mutableIntStateOf(0) }
+  val density = LocalDensity.current
+  Box(modifier.onSizeChanged { anchorWidth = it.width }) {
     OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) {
       val selectedIcon = if (selected != null) icon?.invoke(selected) else null
       if (selectedIcon != null) {
@@ -46,7 +52,8 @@ fun <T> DropdownField(
       )
       Ic(BerillIcons.Dropdown)
     }
-    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+    DropdownMenu(expanded = open, onDismissRequest = { open = false },
+      modifier = (if (anchorWidth > 0) Modifier.width(with(density) { anchorWidth.toDp() }) else Modifier).heightIn(max = 280.dp)) {
       options.forEach { option ->
         val optionIcon = icon?.invoke(option)
         DropdownMenuItem(

@@ -103,6 +103,22 @@ class SyncEncryption(
 
   private fun isParams(record: SyncRecord) = record.collection == Collections.SETTINGS && record.id == RECORD_ID
 
+  fun encryptAttachment(bytes: ByteArray): ByteArray {
+    check(state.value != E2eState.Locked) { "Encryption locked" }
+    return if (state.value == E2eState.On) "BRL1".encodeToByteArray() + crypto.encrypt(requireNotNull(key), bytes, "berill/attachment".encodeToByteArray())
+      else "BRL0".encodeToByteArray() + bytes
+  }
+
+  fun decryptAttachment(bytes: ByteArray): ByteArray? {
+    if (bytes.size < 4) return null
+    val data = bytes.copyOfRange(4, bytes.size)
+    return when (bytes.copyOfRange(0, 4).decodeToString()) {
+      "BRL0" -> data
+      "BRL1" -> key?.let { crypto.decrypt(it, data, "berill/attachment".encodeToByteArray()) }
+      else -> null
+    }
+  }
+
   fun encryptOutgoing(record: SyncRecord): SyncRecord? {
     if (isParams(record)) return record
     return when (_state.value) {

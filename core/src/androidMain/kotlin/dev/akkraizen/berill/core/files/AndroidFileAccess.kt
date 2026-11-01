@@ -23,10 +23,16 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 object DocumentPicker {
+  internal var saveLaunch: ((String) -> Unit)? = null
+  internal var savePending: ((Uri?) -> Unit)? = null
   internal var launch: (() -> Unit)? = null
   internal var pending: ((Uri?) -> Unit)? = null
 
   fun register(activity: ComponentActivity) {
+    val saver = activity.registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+      savePending?.invoke(uri); savePending = null
+    }
+    saveLaunch = { saver.launch(it) }
     val launcher = activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
       pending?.invoke(uri)
       pending = null
@@ -37,6 +43,22 @@ object DocumentPicker {
 
 internal class AndroidFileAccess(private val context: Context) : FileAccess {
   private val imageMutex = Mutex()
+  private val saveMutex = Mutex()
+
+  override suspend fun saveFile(name: String, bytes: ByteArray, mimeType: String): Boolean = saveMutex.withLock {
+    val uri = withContext(Dispatchers.Main) {
+      val launch = DocumentPicker.saveLaunch ?: return@withContext null
+      suspendCancellableCoroutine<Uri?> { cont ->
+        DocumentPicker.savePending = { if (cont.isActive) cont.resume(it) }
+        cont.invokeOnCancellation { DocumentPicker.savePending = null }
+        launch(name)
+      }
+    } ?: return@withLock false
+    withContext(Dispatchers.IO) {
+      context.contentResolver.openOutputStream(uri)?.use { it.write(bytes); true } ?: false
+    }
+  }
+
 
   override suspend fun pickImage(maxSide: Int): PickedFile? = imageMutex.withLock {
     require(maxSide > 0)

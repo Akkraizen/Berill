@@ -117,7 +117,8 @@ internal fun HabitsScreen(data: HabitsData) {
 
       LinearWavyProgressIndicator(
         progress = { if (active.isEmpty()) 0f else done / active.size.toFloat() },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        stopSize = 0.dp
       )
     }
     item {
@@ -190,7 +191,7 @@ internal fun HabitsScreen(data: HabitsData) {
         val base = def.label
           .trim()
           .lowercase()
-          .replace(Regex("[^a-zа-яё0-9]+"), "_")
+          .replace(Regex("""[^\p{L}\p{N}]+"""), "_")
           .trim('_')
           .ifEmpty { "habit" }
         val taken = defs.map { it.id }.toSet()
@@ -221,20 +222,23 @@ internal fun HabitsTodayCard(data: HabitsData) {
   Text(HabitsText.shortDoneOf(done, active.size)(), style = MaterialTheme.typography.headlineSmall)
   LinearWavyProgressIndicator(
     progress = { done / active.size.toFloat() },
-    modifier = Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxWidth(),
+        stopSize = 0.dp
   )
-  FlowRow(
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
-    active.forEach { h ->
-      val value = record.valueOf(h.id)
-      BerillChip(
-        selected = value >= h.value.defaultDuration,
-        onClick = { data.toggle(h.id, h.value, now, value) },
-        label = { Text(h.value.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        leadingIcon = { Ic(habitIcon(h.id, h.value), size = 18.dp) }
-      )
+  dev.akkraizen.berill.api.ui.layout.BoundedList {
+    FlowRow(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      active.forEach { h ->
+        val value = record.valueOf(h.id)
+        BerillChip(
+          selected = value >= h.value.defaultDuration,
+          onClick = { data.toggle(h.id, h.value, now, value) },
+          label = { Text(h.value.label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+          leadingIcon = { Ic(habitIcon(h.id, h.value), size = 18.dp) }
+        )
+      }
     }
   }
 }

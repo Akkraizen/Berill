@@ -17,6 +17,8 @@ import dev.akkraizen.berill.plugins.recipes.ui.RecipesGallery
 import dev.akkraizen.berill.plugins.recipes.widgets.recipesWidgets
 
 object RecipesPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.recipes.mcp.RecipesMcp(ctx)
+
   const val RECIPES = "recipes"
 
   const val IMAGES = "recipe_images"
@@ -39,6 +41,7 @@ object RecipesPlugin : BerillPlugin {
 
   @Composable
   override fun Screen(ctx: PluginContext) {
+    androidx.compose.runtime.CompositionLocalProvider(dev.akkraizen.berill.plugins.recipes.ui.LocalRecipeFiles provides ctx.files) {
     val route by ctx.nav.route.collectAsState()
     val r = route
 
@@ -49,6 +52,10 @@ object RecipesPlugin : BerillPlugin {
         RecipesGallery(ctx)
     }
   }
+
+  }
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionSearchSource(ctx, RECIPES, { title }, { "recipe:$it" }))
 
   override fun widgets(ctx: PluginContext) = recipesWidgets(ctx)
 }

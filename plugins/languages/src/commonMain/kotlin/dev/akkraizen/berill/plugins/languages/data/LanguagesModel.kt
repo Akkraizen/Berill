@@ -13,13 +13,13 @@ internal object LanguageSelection {
 
 internal fun List<Language>.selected(): String? = LanguageSelection.code.takeIf { c -> any { it.code == c } } ?: firstOrNull()?.code
 
-const val WORDS_SECTION = "Слова"
-const val PHRASES_SECTION = "Фразы"
+val WORDS_SECTION = WordSection.WORDS
+val PHRASES_SECTION = WordSection.PHRASES
 
 @Serializable
 data class Word(
   val language: String = "de",
-  val section: String = WORDS_SECTION,
+  val section: WordSection = WORDS_SECTION,
   val word: String = "",
   val pron: String? = null,
   val translation: String = "",

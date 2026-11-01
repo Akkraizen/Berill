@@ -97,6 +97,12 @@ internal fun WorkoutScreen(ctx: PluginContext, id: String) {
     x.copy(sets = x.sets.mapIndexed { i, set -> if (i == s) change(set) else set })
   }
 
+  LaunchedEffect(timer.value?.deadlineMillis, w.finished) {
+    val deadline = timer.value?.deadlineMillis
+    if (deadline == null || w.finished) ctx.reminders.cancel("workout:$id")
+    else ctx.reminders.schedule(dev.akkraizen.berill.api.Reminder("workout:$id", WorkoutsText.title(), WorkoutsText.timerDone(), deadline,
+      dev.akkraizen.berill.api.widgets.WidgetAction.Open(pluginId = "workouts", route = "log:$id", page = "journal"), event = dev.akkraizen.berill.api.ReminderEvent.TIMER))
+  }
   LaunchedEffect(timer.value, w.finished, w.exercises) {
     val active = timer.value ?: return@LaunchedEffect
     val ex = w.exercises.getOrNull(active.exercise)

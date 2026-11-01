@@ -8,6 +8,7 @@ import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.label
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.api.HomeCard
 import dev.akkraizen.berill.api.PluginContext
@@ -28,6 +29,8 @@ import dev.akkraizen.berill.plugins.workouts.ui.WorkoutsSettings
 import dev.akkraizen.berill.plugins.workouts.widgets.workoutsWidgets
 
 object WorkoutsPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.workouts.mcp.WorkoutsMcp(ctx)
+
   const val PROGRAMS = "workout_programs"
   const val CYCLES = "workout_cycles"
   const val LOGS = "workout_logs"
@@ -88,8 +91,10 @@ object WorkoutsPlugin : BerillPlugin {
     listOf(
       QuickAction("workout", WorkoutsText.quickWorkout, Icons.Outlined.FitnessCenter) {
         startWorkout(ctx, WorkoutsText.workoutTitle(), null, emptyList())
-      }
+      }.withPopup { close, error -> dev.akkraizen.berill.plugins.workouts.ui.QuickWorkoutDialog(ctx, close, error) }
     )
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionDaySource(ctx, LOGS, { title }, { "log:$it" }, page = PAGE_JOURNAL))
 
   override fun widgets(ctx: PluginContext) = workoutsWidgets(ctx)
 }

@@ -32,6 +32,8 @@ import kotlinx.coroutines.flow.map
 import dev.akkraizen.berill.plugins.study.widgets.studyWidgets
 
 object StudyPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.study.mcp.StudyMcp(ctx)
+
   const val SUBJECTS = "subjects"
   const val TASKS = "study_tasks"
 
@@ -85,7 +87,7 @@ object StudyPlugin : BerillPlugin {
   override fun homeCards(ctx: PluginContext) =
     listOf(HomeCard("deadlines", StudyText.deadlines, order = 20) { NearestDeadlines(ctx) })
 
-  override fun provides(ctx: PluginContext): List<Capability> =
+  private fun baseProvides(ctx: PluginContext): List<Capability> =
     listOf(
       object : DeadlineSource {
         override fun deadlines(): Flow<List<Deadline>> =

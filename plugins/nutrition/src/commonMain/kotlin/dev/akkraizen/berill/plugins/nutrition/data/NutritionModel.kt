@@ -35,7 +35,7 @@ data class FoodEntry(
 }
 
 @Serializable
-data class WeightEntry(val date: String, val kg: Double)
+data class WeightEntry(val date: String, val kg: Double, val source: String? = null)
 
 @Serializable
 data class WaterDay(val date: String, val ml: Int)

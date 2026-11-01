@@ -45,6 +45,7 @@ kotlin {
       implementation(libs.sqldelight.coroutines)
       implementation(libs.coil.networkKtor3)
       implementation(libs.materialKolor)
+      implementation(libs.atomicfu)
     }
     androidMain.dependencies {
       implementation(libs.kotlinx.coroutinesAndroid)

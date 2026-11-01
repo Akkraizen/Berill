@@ -55,6 +55,19 @@
     "recipes.widget.dayDescription": "Каждый день новый рецепт, сначала из избранного",
     "recipes.widget.noRecipes": "Добавьте рецепты в книгу рецептов",
     "recipes.widget.open": "Открыть",
-    "recipes.widget.another": "Другой"
+    "recipes.widget.another": "Другой",
+    "legacy.RecipeCategory.BREAKFAST": "Завтраки",
+    "legacy.RecipeCategory.SOUP": "Супы",
+    "legacy.RecipeCategory.MAIN": "Основные блюда",
+    "legacy.RecipeCategory.SIDE": "Гарниры",
+    "legacy.RecipeCategory.SALAD": "Салаты",
+    "legacy.RecipeCategory.SNACK": "Перекусы",
+    "legacy.RecipeCategory.BAKING": "Выпечка",
+    "legacy.RecipeCategory.DESSERT": "Десерты",
+    "legacy.RecipeCategory.DRINK": "Напитки",
+    "legacy.RecipeCategory.SAUCE": "Соусы",
+    "photos.addFailed": "Не удалось завершить добавление фотографий. Проверьте доступ к файлам и свободное место.",
+    "photos.loadFailed": "Фото недоступно. Проверьте подключение или восстановите вложение из резервной копии.",
+    "photos.retry": "Повторить загрузку"
   }
 }

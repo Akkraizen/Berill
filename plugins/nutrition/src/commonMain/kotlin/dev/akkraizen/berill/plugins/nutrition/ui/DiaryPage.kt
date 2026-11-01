@@ -74,6 +74,7 @@ private fun DiaryHome(ctx: PluginContext) {
 
   PluginList {
     item { DaySwitcher(date) }
+    item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx, date) }
     item {
       TwoPane(
         left = {

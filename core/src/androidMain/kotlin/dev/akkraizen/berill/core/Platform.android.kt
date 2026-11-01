@@ -25,7 +25,9 @@ fun createAndroidCore(context: Context, plugins: List<BerillPlugin>): BerillCore
     driver = AndroidSqliteDriver(BerillDatabase.Schema, context.applicationContext, "berill.db"),
     plugins = plugins,
     scope = coreScope(),
+    reminderScheduler = dev.akkraizen.berill.core.connections.AndroidReminderScheduler(context.applicationContext),
     files = AndroidFileAccess(context.applicationContext),
+    attachmentCache = dev.akkraizen.berill.core.attachments.FileAttachmentCache(File(context.applicationContext.filesDir, "attachments")),
     externalPlatform = runCatching {
       AndroidExternalPlugins(context, File(context.applicationContext.filesDir, "plugins"))
     }.getOrNull(),

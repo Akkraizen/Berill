@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
@@ -32,6 +33,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.CompositionLocalProvider
+import dev.akkraizen.berill.api.ui.interaction.LocalShortcuts
+import dev.akkraizen.berill.core.connections.handleShortcut
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,6 +47,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.key.*
+import dev.akkraizen.berill.core.connections.ConnectionTools
+import dev.akkraizen.berill.core.connections.ConnectionDialogs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,12 +74,22 @@ fun BerillShell(
 ) {
   val appearance by core.appearance.state.collectAsState()
 
+  val shortcuts by core.shortcuts.state.collectAsState()
+  CompositionLocalProvider(LocalShortcuts provides shortcuts) {
   key(I18n.language) {
     BerillTheme(appearance) {
       val stack by core.nav.stack.collectAsState()
       val plugins by core.plugins.enabled.collectAsState()
       val current = stack.last()
-      PlatformBackHandler(enabled = stack.size > 1) { core.nav.back() }
+      val noteId = (current as? Destination.Note)?.id
+      val editorContent = remember(core, noteId) { movableContentOf<Boolean> { showBack ->
+        noteId?.let { dev.akkraizen.berill.core.ui.notes.NoteEditor(core, it, showBack) }
+      } }
+      val editorSlot = remember(noteId, editorContent) { dev.akkraizen.berill.core.ui.notes.NoteEditorSlot(noteId, editorContent) }
+      val focusedNote by core.focusedNote.collectAsState()
+      val focusMode = current is Destination.Note && focusedNote == current.id
+      LaunchedEffect(current) { if (current !is Destination.Note || focusedNote != current.id) core.focusedNote.value = null }
+      PlatformBackHandler(enabled = stack.size > 1 || focusMode) { if (focusMode) core.focusedNote.value = null else core.nav.back() }
       var expandedSections by rememberSaveable { mutableStateOf(emptyList<String>()) }
       val activeSection = (current as? Destination.Plugin)?.id ?: (current as? Destination.PluginSettings)?.id
       LaunchedEffect(activeSection) {
@@ -86,7 +105,9 @@ fun BerillShell(
         current is Destination.PluginSettings || current is Destination.SettingsSection
       val onboarded by core.onboarded.collectAsState()
 
-      Box(Modifier.fillMaxSize()) {
+      CompositionLocalProvider(dev.akkraizen.berill.core.ui.notes.LocalNoteEditorSlot provides editorSlot) {
+      Box(Modifier.fillMaxSize().onPreviewKeyEvent { e -> core.handleShortcut(e)
+      }) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
           windowChrome?.invoke(if (onboarded) title else "Berill")
 
@@ -109,18 +130,35 @@ fun BerillShell(
               Onboarding(core, onFinish = core::finishOnboarding)
             else
               BoxWithConstraints(Modifier.fillMaxSize()) {
-                if (maxWidth >= 840.dp) {
+                if (focusMode && current is Destination.Note) {
+                  Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
+                    Surface(Modifier.widthIn(max = 800.dp).fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+                      dev.akkraizen.berill.core.ui.notes.NotesScreen(core, current.id, twoPane = false)
+                    }
+                  }
+                } else if (maxWidth >= 840.dp) {
                   var expanded by rememberSaveable { mutableStateOf(true) }
                   Surface(color = MaterialTheme.colorScheme.surface) {
                     Row(Modifier.fillMaxSize().safeDrawingPadding()) {
                       AnimatedSidebar(model, expanded, onToggle = { expanded = !expanded })
-                      Content(
-                        core,
-                        stack,
-                        plugins,
-                        showHeader = true,
-                        modifier = Modifier.weight(1f)
-                      )
+                      Column(Modifier.weight(1f)) {
+                        if (windowChrome == null) TopAppBar(
+                          title = { CompactTitle(title) },
+                          navigationIcon = {
+                            if (deep) IconButton(onClick = { core.nav.back() }) {
+                              Icon(Icons.AutoMirrored.Filled.ArrowBack, CoreText.back())
+                            }
+                          },
+                          actions = { ConnectionTools(core) }
+                        )
+                        Content(
+                          core,
+                          stack,
+                          plugins,
+                          showHeader = windowChrome != null,
+                          modifier = Modifier.weight(1f)
+                        )
+                      }
                     }
                   }
                 } else {
@@ -142,6 +180,7 @@ fun BerillShell(
                       topBar = {
                         TopAppBar(
                           title = { CompactTitle(title) },
+                          actions = { if (windowChrome == null) ConnectionTools(core) },
                           navigationIcon = {
                             if (deep) {
                               IconButton(onClick = { core.nav.back() }) {
@@ -171,8 +210,11 @@ fun BerillShell(
         }
         UndoDeletions(core.store, Modifier.align(Alignment.BottomCenter))
       }
+      ConnectionDialogs(core)
       overlay()
+      }
     }
+  }
   }
 }
 

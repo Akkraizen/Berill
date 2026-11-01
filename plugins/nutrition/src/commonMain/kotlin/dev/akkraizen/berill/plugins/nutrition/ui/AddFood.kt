@@ -68,43 +68,64 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun AddFoodScreen(ctx: PluginContext, date: String, initialMeal: String) {
+internal fun AddFoodScreen(ctx: PluginContext, date: String, initialMeal: String, onError: (Exception) -> Unit = { throw it }, header: (@Composable () -> Unit)? = null,
+  onCreated: ((Product, String, Double, Boolean) -> Unit)? = null) {
   var meal by
     rememberSaveable(initialMeal) {
       mutableStateOf(initialMeal.takeIf { it in MEALS } ?: MEAL_SNACK)
     }
-  var pending by remember { mutableStateOf<Product?>(null) }
-  val collection = remember(ctx) { foods(ctx) }
+  val quickDraft = LocalFoodDraft.current
+  var localPending by remember { mutableStateOf<Product?>(null) }
+  var portionHidden by remember { mutableStateOf(false) }
+  val pending = if (quickDraft != null) quickDraft.value.pending?.toProduct() else localPending
+  fun pick(product: Product?) {
+    portionHidden = false
+    if (quickDraft == null) localPending = product
+    else quickDraft.value = quickDraft.value.copy(pending = product?.toEntry(date, meal, product.defaultGrams, 0), inputs = quickDraft.value.inputs - FoodInput.GRAMS)
+  }
+  fun save(product: Product, grams: Double, again: Boolean) {
+    try {
+      if (onCreated != null) onCreated(product, meal, grams, again)
+      else {
+        collectionSave(ctx, product, date, meal, grams)
+        pick(null)
+        ctx.nav.back()
+      }
+    } catch (e: CancellationException) { throw e }
+      catch (e: Exception) { onError(e) }
+  }
   val dayTitle = date.toDateOrNull()?.dayTitle() ?: date
 
   PluginList {
+    if (header != null) item { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { header() } }
+    if (pending != null && portionHidden) item {
+      FilledTonalButton(onClick = { portionHidden = false }) { Text(pending.name) }
+    }
     item {
       DetailHeader(NutritionText.addTitle(NutritionText.mealLabel(meal), dayTitle)(), Icons.Outlined.Restaurant)
     }
-    item { ChoiceChips(MEALS, meal, { NutritionText.mealLabel(it) }, { meal = it }) }
+    item { ChoiceChips(MEALS, meal, { NutritionText.mealLabel(it) }, { meal = it; quickDraft?.let { draft -> draft.value = draft.value.copy(meal = it) } }) }
     item {
       TwoPane(
         left = {
-          SearchCard(ctx) { pending = it }
-          BarcodeCard(ctx) { pending = it }
+          SearchCard(ctx) { pick(it) }
+          BarcodeCard(ctx) { pick(it) }
         },
         right = {
-          RecentCard(ctx) { pending = it }
-          ManualCard { pending = it }
+          RecentCard(ctx) { pick(it) }
+          ManualCard { pick(it) }
         }
       )
     }
   }
 
-  pending?.let { product ->
+  pending?.takeUnless { portionHidden }?.let { product ->
     PortionDialog(
       product = product,
-      onDismiss = { pending = null },
-      onAdd = { grams ->
-        collection.save(ctx.data.newId(), product.toEntry(date, meal, grams, nowMillis()))
-        pending = null
-        ctx.nav.back()
-      }
+      onDismiss = { if (quickDraft != null) portionHidden = true else pick(null) },
+      onAdd = { grams -> save(product, grams, false) },
+      onAddMore = if (onCreated != null) ({ grams -> save(product, grams, true) }) else null,
+      enabled = date.toDateOrNull() != null
     )
   }
 }
@@ -113,7 +134,7 @@ internal fun AddFoodScreen(ctx: PluginContext, date: String, initialMeal: String
 private fun SearchCard(ctx: PluginContext, onPick: (Product) -> Unit) {
   val api = remember(ctx) { OpenFoodFacts(ctx) }
   val scope = rememberCoroutineScope()
-  var query by rememberDraft("nutrition/add/search")
+  var query by rememberFoodField(FoodInput.SEARCH, "nutrition/add/search")
   var loading by remember { mutableStateOf(false) }
   var results by remember { mutableStateOf<List<Product>>(emptyList()) }
   var message by remember { mutableStateOf<String?>(null) }
@@ -170,11 +191,14 @@ private fun SearchCard(ctx: PluginContext, onPick: (Product) -> Unit) {
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
     }
-    results.forEach { product ->
-      key(product.code ?: product.name) {
-        AppearAnimated { ProductRow(product, showImage = true) { onPick(product) } }
+    if (results.isNotEmpty()) dev.akkraizen.berill.api.ui.layout.BoundedList {
+      results.forEach { product ->
+        key(product.code ?: product.name) {
+          AppearAnimated { ProductRow(product, showImage = true) { onPick(product) } }
+        }
       }
     }
+
   }
 }
 
@@ -214,7 +238,7 @@ private fun ProductRow(product: Product, showImage: Boolean, onClick: () -> Unit
 private fun BarcodeCard(ctx: PluginContext, onPick: (Product) -> Unit) {
   val api = remember(ctx) { OpenFoodFacts(ctx) }
   val scope = rememberCoroutineScope()
-  var code by rememberDraft("nutrition/add/barcode")
+  var code by rememberFoodField(FoodInput.BARCODE, "nutrition/add/barcode")
   var loading by remember { mutableStateOf(false) }
   var message by remember { mutableStateOf<String?>(null) }
 
@@ -273,21 +297,24 @@ private fun RecentCard(ctx: PluginContext, onPick: (Product) -> Unit) {
     .take(12)
   SectionCard(NutritionText.recentTitle(), Icons.Outlined.History) {
     if (recent.isEmpty()) EmptyHint(NutritionText.noRecent())
-    recent.forEach { e ->
-      key(e.name, e.brand) {
-        ProductRow(e.toProduct(), showImage = false) { onPick(e.toProduct()) }
+    if (recent.isNotEmpty()) dev.akkraizen.berill.api.ui.layout.BoundedList {
+      recent.forEach { e ->
+        key(e.name, e.brand) {
+          ProductRow(e.toProduct(), showImage = false) { onPick(e.toProduct()) }
+        }
       }
     }
+
   }
 }
 
 @Composable
 private fun ManualCard(onPick: (Product) -> Unit) {
-  var name by rememberDraft("nutrition/add/manual/name")
-  var kcal by rememberDraft("nutrition/add/manual/kcal")
-  var protein by rememberDraft("nutrition/add/manual/protein")
-  var fat by rememberDraft("nutrition/add/manual/fat")
-  var carbs by rememberDraft("nutrition/add/manual/carbs")
+  var name by rememberFoodField(FoodInput.NAME, "nutrition/add/manual/name")
+  var kcal by rememberFoodField(FoodInput.KCAL, "nutrition/add/manual/kcal")
+  var protein by rememberFoodField(FoodInput.PROTEIN, "nutrition/add/manual/protein")
+  var fat by rememberFoodField(FoodInput.FAT, "nutrition/add/manual/fat")
+  var carbs by rememberFoodField(FoodInput.CARBS, "nutrition/add/manual/carbs")
   val k = parseAmount(kcal)?.takeIf { it >= 0 }
   val valid = name.isNotBlank() && k != null
   fun submit() {
@@ -350,12 +377,15 @@ private fun ManualCard(onPick: (Product) -> Unit) {
   }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun PortionDialog(product: Product, onDismiss: () -> Unit, onAdd: (Double) -> Unit) {
-  var grams by remember(product) { mutableStateOf(formatNum(product.defaultGrams)) }
+private fun PortionDialog(product: Product, onDismiss: () -> Unit, onAdd: (Double) -> Unit, onAddMore: ((Double) -> Unit)? = null, enabled: Boolean = true) {
+  var grams by if (LocalFoodDraft.current != null)
+    rememberFoodField(FoodInput.GRAMS, "nutrition/add/portion", formatNum(product.defaultGrams))
+  else remember(product) { mutableStateOf(formatNum(product.defaultGrams)) }
   val g = parseAmount(grams)?.takeIf { it > 0 }
-  val confirm: () -> Unit = { if (g != null) onAdd(g) }
-  DialogKeys(onConfirm = confirm, confirmEnabled = g != null, onDismiss = onDismiss)
+  val confirm: () -> Unit = { if (g != null && enabled) onAdd(g) }
+  DialogKeys(onConfirm = confirm, confirmEnabled = g != null && enabled, onDismiss = onDismiss)
   AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text(product.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
@@ -395,8 +425,15 @@ private fun PortionDialog(product: Product, onDismiss: () -> Unit, onAdd: (Doubl
       }
     },
     confirmButton = {
-      TextButton(onClick = confirm, enabled = g != null) { Text(NutritionText.add()) }
+      androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.End) {
+        if (onAddMore != null) TextButton(enabled = g != null && enabled, onClick = { g?.let(onAddMore) }) { Text(dev.akkraizen.berill.api.i18n.I18n.text("quick.saveMore")) }
+        TextButton(onClick = confirm, enabled = g != null && enabled) { Text(NutritionText.add()) }
+      }
     },
     dismissButton = { TextButton(onClick = onDismiss) { Text(NutritionText.cancel()) } }
   )
+}
+
+private fun collectionSave(ctx: PluginContext, product: Product, date: String, meal: String, grams: Double) {
+  foods(ctx).save(ctx.data.newId(), product.toEntry(date, meal, grams, nowMillis()))
 }

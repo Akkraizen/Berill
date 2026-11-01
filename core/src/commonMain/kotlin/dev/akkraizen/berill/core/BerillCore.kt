@@ -52,7 +52,9 @@ class BerillCore(
   val desktop: DesktopIntegration? = null,
   oauth: OAuthRedirects = NoOAuthRedirects,
   private val appearanceCache: AppearanceCache? = null,
-  mcpFactory: ((BerillCore) -> McpAccess)? = null
+  mcpFactory: ((BerillCore) -> McpAccess)? = null,
+  reminderScheduler: dev.akkraizen.berill.core.connections.ReminderScheduler = dev.akkraizen.berill.core.connections.NoReminderScheduler,
+  attachmentCache: dev.akkraizen.berill.core.attachments.AttachmentCache = dev.akkraizen.berill.core.attachments.MemoryAttachmentCache()
 ) {
   private val db = BerillDatabase(driver)
 
@@ -63,13 +65,30 @@ class BerillCore(
 
   val store = LocalStore(db, clock)
   val data: DataAccess = StoreDataAccess(store)
+  val homePreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "home.preferences", dev.akkraizen.berill.core.preferences.HomePreferences.serializer(), dev.akkraizen.berill.core.preferences.HomePreferences())
+  val editorPreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "editor.preferences", dev.akkraizen.berill.core.preferences.EditorPreferences.serializer(), dev.akkraizen.berill.core.preferences.EditorPreferences())
+  val notificationPreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "notifications.preferences", dev.akkraizen.berill.core.notifications.NotificationPreferences.serializer(), dev.akkraizen.berill.core.notifications.NotificationPreferences())
+  val notifications = dev.akkraizen.berill.core.notifications.NotificationCenter(store) { notificationPreferences.state.value }
+  val focusedNote = MutableStateFlow<String?>(null)
   val nav = AppNavigator(newNoteId = data::newId)
+  val editorSessions = dev.akkraizen.berill.core.notes.EditorSessions()
   val notes = NotesRepository(data) { Clock.System.now().toEpochMilliseconds() }
   val http: HttpAccess = KtorHttpAccess()
 
+  val encryption = SyncEncryption(store, vault)
+  val attachments = dev.akkraizen.berill.core.attachments.Attachments(attachmentCache, store, vault, encryption)
+  private val pluginFiles = object : FileAccess by files {
+    override suspend fun storeAttachment(bytes: ByteArray): String = attachments.put(bytes)
+    override suspend fun loadAttachment(hash: String): ByteArray? = attachments.get(hash)
+  }
+
+  val reminders = dev.akkraizen.berill.core.connections.ReminderCenter(store, reminderScheduler, notificationPreferences) { error ->
+    connections.errors.report(dev.akkraizen.berill.core.connections.FailureOperation.REMINDERS, error)
+  }.also { center -> center.onDaily = { notifications.reminders("daily", it) }; center.onTimer = { notifications.reminders("timer", listOf(it)) }; center.onCancel = notifications::cancelReminder }
+
   val external: ExternalPlugins = loadExternalPlugins(externalPlatform, plugins, scope)
   val collections = CollectionRegistry(plugins + external.loaded)
-  val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, files, vault, oauth)
+  val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, pluginFiles, vault, oauth, reminders)
   val appearance = AppearanceStore(store, scope)
 
   val widgets: WidgetHub = WidgetHub(
@@ -80,8 +99,12 @@ class BerillCore(
     now = { Clock.System.now().toEpochMilliseconds() }
   )
 
-  val encryption = SyncEncryption(store, vault)
-  val sync = SyncEngine(store, deviceId, scope, encryption, vault)
+  val sync = SyncEngine(store, deviceId, scope, encryption, vault, beforeUpload = { attachments.uploadPending() })
+
+  var healthImport: dev.akkraizen.berill.core.connections.HealthImport? = null
+
+  val shortcuts = dev.akkraizen.berill.core.connections.ShortcutSettings(store)
+  val connections = dev.akkraizen.berill.core.connections.Connections(this)
 
   val updates = AppUpdates(store)
 
@@ -97,7 +120,11 @@ class BerillCore(
   }
 
   fun onEscapeKey(): Boolean {
+    for (dialog in listOf(notifications.conflictsOpen, notifications.open, connections.searchOpen, connections.dayOpen, connections.trashOpen)) {
+      if (dialog.value) { dialog.value = false; return true }
+    }
     if (HotKeys.runEscape()) return true
+    if (focusedNote.value != null) { focusedNote.value = null; return true }
     if (!_onboarded.value) return false
     if (nav.stack.value == listOf(Destination.Home)) return false
     nav.selectTab(Tab.Home)
@@ -116,6 +143,10 @@ class BerillCore(
   }
 
   init {
+    scope.launch { store.conflicts.state.collect { notifications.conflicts(it) } }
+    scope.launch { updates.state.collect { state ->
+      if (state is dev.akkraizen.berill.core.update.UpdateCheck.Available) notifications.publish(dev.akkraizen.berill.core.notifications.Notice("update:${state.update.version}", dev.akkraizen.berill.core.notifications.NoticeKind.UPDATE, at = Clock.System.now().toEpochMilliseconds(), detail = state.update.version))
+    } }
     I18n.language = appearance.state.value.appLanguage
     scope.launch {
       appearance.state.collect {
@@ -126,6 +157,17 @@ class BerillCore(
   }
 
   fun start() {
+    scope.launch {
+      while (true) {
+        for (plugin in this@BerillCore.plugins.enabled.value) {
+          for (source in dev.akkraizen.berill.core.connections.tolerateSource(plugin.id, {}) { plugin.provides(this@BerillCore.plugins.context(plugin)) }.orEmpty().filterIsInstance<dev.akkraizen.berill.api.MaintenanceSource>()) {
+            try { source.update() } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { dev.akkraizen.berill.core.log.AppLog.error("maintenance", plugin.id, e) }
+          }
+        }
+        kotlinx.coroutines.delay(60000)
+      }
+    }
+    reminders.start(this.plugins, scope)
     sync.start()
     updates.start(scope)
     desktop?.start()

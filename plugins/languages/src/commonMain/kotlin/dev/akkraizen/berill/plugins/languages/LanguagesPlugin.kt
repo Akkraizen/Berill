@@ -14,6 +14,9 @@ import dev.akkraizen.berill.plugins.languages.ui.OverviewPage
 import dev.akkraizen.berill.plugins.languages.widgets.languagesWidgets
 
 object LanguagesPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.languages.mcp.LanguagesMcp(ctx)
+
+  const val REVIEWS = "lang_reviews"
   const val WORDS = "lang_words"
   const val LESSONS = "lang_lessons"
 
@@ -27,7 +30,7 @@ object LanguagesPlugin : BerillPlugin {
     get() = LanguagesText.description()
 
   override val installedByDefault = true
-  override val collections = listOf(WORDS, LESSONS)
+  override val collections = listOf(REVIEWS, WORDS, LESSONS)
   override val hasSettings = true
 
   @Composable
@@ -46,6 +49,8 @@ object LanguagesPlugin : BerillPlugin {
       DictionaryScreen(ctx)
     }
   )
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionSearchSource(ctx, LESSONS, { title }, { "lesson:$it" }))
 
   override fun widgets(ctx: PluginContext) = languagesWidgets(ctx)
 }

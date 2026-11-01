@@ -18,6 +18,8 @@ import dev.akkraizen.berill.plugins.watching.ui.WatchingSettings
 import dev.akkraizen.berill.plugins.watching.widgets.watchingWidgets
 
 object WatchingPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.watching.mcp.WatchingMcp(ctx)
+
   const val TITLES = "titles"
 
   override val id = "watching"
@@ -59,6 +61,8 @@ object WatchingPlugin : BerillPlugin {
 
   override fun homeCards(ctx: PluginContext) =
     listOf(HomeCard("watching", WatchingText.watchingNowCard, order = 31) { WatchingNow(ctx) })
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionShareSource(ctx, TITLES, title, "title:"))
 
   override fun widgets(ctx: PluginContext) = watchingWidgets(ctx)
 }

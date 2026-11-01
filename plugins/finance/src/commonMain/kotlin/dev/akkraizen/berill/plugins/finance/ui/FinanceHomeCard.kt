@@ -53,7 +53,12 @@ internal fun FinanceHomeCard(ctx: PluginContext) {
     listOf(
       Stat(FinanceText.income(), formatRub(s.income), tone = Tone.Good, icon = kindIcon(INCOME)),
       Stat(FinanceText.expenses(), formatRub(s.expense), tone = Tone.Bad, icon = kindIcon(EXPENSE)),
-      Stat(FinanceText.onAccounts(), formatRub(savings), tone = Tone.Info, icon = Icons.Outlined.AccountBalance)
+      Stat(
+        FinanceText.onAccounts(),
+        formatRub(savings),
+        tone = Tone.Info,
+        icon = Icons.Outlined.AccountBalance
+      )
     ),
     minTileWidth = 120.dp
   )
@@ -64,14 +69,26 @@ internal fun FinanceHomeCard(ctx: PluginContext) {
   if (category !in categories[EXPENSE].orEmpty()) category = categories.firstFor(EXPENSE)
   fun addExpense() {
     val value = parseAmount(amount)?.takeIf { it > 0 } ?: return
-    opsCollection.save(ctx.data.newId(), Operation(EXPENSE, value, category, null, today().toString()))
+    opsCollection.save(
+      ctx.data.newId(),
+      Operation(EXPENSE, value, category, null, today().toString())
+    )
     amount = ""
   }
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+  Row(
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     BerillTextField(
       amount,
       { amount = it },
-      placeholder = { Text(FinanceText.quickExpense(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+      placeholder = {
+        Text(
+          FinanceText.quickExpense(),
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      },
       singleLine = true,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
       modifier = Modifier.weight(1f),
@@ -85,7 +102,7 @@ internal fun FinanceHomeCard(ctx: PluginContext) {
     FinanceText.category(),
     categories[EXPENSE].orEmpty(),
     category,
-    { it },
+    { FinanceText.categoryLabel(it) },
     { category = it }
   )
 }

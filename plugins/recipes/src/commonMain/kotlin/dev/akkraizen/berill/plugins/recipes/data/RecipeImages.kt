@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import dev.akkraizen.berill.api.Item
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.plugins.recipes.RecipesPlugin
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -25,6 +26,17 @@ internal fun recipeImages(ctx: PluginContext) = ctx.data.collection(RecipesPlugi
 internal fun rememberRecipeImages(ctx: PluginContext): Map<String, List<Item<RecipeImage>>> {
   val collection = remember(ctx) { recipeImages(ctx) }
   val all by remember(collection) { collection.observe() }.collectAsState(emptyList())
+  androidx.compose.runtime.LaunchedEffect(all) {
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+    for (item in all) {
+      ensureActive()
+      if (item.value.data.isBlank() || item.value.data.startsWith("blob:")) continue
+      val bytes = runCatching { kotlin.io.encoding.Base64.decode(item.value.data) }.getOrNull() ?: continue
+      val hash = ctx.files.storeAttachment(bytes) ?: continue
+      ctx.data.raw(RecipesPlugin.IMAGES).patchIfCurrent(item.id, "data", kotlinx.serialization.json.JsonPrimitive(item.value.data), kotlinx.serialization.json.JsonPrimitive("blob:$hash"))
+    }
+    }
+  }
   return remember(all) {
     all.groupBy { it.value.recipe }.mapValues { (_, list) -> orderedRecipeImages(list) }
   }

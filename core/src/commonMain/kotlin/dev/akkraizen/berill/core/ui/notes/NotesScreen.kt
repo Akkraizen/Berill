@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -18,6 +19,15 @@ import dev.akkraizen.berill.api.ui.animation.AnimatedRoute
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.notes.*
 import dev.akkraizen.berill.core.ui.CoreText
+
+internal class NoteEditorSlot(val id: String?, val render: @Composable (Boolean) -> Unit)
+internal val LocalNoteEditorSlot = staticCompositionLocalOf<NoteEditorSlot?> { null }
+
+@Composable
+private fun Editor(core: BerillCore, id: String, showBack: Boolean) {
+  val slot = LocalNoteEditorSlot.current
+  if (slot != null && slot.id == id) slot.render(showBack) else NoteEditor(core, id, showBack)
+}
 
 @Composable
 internal fun NotesScreen(core: BerillCore, openedId: String?, twoPane: Boolean) {
@@ -35,7 +45,7 @@ internal fun NotesScreen(core: BerillCore, openedId: String?, twoPane: Boolean) 
               modifier = Modifier.align(Alignment.Center)
             )
           } else {
-            NoteEditor(core, id, showBack = false)
+            Editor(core, id, showBack = false)
           }
         }
       }
@@ -43,7 +53,7 @@ internal fun NotesScreen(core: BerillCore, openedId: String?, twoPane: Boolean) 
   } else {
 
     AnimatedRoute(openedId) { id ->
-      if (id == null) NotesList(core, null) else NoteEditor(core, id, showBack = true)
+      if (id == null) NotesList(core, null) else Editor(core, id, showBack = true)
     }
   }
 }

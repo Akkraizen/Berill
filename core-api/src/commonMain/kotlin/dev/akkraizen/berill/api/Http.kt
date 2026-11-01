@@ -29,7 +29,13 @@ class HttpResponse(val status: Int, val body: String) {
 
 fun formBody(fields: Map<String, String>): String = fields.entries.joinToString("&") { (k, v) -> "${k.urlEncode()}=${v.urlEncode()}" }
 
-class HttpException(val status: Int, message: String = "HTTP $status") : Exception(message)
+enum class HttpFailureKind { STATUS, NETWORK, TIMEOUT, INVALID_RESPONSE, INVALID_REQUEST }
+open class HttpException(val status: Int, message: String = "HTTP $status") : Exception(message) {
+  var kind: HttpFailureKind = HttpFailureKind.STATUS
+    private set
+  // Keep the original constructor available to already compiled plugins.
+  constructor(status: Int, message: String = "HTTP $status", kind: HttpFailureKind) : this(status, message) { this.kind = kind }
+}
 
 fun String.urlEncode(): String =
   buildString {

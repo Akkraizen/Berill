@@ -33,7 +33,6 @@ import dev.akkraizen.berill.api.ui.cards.SectionCard
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.feedback.Tone
-import dev.akkraizen.berill.api.ui.feedback.color
 import dev.akkraizen.berill.api.ui.fields.DateTextField
 import dev.akkraizen.berill.api.ui.fields.MonthSwitcher
 import dev.akkraizen.berill.api.ui.formatRub
@@ -67,7 +66,7 @@ import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
 internal val NO_ACCOUNT: String
   get() = FinanceText.noAccount()
 
-internal fun kindTone(kind: String) =
+internal fun kindTone(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind) =
   when (kind) {
     INCOME -> Tone.Good
     EXPENSE -> Tone.Bad
@@ -88,8 +87,18 @@ internal fun FinanceScreen(ctx: PluginContext) {
   val route by ctx.nav.route.collectAsState()
   LaunchedEffect(route) {
     val r = route
+    if (r?.startsWith("operation:") == true) {
+      val id = r.removePrefix("operation:")
+      opsCollection.get(id)?.let { editingOp = Item(id, it) }
+    }
     if (r != null && r.startsWith(FinancePlugin.ADD_ROUTE)) {
-      quickAdd = Operation(EXPENSE, 0.0, r.removePrefix(FinancePlugin.ADD_ROUTE).ifBlank { null }, null, today().toString())
+      quickAdd = Operation(
+        EXPENSE,
+        0.0,
+        r.removePrefix(FinancePlugin.ADD_ROUTE).ifBlank { null },
+        null,
+        today().toString()
+      )
       ctx.nav.back()
     }
   }
@@ -100,7 +109,7 @@ internal fun FinanceScreen(ctx: PluginContext) {
   val byCategory = monthOps
     .map { it.value }
     .filter { it.kind == EXPENSE }
-    .groupBy { it.category ?: "Другое" }
+    .groupBy { it.category ?: dev.akkraizen.berill.plugins.finance.data.FinanceCategory.OTHER.name }
     .mapValues { (_, list) -> list.sumOf { it.amount } }
     .toList()
     .sortedByDescending { it.second }
@@ -143,6 +152,7 @@ internal fun FinanceScreen(ctx: PluginContext) {
         monthOps.forEach { item -> OperationRow(item.value) { editingOp = item } }
       }
     }
+    item { FinanceAutomation(ctx, ops) }
     item { FinanceStatistics(ops.map { it.value }, month) }
     if (byCategory.isNotEmpty())
       item {
@@ -217,7 +227,7 @@ internal fun FinanceScreen(ctx: PluginContext) {
 @Composable
 private fun AddOperationForm(
   accounts: List<String>,
-  categories: Map<String, List<String>>,
+  categories: Map<dev.akkraizen.berill.plugins.finance.data.OperationKind, List<String>>,
   onSave: (Operation) -> Unit
 ) {
   var kind by rememberSaveable { mutableStateOf(EXPENSE) }
@@ -241,7 +251,15 @@ private fun AddOperationForm(
           needsAccount(kind) -> account?.takeIf { it in accounts } ?: accounts.first()
           else -> account?.takeIf { it in accounts }
         }
-        onSave(Operation(kind, value, category, acc, day.toString(), comment.trim().ifEmpty { null }))
+        onSave(
+          Operation(
+            kind,
+            value,
+            category,
+            acc,
+            day.toString(),
+            comment.trim().ifEmpty { null })
+        )
         amount = ""
         date = today().toString()
         comment = ""
@@ -273,13 +291,18 @@ private fun AddOperationForm(
       modifier = Modifier.fillMaxWidth(),
       onSubmit = { submit() }
     )
-    DateTextField(date, { date = it }, FinanceText.date(), isError = date.toDateOrNull() == null, onSubmit = { submit() })
+    DateTextField(
+      date,
+      { date = it },
+      FinanceText.date(),
+      isError = date.toDateOrNull() == null,
+      onSubmit = { submit() })
   }
   DropdownField(
     FinanceText.category(),
     categories[kind].orEmpty(),
     category,
-    { it },
+    { FinanceText.categoryLabel(it) },
     { category = it },
     Modifier.fillMaxWidth()
   )
@@ -306,4 +329,5 @@ private fun AddOperationForm(
   Button(onClick = { submit() }) { Text(FinanceText.save()) }
 }
 
-internal fun formatPlain(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
+internal fun formatPlain(value: Double): String =
+  if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()

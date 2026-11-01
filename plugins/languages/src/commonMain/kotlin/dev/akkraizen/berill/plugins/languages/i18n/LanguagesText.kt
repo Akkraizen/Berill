@@ -17,11 +17,11 @@ internal object LanguagesText {
   val language = pluginI18n.tr("languages.language")
   val dictionaryEmpty = pluginI18n.tr("languages.dictionaryEmpty")
 
-  fun sectionLabel(section: String): String =
+  fun sectionLabel(section: dev.akkraizen.berill.plugins.languages.data.WordSection): String =
     when (section) {
       WORDS_SECTION -> pluginI18n.tr("languages.sectionLabel")()
       PHRASES_SECTION -> pluginI18n.tr("languages.sectionLabel.2")()
-      else -> section
+      else -> section.name
     }
 
   val studiedLanguages = pluginI18n.tr("languages.studiedLanguages")
@@ -110,6 +110,7 @@ internal object LanguagesText {
   val date = pluginI18n.tr("languages.date")
   val lessonNotes = pluginI18n.tr("languages.lessonNotes")
 
+  val reviewDone = pluginI18n.tr("languages.reviewDone")
   val widgetCardTitle = pluginI18n.tr("languages.widget.cardTitle")
   val widgetCardDescription = pluginI18n.tr("languages.widget.cardDescription")
   val widgetCardChoose = pluginI18n.tr("languages.widget.cardChoose")

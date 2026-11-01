@@ -76,6 +76,7 @@ private fun JournalList(ctx: PluginContext) {
         }
       }
     }
+    item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx) }
     if (sorted.isEmpty()) item { SectionCard { EmptyHint(WorkoutsText.noLogs()) } }
     items(sorted, key = { it.id }) { item ->
       LogRow(item.value) { ctx.nav.open(WorkoutsPlugin.LOG_ROUTE + item.id) }

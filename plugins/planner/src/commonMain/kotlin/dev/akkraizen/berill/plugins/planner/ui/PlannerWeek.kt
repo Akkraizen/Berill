@@ -36,15 +36,18 @@ internal fun GoalsCard(data: PlannerData, weekId: String, goals: List<Item<Plann
   SectionCard(PlannerText.weekGoals(), Icons.Outlined.Flag) {
     if (goals.isNotEmpty()) ProgressLine(goals.count { it.value.done } / goals.size.toFloat())
     if (goals.isEmpty()) EmptyHint(PlannerText.noGoals())
-    goals.forEach { item ->
-      TaskRow(
-        item.value,
-        compact = false,
-        onToggle = { data.edit(item.id) { it.copy(done = !it.done) } },
-        onNextDay = null,
-        onDelete = { data.tasks.delete(item.id) }
-      )
+    if (goals.isNotEmpty()) dev.akkraizen.berill.api.ui.layout.BoundedList {
+      goals.forEach { item ->
+        TaskRow(
+          item.value,
+          compact = false,
+          onToggle = { data.edit(item.id) { it.copy(done = !it.done) } },
+          onNextDay = null,
+          onDelete = { data.tasks.delete(item.id) }
+        )
+      }
     }
+
     Row(verticalAlignment = Alignment.CenterVertically) {
       BerillTextField(
         input,

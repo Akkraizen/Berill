@@ -99,10 +99,10 @@ internal fun McpSettings(mcp: McpAccess) {
         CodeBlock(
           McpText.desktopTitle(),
           if (mcp.bridgeCommand != null) McpText.desktopHint() else McpText.desktopHttpHint(),
-          desktopConfig
+          if (showToken) desktopConfig else desktopConfig.replace(mcp.token(), "<TOKEN>"), desktopConfig
         )
-        val codeCommand = remember(status, version) { mcp.claudeCodeCommand() }
-        CodeBlock(McpText.codeTitle(), McpText.codeHint(), codeCommand)
+        val httpConfig = remember(status, version) { mcp.httpClientConfig() }
+        CodeBlock(McpText.codeTitle(), McpText.codeHint(), if (showToken) httpConfig else httpConfig.replace(mcp.token(), "<TOKEN>"), httpConfig)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
           Text(McpText.token(), style = MaterialTheme.typography.titleSmall)
           Text(McpText.tokenHint(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -136,12 +136,12 @@ internal fun McpSettings(mcp: McpAccess) {
 }
 
 @Composable
-private fun CodeBlock(title: String, hint: String, code: String) {
+private fun CodeBlock(title: String, hint: String, code: String, copyValue: String = code) {
   Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
     Text(title, style = MaterialTheme.typography.titleSmall)
     Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Monospace(code)
-    CopyButton { code }
+    CopyButton { copyValue }
   }
 }
 

@@ -55,20 +55,20 @@ object BytecodeVerifier {
         if (name.endsWith(".class")) {
           if (name == "module-info.class" || name.startsWith("META-INF/")) continue
           val bytes = zip.readBytes()
-          if (bytes.size > 4 * 1024 * 1024) problems += "$name: класс слишком большой"
+          if (bytes.size > 4 * 1024 * 1024) problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m0", "p0" to (name))
           classes[name.removeSuffix(".class")] = bytes
         }
       }
     }
-    if (classes.isEmpty()) problems += "в plugin.jar нет классов"
+    if (classes.isEmpty()) problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m1")
     val own = classes.keys
     for ((internalName, bytes) in classes) {
       val dotted = internalName.replace('/', '.')
       if (RESERVED_PACKAGES.any { dotted.startsWith(it) })
-        problems += "$dotted: класс в зарезервированном пакете"
+        problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m2", "p0" to (dotted))
       problems +=
         runCatching { verifyClass(internalName, bytes, own) }
-          .getOrElse { listOf("$dotted: не читается (${it.message})") }
+          .getOrElse { listOf(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m3", "p0" to (dotted), "p1" to (it.message))) }
       if (problems.size > 50) break
     }
     return problems.distinct()
@@ -76,7 +76,7 @@ object BytecodeVerifier {
 
   private fun verifyClass(className: String, bytes: ByteArray, own: Set<String>): List<String> {
     val input = DataInputStream(ByteArrayInputStream(bytes))
-    require(input.readInt() == 0xCAFEBABE.toInt()) { "не class-файл" }
+    require(input.readInt() == 0xCAFEBABE.toInt()) { dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m4") }
     input.readUnsignedShort()
     input.readUnsignedShort()
     val count = input.readUnsignedShort()
@@ -120,7 +120,7 @@ object BytecodeVerifier {
           refA[i] = input.readUnsignedShort()
         }
 
-        else -> error("неизвестный тег $tag")
+        else -> error(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m5", "p0" to (tag)))
       }
       i++
     }
@@ -142,7 +142,7 @@ object BytecodeVerifier {
         7 -> {
           val type = elementType(utf8[refA[k]] ?: continue) ?: continue
           if (type !in own && !PluginClassRules.isAllowed(type.replace('/', '.'))) {
-            problems += "$self: использует запрещённый класс ${type.replace('/', '.')}"
+            problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m6", "p0" to (self), "p1" to (type.replace('/', '.')))
           }
         }
 
@@ -153,10 +153,10 @@ object BytecodeVerifier {
           val nat = refB[k]
           val member = utf8.getOrNull(refA.getOrNull(nat) ?: 0) ?: continue
           if (owner == "java/lang/Class" && member in deniedClassMethods) {
-            problems += "$self: рефлексия Class.$member запрещена"
+            problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m7", "p0" to (self), "p1" to (member))
           }
           if (owner.startsWith("java/lang/invoke/") && "$owner.$member" !in allowedInvoke) {
-            problems += "$self: вызов ${owner.replace('/', '.')}.$member запрещён"
+            problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.BytecodeVerifier.m8", "p0" to (self), "p1" to (owner.replace('/', '.')), "p2" to (member))
           }
         }
       }

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.MonitorWeight
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.label
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.api.HomeCard
 import dev.akkraizen.berill.api.PluginContext
@@ -30,6 +31,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 object NutritionPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = baseProvides(ctx) + dev.akkraizen.berill.plugins.nutrition.mcp.NutritionMcp(ctx)
+
+  const val HEALTH = "health_days"
   const val FOODS = "food_entries"
   const val WEIGHTS = "body_weight"
   const val WATER = "water_days"
@@ -51,7 +55,7 @@ object NutritionPlugin : BerillPlugin {
     get() = NutritionText.description()
 
   override val installedByDefault = true
-  override val collections = listOf(FOODS, WEIGHTS, WATER)
+  override val collections = listOf(HEALTH, FOODS, WEIGHTS, WATER)
 
   override val permissions = PluginPermissions(
     network = listOf(
@@ -88,8 +92,10 @@ object NutritionPlugin : BerillPlugin {
       QuickAction("food", NutritionText.quickFood, Icons.Outlined.Restaurant) {
         val hour = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
         openAdd(ctx, today().toString(), mealByHour(hour))
-      }
+      }.withPopup { close, error -> dev.akkraizen.berill.plugins.nutrition.ui.QuickFoodDialog(ctx, close, error) }
     )
+
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.plugins.nutrition.data.NutritionHealth(ctx), dev.akkraizen.berill.api.CollectionDaySource(ctx, HEALTH, { "Health Connect" }, describe = { "${it.fields["steps"] ?: 0} · ${it.fields["sleepMinutes"] ?: 0} min" }), dev.akkraizen.berill.api.DailyReminderSource(ctx, { title }, listOf(12, 15, 18), { (ctx.data.raw(WATER).get(dev.akkraizen.berill.api.ui.today().toString())?.fields?.get("ml")?.toString()?.toIntOrNull() ?: 0) < dev.akkraizen.berill.plugins.nutrition.data.nutritionPrefs(ctx).norm.waterMl }), dev.akkraizen.berill.api.CollectionDaySource(ctx, WEIGHTS, { title }, describe = { "${it.fields["kg"]} kg" }), dev.akkraizen.berill.api.CollectionDaySource(ctx, FOODS, { title }, describe = { it.label() + " · " + (it.fields["grams"]?.toString() ?: "") + " g" }), dev.akkraizen.berill.api.CollectionDaySource(ctx, WATER, { title }, describe = { "${it.fields["ml"]} ml" }))
 
   override fun widgets(ctx: PluginContext) = nutritionWidgets(ctx)
 }

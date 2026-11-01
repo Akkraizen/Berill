@@ -45,15 +45,33 @@ import dev.akkraizen.berill.plugins.recipes.i18n.RecipesText
 import dev.akkraizen.berill.plugins.recipes.i18n.pluginI18n
 import kotlin.io.encoding.Base64
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import androidx.compose.material3.TextButton
+
+private enum class PhotoFailure(val key: String) { ADD("photos.addFailed"), LOAD("photos.loadFailed") }
+
+internal val LocalRecipeFiles = androidx.compose.runtime.staticCompositionLocalOf<dev.akkraizen.berill.api.FileAccess> { dev.akkraizen.berill.api.NoFileAccess }
 
 @Composable
-internal fun rememberImageBytes(data: String?): ByteArray? = remember(data) { data?.let { runCatching { Base64.decode(it) }.getOrNull() } }
+internal fun rememberImageBytes(data: String?, revision: Int = 0, onFailure: () -> Unit = {}): ByteArray? {
+  val failed by rememberUpdatedState(onFailure)
+  val files = LocalRecipeFiles.current
+  val bytes by androidx.compose.runtime.produceState<ByteArray?>(null, data, files, revision) {
+    value = try {
+      if (data?.startsWith("blob:") == true) files.loadAttachment(data.removePrefix("blob:")).also { if (it == null) failed() }
+      else data?.let { Base64.decode(it) }
+    } catch (e: CancellationException) { throw e } catch (_: Exception) { failed(); null }
+  }
+  return bytes
+}
 
 @Composable
 internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, images: List<Item<RecipeImage>>) {
   val collection = remember(ctx) { recipeImages(ctx) }
   val scope = rememberCoroutineScope()
   var busy by remember { mutableStateOf(false) }
+  var photoError by remember { mutableStateOf<PhotoFailure?>(null) }
+  var imageRevision by remember { mutableStateOf(0) }
   var viewing by remember { mutableStateOf<String?>(null) }
   val currentImages by rememberUpdatedState(images)
   var dragging by remember { mutableStateOf<String?>(null) }
@@ -66,14 +84,14 @@ internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, 
     }
   }
 
-  fun addFiles(files: List<PickedFile>) {
+  suspend fun addFiles(files: List<PickedFile>) {
     val last = collection.all().filter { it.value.recipe == recipeId }
       .maxOfOrNull { it.value.position ?: it.value.createdAt } ?: -1L
     val created = nowMillis()
     files.forEachIndexed { index, file ->
       collection.save(ctx.data.newId(), RecipeImage(
         recipeId,
-        Base64.encode(file.bytes),
+        ctx.files.storeAttachment(file.bytes)?.let { "blob:$it" } ?: Base64.encode(file.bytes),
         file.mimeType,
         created + index,
         last + index + 1
@@ -81,24 +99,22 @@ internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, 
     }
   }
 
-  fun attach() {
+  suspend fun addSafely(pick: suspend () -> List<PickedFile>) {
     if (busy) return
-    scope.launch {
-      busy = true
-      try {
-        addFiles(ctx.files.pickImages())
-      } finally {
-        busy = false
-      }
-    }
+    busy = true; photoError = null
+    try { addFiles(pick()) }
+    catch (e: CancellationException) { throw e }
+    catch (_: Exception) { photoError = PhotoFailure.ADD }
+    finally { busy = false }
   }
+  fun attach() { scope.launch { addSafely { ctx.files.pickImages() } } }
 
   Column(
-    Modifier.fillMaxWidth().then(ctx.files.imageDropTarget(enabled = !busy, onDrop = ::addFiles)),
+    Modifier.fillMaxWidth().then(ctx.files.imageDropTarget(enabled = !busy, onDrop = { files -> scope.launch { addSafely { files } } })),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     val main = images.firstOrNull()
-    val mainBytes = rememberImageBytes(main?.value?.data)
+    val mainBytes = rememberImageBytes(main?.value?.data, imageRevision) { photoError = PhotoFailure.LOAD }
     Cover(
       recipe.cover,
       categoryIcon(recipe.category),
@@ -118,7 +134,7 @@ internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, 
       verticalAlignment = Alignment.CenterVertically
     ) {
       images.forEach { image ->
-        val bytes = rememberImageBytes(image.value.data)
+        val bytes = rememberImageBytes(image.value.data, imageRevision) { photoError = PhotoFailure.LOAD }
         Cover(
           null,
           categoryIcon(recipe.category),
@@ -157,6 +173,10 @@ internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, 
             Ic(Icons.Outlined.AddPhotoAlternate, size = 28.dp, tint = MaterialTheme.colorScheme.onSecondaryContainer)
         }
       }
+    }
+    photoError?.let { problem ->
+      Text(pluginI18n.text(problem.key), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+      if (problem == PhotoFailure.LOAD) TextButton(onClick = { photoError = null; imageRevision++ }) { Text(pluginI18n.text("photos.retry")) }
     }
     if (images.isEmpty()) {
       Text(

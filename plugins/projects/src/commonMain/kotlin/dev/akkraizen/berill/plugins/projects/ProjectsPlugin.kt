@@ -16,6 +16,8 @@ import dev.akkraizen.berill.plugins.projects.ui.ProjectScreen
 import dev.akkraizen.berill.plugins.projects.ui.ProjectsBoard
 
 object ProjectsPlugin : BerillPlugin {
+  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.plugins.projects.mcp.ProjectsMcp(ctx))
+
   const val PROJECTS = "projects"
 
   override val id = "projects"

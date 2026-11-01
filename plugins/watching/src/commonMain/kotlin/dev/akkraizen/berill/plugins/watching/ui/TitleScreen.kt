@@ -217,7 +217,7 @@ internal fun TitleSearch(ctx: PluginContext, kinopoisk: Boolean, onClose: () -> 
     search = { q -> if (kinopoisk) kp.search(q) else shikimori.search(q) },
     errorText = { e -> if (kinopoisk) Kinopoisk.errorText(e) else Shikimori.errorText(e) },
     onPick = { hit ->
-      val sameKind: (String) -> Boolean = { media ->
+      val sameKind: (dev.akkraizen.berill.plugins.watching.data.MediaKind) -> Boolean = { media ->
         if (kinopoisk) media != ANIME else media == ANIME
       }
       val existing = collection.all().firstOrNull {

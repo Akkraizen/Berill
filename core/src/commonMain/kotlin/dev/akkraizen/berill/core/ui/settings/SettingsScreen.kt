@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Shield
@@ -51,6 +52,9 @@ import dev.akkraizen.berill.core.ui.CoreText
 import dev.akkraizen.berill.core.ui.onboarding.OnboardingText
 
 internal enum class SettingsPage(val icon: ImageVector, private val tr: Tr, private val hintTr: Tr) {
+  Home(Icons.Outlined.Apps, Tr("workspace.home"), Tr("workspace.homeHint")),
+  Notifications(Icons.Outlined.Notifications, Tr("notification.settings"), Tr("notification.settingsHint")),
+  Editor(Icons.Outlined.Computer, Tr("editor.settings"), Tr("editor.settingsHint")),
   Appearance(Icons.Outlined.Palette, CoreText.appearance, Tr("core.settings.appearanceHint")),
   Sync(Icons.Outlined.Sync, CoreText.sync, Tr("core.settings.syncHint")),
   Sections(Icons.Outlined.Extension, CoreText.sections, Tr("core.settings.sectionsHint")),
@@ -151,6 +155,9 @@ private fun SettingsPageContent(core: BerillCore, page: SettingsPage, showTitle:
   PluginList {
     if (showTitle) item { Text(page.title, style = MaterialTheme.typography.headlineSmall) }
     when (page) {
+      SettingsPage.Home -> item { SectionCard { HomeSettings(core) } }
+      SettingsPage.Notifications -> item { SectionCard { NotificationSettings(core) } }
+      SettingsPage.Editor -> item { SectionCard { EditorSettings(core) } }
       SettingsPage.Appearance -> item { SectionCard { AppearanceSettings(core) } }
       SettingsPage.Sync -> item { SectionCard { SyncSettings(core) } }
       SettingsPage.Sections -> {
@@ -159,7 +166,10 @@ private fun SettingsPageContent(core: BerillCore, page: SettingsPage, showTitle:
       }
       SettingsPage.External -> item { SectionCard { ExternalPluginsSettings(core) } }
       SettingsPage.Data -> item { SectionCard { DataOverview(core) } }
-      SettingsPage.Desktop -> core.desktop?.let { desktop -> item { SectionCard { DesktopSettings(desktop) } } }
+      SettingsPage.Desktop -> core.desktop?.let { desktop ->
+        item { SectionCard { DesktopSettings(desktop) } }
+        item { ShortcutsSettings(core) }
+      }
       SettingsPage.Assistants -> core.mcp?.let { mcp -> item { SectionCard { McpSettings(mcp) } } }
       SettingsPage.About -> {
         item { SectionCard { AboutApp(core) } }

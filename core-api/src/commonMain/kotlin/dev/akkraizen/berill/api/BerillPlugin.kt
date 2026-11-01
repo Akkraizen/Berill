@@ -54,4 +54,10 @@ class PluginPage(val id: String, val title: Tr, val icon: ImageVector, val conte
 
 class HomeCard(val id: String, val title: Tr, val order: Int = 100, val content: @Composable () -> Unit)
 
-class QuickAction(val id: String, val label: Tr, val icon: ImageVector, val run: () -> Unit)
+typealias QuickActionPopup = @Composable (onDismiss: () -> Unit, onError: (Exception) -> Unit) -> Unit
+
+class QuickAction(val id: String, val label: Tr, val icon: ImageVector, val run: () -> Unit) {
+  var popup: QuickActionPopup? = null
+    private set
+  fun withPopup(content: QuickActionPopup): QuickAction = apply { popup = content }
+}

@@ -11,6 +11,9 @@ import dev.akkraizen.berill.api.Deadline
 import dev.akkraizen.berill.api.DeadlineSource
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.all
+import dev.akkraizen.berill.api.observe
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import dev.akkraizen.berill.api.set
 import dev.akkraizen.berill.api.string
 import dev.akkraizen.berill.core.db.BerillDatabase
@@ -160,6 +163,25 @@ class KernelTest {
       withTimeout(5_000) { c.plugins.enabled.first { list -> list.none { it.id == "study" } } }
       assertTrue(planner.capabilities.all<DeadlineSource>().isEmpty())
     }
+
+  @Test
+  fun capabilitySubscriptionsFollowDisableEnableAndUninstallWithoutLosingSettings() = runBlocking {
+    val c = core(TestPlugin("study", withDeadlines = true), TestPlugin("planner"))
+    val study = c.plugins.context(c.plugins.byId("study")!!)
+    study.settings.set("preference", "keep")
+    val observed = c.plugins.capabilities.observe<DeadlineSource>().stateIn(scope, SharingStarted.Eagerly, emptyList())
+    withTimeout(5000) { observed.first { it.size == 1 } }
+    c.plugins.setEnabled("study", false)
+    withTimeout(5000) { observed.first { it.isEmpty() } }
+    assertEquals("keep", study.settings.string("preference"))
+    c.plugins.setEnabled("study", true)
+    withTimeout(5000) { observed.first { it.size == 1 } }
+    c.plugins.uninstall("study")
+    withTimeout(5000) { observed.first { it.isEmpty() } }
+    c.plugins.install("study")
+    withTimeout(5000) { observed.first { it.size == 1 } }
+    assertEquals("keep", study.settings.string("preference"))
+  }
 
   @Test
   fun `настройки плагина сохраняются`() {

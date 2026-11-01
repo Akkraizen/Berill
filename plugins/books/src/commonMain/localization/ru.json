@@ -50,6 +50,9 @@
     "books.widget.readingTitle": "Сейчас читаю",
     "books.widget.readingDescription": "Книги в процессе чтения, касание открывает книгу",
     "books.widget.readingDays": "день {n}",
-    "books.widget.pages": "{n} стр."
+    "books.widget.pages": "{n} стр.",
+    "legacy.BookStatus.NOT_STARTED": "не начато",
+    "legacy.BookStatus.READING": "в процессе чтения",
+    "legacy.BookStatus.DONE": "прочитано"
   }
 }

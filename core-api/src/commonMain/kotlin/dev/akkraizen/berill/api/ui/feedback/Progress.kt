@@ -24,6 +24,7 @@ fun ProgressLine(
   LinearProgressIndicator(
     progress = { animated },
     modifier = modifier.fillMaxWidth().height(6.dp),
-    color = color
+    color = color,
+    drawStopIndicator = {}
   )
 }

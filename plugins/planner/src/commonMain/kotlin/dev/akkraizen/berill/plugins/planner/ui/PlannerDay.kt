@@ -53,6 +53,8 @@ import dev.akkraizen.berill.plugins.planner.data.PlannerData
 import dev.akkraizen.berill.plugins.planner.data.PlannerTask
 import dev.akkraizen.berill.plugins.planner.data.parse
 import dev.akkraizen.berill.plugins.planner.data.taskOrder
+import dev.akkraizen.berill.plugins.planner.data.plannerDayTotals
+import dev.akkraizen.berill.plugins.planner.i18n.pluginI18n
 import dev.akkraizen.berill.plugins.planner.i18n.PlannerText
 import kotlinx.datetime.LocalDate
 
@@ -67,7 +69,8 @@ internal fun DayCard(
 ) {
   val tasks = all.filter { it.value.date == date.toString() }.sortedWith(taskOrder)
   val dayDeadlines = deadlines.filter { it.date == date }
-  val done = tasks.count { it.value.done }
+  val totals = plannerDayTotals(all.map { it.value }, date)
+  val done = totals.completed
   val isToday = date == today()
   var input by rememberDraft("planner/day/$date")
 
@@ -95,36 +98,41 @@ internal fun DayCard(
             modifier = Modifier.weight(1f)
           )
           Text(
-            "${date.dayMonthShort()} · $done/${tasks.size}",
+            "${date.dayMonthShort()} · $done/${totals.planned}",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
           )
         }
-      if (tasks.isNotEmpty()) ProgressLine(done / tasks.size.toFloat())
-      dayDeadlines.forEach { d ->
-        Row(
-          Modifier.interactive(bleed = 6.dp) { data.ctx.nav.openPlugin(d.pluginId, d.route) },
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-          Ic(Icons.Outlined.Alarm, size = 18.dp, tint = MaterialTheme.colorScheme.error)
-          Text(
-            PlannerText.deadline(d.title)(),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium
+      if (totals.planned > 0) ProgressLine(done / totals.planned.toFloat())
+      if (totals.deferred > 0) Text(pluginI18n.text("planner.deferredCount", "count" to totals.deferred),
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+      dev.akkraizen.berill.api.ui.layout.BoundedList {
+        dayDeadlines.forEach { d ->
+          Row(
+            Modifier.interactive(bleed = 6.dp) { data.ctx.nav.openPlugin(d.pluginId, d.route) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Ic(Icons.Outlined.Alarm, size = 18.dp, tint = MaterialTheme.colorScheme.error)
+            Text(
+              PlannerText.deadline(d.title)(),
+              color = MaterialTheme.colorScheme.error,
+              style = MaterialTheme.typography.bodyMedium
+            )
+          }
+        }
+        if (totals.planned == 0 && dayDeadlines.isEmpty()) EmptyHint(PlannerText.empty())
+        tasks.forEach { item ->
+          TaskRow(
+            item.value,
+            compact = compact,
+            onToggle = { data.edit(item.id) { it.copy(done = !it.done) } },
+            onNextDay = { data.edit(item.id) { it.rescheduled(date.plusDays(1)) } },
+            onDelete = { data.tasks.delete(item.id) }
           )
         }
       }
-      if (tasks.isEmpty() && dayDeadlines.isEmpty()) EmptyHint(PlannerText.empty())
-      tasks.forEach { item ->
-        TaskRow(
-          item.value,
-          compact = compact,
-          onToggle = { data.edit(item.id) { it.copy(done = !it.done) } },
-          onNextDay = { data.edit(item.id) { it.copy(date = date.plusDays(1).toString()) } },
-          onDelete = { data.tasks.delete(item.id) }
-        )
-      }
+
       Row(verticalAlignment = Alignment.CenterVertically) {
         BerillTextField(
           input,

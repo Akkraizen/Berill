@@ -31,27 +31,29 @@ internal fun ReadingNow(ctx: PluginContext) {
   val reading = all.filter { it.value.normalizedStatus == READING }
     .sortedByDescending { it.value.started ?: "" }
   if (reading.isEmpty()) EmptyHint(BooksText.nothingReading())
-  reading.forEach { item ->
-    Row(
-      Modifier.interactive(bleed = 6.dp) {
-        ctx.nav.openPlugin(BooksPlugin.id, BooksPlugin.BOOK_ROUTE + item.id)
-      },
-      horizontalArrangement = Arrangement.spacedBy(12.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Cover(item.value.cover, Icons.Outlined.MenuBook, Modifier.size(40.dp, 60.dp))
-      Column {
-        Text(
-          item.value.title,
-          style = MaterialTheme.typography.titleSmall,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis
-        )
-        Text(
-          item.value.author ?: BooksText.bookFallback(),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+  if (reading.isNotEmpty()) dev.akkraizen.berill.api.ui.layout.BoundedList {
+    reading.forEach { item ->
+      Row(
+        Modifier.interactive(bleed = 6.dp) {
+          ctx.nav.openPlugin(BooksPlugin.id, BooksPlugin.BOOK_ROUTE + item.id)
+        },
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Cover(item.value.cover, Icons.Outlined.MenuBook, Modifier.size(40.dp, 60.dp))
+        Column {
+          Text(
+            item.value.title,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+          )
+          Text(
+            item.value.author ?: BooksText.bookFallback(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
       }
     }
   }

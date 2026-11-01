@@ -23,6 +23,7 @@ import dev.akkraizen.berill.protocol.Collections
 
 @Composable
 internal fun DataOverview(core: BerillCore) {
+  dev.akkraizen.berill.core.connections.ArchiveSettings(core)
   val counts by core.store.observeCounts().collectAsState(emptyMap())
 
   fun owner(name: String) =

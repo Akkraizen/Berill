@@ -97,7 +97,7 @@
     "planner.stats.week": "Weekly tasks",
     "planner.stats.planned": "Planned",
     "planner.stats.done": "Completed",
-    "planner.stats.hint": "Tasks are grouped by their scheduled date, rather than completion time.",
+    "planner.stats.hint": "A rescheduled task remains planned and unfinished on its original date, and is also counted on its new date.",
     "planner.widget.todayTitle": "Today's plan",
     "planner.widget.todayDescription": "Tasks and events for the day; check off tasks on the widget",
     "planner.widget.add": "Add",
@@ -113,6 +113,8 @@
     "planner.widget.noEvents": "No events",
     "planner.widget.noUpcoming": "No upcoming events",
     "planner.widget.openDay": "Day",
-    "planner.widget.newEvent": "Event"
+    "planner.widget.newEvent": "Event",
+    "planner.deferredCount": "Moved to other days: {count}",
+    "planner.stats.unfinished": "Unfinished"
   }
 }

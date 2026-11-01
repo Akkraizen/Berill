@@ -242,8 +242,8 @@ internal fun SubjectScreen(ctx: PluginContext, id: String) {
               StudyText.name()
             )
             ChoiceChips(
-              listOf("экзамен", "зачёт"),
-              if (s.isExam) "экзамен" else "зачёт",
+              listOf(dev.akkraizen.berill.plugins.study.data.SubjectControl.EXAM.wire, dev.akkraizen.berill.plugins.study.data.SubjectControl.CREDIT.wire),
+              if (s.isExam) dev.akkraizen.berill.plugins.study.data.SubjectControl.EXAM.wire else dev.akkraizen.berill.plugins.study.data.SubjectControl.CREDIT.wire,
               { StudyText.controlLabel(it) },
               { c -> update { it.copy(control = c) } }
             )

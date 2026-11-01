@@ -16,22 +16,22 @@ import dev.akkraizen.berill.plugins.finance.i18n.FinanceText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-const val EXPENSE = "расход"
-const val INCOME = "доход"
-const val DEPOSIT = "пополнение"
-const val WITHDRAW = "снятие"
+val EXPENSE = OperationKind.EXPENSE
+val INCOME = OperationKind.INCOME
+val DEPOSIT = OperationKind.DEPOSIT
+val WITHDRAW = OperationKind.WITHDRAW
 val KINDS = listOf(EXPENSE, INCOME, DEPOSIT, WITHDRAW)
 
-fun kindLabel(kind: String) =
+fun kindLabel(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind) =
   when (kind) {
     EXPENSE -> FinanceText.kindExpense()
     INCOME -> FinanceText.kindIncome()
     DEPOSIT -> FinanceText.kindDeposit()
     WITHDRAW -> FinanceText.kindWithdraw()
-    else -> kind
+    else -> kind.name
   }
 
-fun kindIcon(kind: String): ImageVector =
+fun kindIcon(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind): ImageVector =
   when (kind) {
     EXPENSE -> Icons.Outlined.TrendingDown
     INCOME -> Icons.Outlined.TrendingUp
@@ -40,41 +40,74 @@ fun kindIcon(kind: String): ImageVector =
     else -> Icons.Outlined.Receipt
   }
 
-const val INTEREST = "Проценты"
+val INTEREST = FinanceCategory.INTEREST.name
 
-val CATEGORIES: Map<String, List<String>> = mapOf(
+enum class FinanceCategory {
+  GROCERIES,
+  CAFES,
+  TRANSPORT,
+  HOUSING,
+  MOBILE,
+  HEALTH,
+  CLOTHES,
+  ENTERTAINMENT,
+  GIFTS,
+  EDUCATION,
+  OTHER,
+  SALARY,
+  SIDE_JOB,
+  INTEREST,
+  REFUND,
+  SAVINGS;
+
+  companion object {
+    fun fromName(name: String): FinanceCategory? =
+      entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
+  }
+}
+
+val CATEGORIES: Map<dev.akkraizen.berill.plugins.finance.data.OperationKind, List<String>> = mapOf(
   EXPENSE to
     listOf(
-      "Продукты",
-      "Кафе и рестораны",
-      "Транспорт",
-      "Жильё и ЖКХ",
-      "Связь и подписки",
-      "Здоровье",
-      "Одежда",
-      "Развлечения",
-      "Подарки",
-      "Образование",
-      "Другое"
+      FinanceCategory.GROCERIES.name,
+      FinanceCategory.CAFES.name,
+      FinanceCategory.TRANSPORT.name,
+      FinanceCategory.HOUSING.name,
+      FinanceCategory.MOBILE.name,
+      FinanceCategory.HEALTH.name,
+      FinanceCategory.CLOTHES.name,
+      FinanceCategory.ENTERTAINMENT.name,
+      FinanceCategory.GIFTS.name,
+      FinanceCategory.EDUCATION.name,
+      FinanceCategory.OTHER.name
     ),
-  INCOME to listOf("Зарплата", "Подработка", INTEREST, "Подарки", "Возврат", "Другое"),
-  DEPOSIT to listOf("Накопления"),
-  WITHDRAW to listOf("Накопления")
+  INCOME to listOf(
+    FinanceCategory.SALARY.name,
+    FinanceCategory.SIDE_JOB.name,
+    FinanceCategory.INTEREST.name,
+    FinanceCategory.GIFTS.name,
+    FinanceCategory.REFUND.name,
+    FinanceCategory.OTHER.name
+  ),
+  DEPOSIT to listOf(FinanceCategory.SAVINGS.name),
+  WITHDRAW to listOf(FinanceCategory.SAVINGS.name)
 )
 
-fun Map<String, List<String>>.firstFor(kind: String): String = this[kind]?.firstOrNull() ?: "Другое"
+fun Map<dev.akkraizen.berill.plugins.finance.data.OperationKind, List<String>>.firstFor(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind): String =
+  this[kind]?.firstOrNull() ?: FinanceCategory.OTHER.name
 
-internal fun categoriesKey(kind: String) = "categories.$kind"
+internal fun categoriesKey(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind) = "categories.${kind.legacy}"
 
 val EDITABLE_KINDS = listOf(EXPENSE, INCOME)
 
-fun needsAccount(kind: String) = kind == DEPOSIT || kind == WITHDRAW
+fun needsAccount(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind) = kind == DEPOSIT || kind == WITHDRAW
 
-fun mayHaveAccount(kind: String, category: String?) = needsAccount(kind) || (kind == INCOME && category == INTEREST)
+fun mayHaveAccount(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind, category: String?) =
+  needsAccount(kind) || (kind == INCOME && category == INTEREST)
 
 @Serializable
 data class Operation(
-  val kind: String = EXPENSE,
+  val kind: dev.akkraizen.berill.plugins.finance.data.OperationKind = EXPENSE,
   val amount: Double = 0.0,
   val category: String? = null,
   val account: String? = null,
@@ -107,11 +140,13 @@ data class MonthSummary(val income: Double, val expense: Double, val saved: Doub
 }
 
 fun summary(ops: List<Item<Operation>>, month: YearMonth): MonthSummary {
-  val inMonth = ops.filter { it.value.date.toDateOrNull()?.let { d -> d in month } == true }.map { it.value }
+  val inMonth =
+    ops.filter { it.value.date.toDateOrNull()?.let { d -> d in month } == true }.map { it.value }
 
-  fun sum(kind: String) = inMonth.filter { it.kind == kind }.sumOf { it.amount }
+  fun sum(kind: dev.akkraizen.berill.plugins.finance.data.OperationKind) = inMonth.filter { it.kind == kind }.sumOf { it.amount }
 
-  val interestToAccounts = inMonth.filter { it.kind == INCOME && it.account != null }.sumOf { it.amount }
+  val interestToAccounts =
+    inMonth.filter { it.kind == INCOME && it.account != null }.sumOf { it.amount }
   return MonthSummary(sum(INCOME), sum(EXPENSE), sum(DEPOSIT) - sum(WITHDRAW) + interestToAccounts)
 }
 
@@ -133,6 +168,8 @@ fun opsOfMonth(ops: List<Item<Operation>>, month: YearMonth): List<Item<Operatio
   ops.filter { it.value.date.toDateOrNull()?.let { d -> d in month } == true }
     .sortedWith(compareByDescending<Item<Operation>> { it.value.date }.thenByDescending { it.id })
 
-internal fun operations(ctx: PluginContext) = ctx.data.collection(FinancePlugin.OPERATIONS, Operation.serializer())
+internal fun operations(ctx: PluginContext) =
+  ctx.data.collection(FinancePlugin.OPERATIONS, Operation.serializer())
 
-internal fun accounts(ctx: PluginContext) = ctx.data.collection(FinancePlugin.ACCOUNTS, Account.serializer())
+internal fun accounts(ctx: PluginContext) =
+  ctx.data.collection(FinancePlugin.ACCOUNTS, Account.serializer())

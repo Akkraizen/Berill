@@ -28,18 +28,22 @@ class McpBridge(
 ) {
   private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
   private var current: BridgeTarget? = null
-  private var session: String? = null
+  @Volatile private var session: String? = null
+  @Volatile private var protocolVersion: String? = null
+  @Volatile private var eventSession: String? = null
+  @Volatile private var eventInput: java.io.InputStream? = null
   private var initialize: String? = null
   private var initialized: String? = null
   private var wokeUp = false
 
   fun run() {
-    while (true) {
-      val line = input.readLine() ?: break
-      if (line.isBlank()) continue
-      handle(line)
-    }
-    close()
+    try {
+      while (true) {
+        val line = input.readLine() ?: break
+        if (line.isBlank()) continue
+        handle(line)
+      }
+    } finally { close() }
   }
 
   private fun handle(line: String) {
@@ -56,11 +60,19 @@ class McpBridge(
       if (id != null) reply(error(id, OFF_MESSAGE))
       return
     }
+    if (method != "initialize" && session == null && initialize != null) {
+      val ready = runCatching {
+        check(send(endpoint, initialize!!, forward = false) < 400)
+        initialized?.let { check(send(endpoint, it, forward = false) < 400) }
+      }.isSuccess
+      if (!ready) { if (id != null) reply(error(id, OFF_MESSAGE)); return }
+    }
     val result = runCatching { send(endpoint, line, forward = true) }
     val status = result.getOrNull()
-    val retry = result.isFailure || status == 404 || status == 401
+    val retry = status == 404 || status == 401
     if (retry && method != "initialize" && initialize != null) {
       log("Berill session was lost, reconnecting")
+      stopEvents()
       current = null
       session = null
       val fresh = resolve()
@@ -72,7 +84,10 @@ class McpBridge(
       if (!resent && id != null) reply(error(id, OFF_MESSAGE))
       return
     }
-    if (result.isFailure && id != null) reply(error(id, result.exceptionOrNull()?.message ?: OFF_MESSAGE))
+    if (result.isFailure) {
+      stopEvents(); current = null; session = null
+      if (id != null) reply(error(id, "Connection lost. The outcome may be unknown; read the record before retrying a change."))
+    }
     else if (status != null && status >= 400 && id != null) reply(error(id, "Berill answered with HTTP $status"))
   }
 
@@ -105,6 +120,7 @@ class McpBridge(
       .header("Authorization", "Bearer ${endpoint.token}")
       .POST(HttpRequest.BodyPublishers.ofString(body))
     session?.let { builder.header(SESSION_HEADER, it) }
+    protocolVersion?.let { builder.header("MCP-Protocol-Version", it) }
     val response = http.send(builder.build(), HttpResponse.BodyHandlers.ofLines())
     response.headers().firstValue(SESSION_HEADER).ifPresent { session = it }
     val type = response.headers().firstValue("Content-Type").orElse("")
@@ -123,21 +139,61 @@ class McpBridge(
               data.append(raw.removePrefix("data:").removePrefix(" "))
             }
             raw.isEmpty() -> {
-              if (data.isNotEmpty() && forward) reply(data.toString())
+              if (data.isNotEmpty()) accept(data.toString(), forward)
               data.clear()
             }
           }
         }
       }
-      if (data.isNotEmpty() && forward) reply(data.toString())
+      if (data.isNotEmpty()) accept(data.toString(), forward)
     } else {
       val text = lines.use { it.toList().joinToString("\n") }.trim()
-      if (text.isNotEmpty() && forward) reply(text)
+      if (text.isNotEmpty()) accept(text, forward)
     }
+    if (body == initialized && response.statusCode() < 400) startEvents(endpoint)
     return response.statusCode()
   }
 
+  private fun accept(text: String, forward: Boolean) {
+    val response = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull()
+    val result = response?.get("result") as? JsonObject
+    (result?.get("protocolVersion") as? JsonPrimitive)?.content?.let { protocolVersion = it }
+    if (forward) reply(text)
+  }
+
+  private fun stopEvents() {
+    eventSession = null
+    runCatching { eventInput?.close() }
+    eventInput = null
+  }
+
+  private fun startEvents(endpoint: BridgeTarget) {
+    val id = session ?: return
+    if (eventSession == id) return
+    stopEvents()
+    eventSession = id
+    Thread {
+      try {
+        val builder = HttpRequest.newBuilder(URI.create(endpoint.url)).header("Accept", "text/event-stream")
+          .header("Authorization", "Bearer ${endpoint.token}").header(SESSION_HEADER, id).GET()
+        protocolVersion?.let { builder.header("MCP-Protocol-Version", it) }
+        val response = http.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream())
+        if (response.statusCode() != 200 || eventSession != id) { response.body().close(); return@Thread }
+        eventInput = response.body()
+        response.body().bufferedReader(Charsets.UTF_8).use { reader ->
+          val data = StringBuilder()
+          reader.forEachLine { line ->
+            if (line.startsWith("data:")) { if (data.isNotEmpty()) data.append('\n'); data.append(line.removePrefix("data:").removePrefix(" ")) }
+            else if (line.isEmpty() && data.isNotEmpty()) { accept(data.toString(), true); data.clear() }
+          }
+        }
+      } catch (e: Exception) { if (eventSession == id) log("Notification stream ended") }
+      finally { if (eventSession == id) { eventSession = null; eventInput = null } }
+    }.apply { isDaemon = true; name = "berill-mcp-events"; start() }
+  }
+
   private fun close() {
+    stopEvents()
     val endpoint = current ?: return
     val id = session ?: return
     runCatching {
@@ -146,6 +202,7 @@ class McpBridge(
           .timeout(Duration.ofSeconds(3))
           .header("Authorization", "Bearer ${endpoint.token}")
           .header(SESSION_HEADER, id)
+          .apply { protocolVersion?.let { header("MCP-Protocol-Version", it) } }
           .DELETE()
           .build(),
         HttpResponse.BodyHandlers.discarding()

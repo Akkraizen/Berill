@@ -2,6 +2,13 @@ package dev.akkraizen.berill.mcp
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.akkraizen.berill.core.BerillCore
+import dev.akkraizen.berill.api.*
+import dev.akkraizen.berill.api.mcp.*
+import dev.akkraizen.berill.core.notes.Note
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Science
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import dev.akkraizen.berill.core.db.BerillDatabase
 import dev.akkraizen.berill.core.secure.MemoryVault
 import io.modelcontextprotocol.kotlin.sdk.client.Client
@@ -47,7 +54,7 @@ class EmbeddedMcpTest {
   private val core: BerillCore = run {
     val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
     BerillDatabase.Schema.create(driver)
-    BerillCore(driver, emptyList(), scope, vault = vault)
+    BerillCore(driver, listOf(DemoMcpPlugin), scope, vault = vault)
   }
   private val mcp = EmbeddedMcp(core, dir, preferredPort = 0)
 
@@ -138,6 +145,36 @@ class EmbeddedMcpTest {
   }
 
   @Test
+  fun pluginToolsAreDiscoveredByAGenericClientAndDisappearWhenDisabled() {
+    mcp.setEnabled(true)
+    withBridge { client ->
+      val names = client.listTools().tools.map { it.name }
+      assertTrue("berill_demo_read" in names)
+      assertFalse("berill_demo_edit" in names)
+    }
+    mcp.setWritable(true)
+    withBridge { client ->
+      val created = client.callTool("berill_demo_edit", mapOf("action" to "create", "collection" to "demo_records", "fields" to mapOf("title" to "Plugin record", "body" to "Initial")))
+      assertFalse(created.isError == true, created.toString())
+      val record = Json.parseToJsonElement((created.content.single() as TextContent).text).jsonObject
+      val id = record.getValue("id").jsonPrimitive.content
+      val updated = client.callTool("update_record", mapOf("collection" to "demo_records", "id" to id, "fields" to mapOf("body" to "Edited"), "expected" to record.getValue("expected")))
+      assertFalse(updated.isError == true, updated.toString())
+      val stale = client.callTool("update_record", mapOf("collection" to "demo_records", "id" to id, "fields" to mapOf("body" to "Stale"), "expected" to record.getValue("expected")))
+      assertTrue(stale.isError == true)
+      assertEquals("CONFLICT", stale.structuredContent?.get("error")?.jsonObject?.get("code")?.jsonPrimitive?.content)
+      assertEquals("Edited", core.data.collection<Note>("demo_records").get(id)?.body)
+      core.plugins.setEnabled("demo", false)
+      withTimeout(5000) { core.plugins.enabled.first { list -> list.none { it.id == "demo" } } }
+      withTimeout(5000) { while (client.listTools().tools.any { it.name == "berill_demo_read" }) delay(20) }
+      val hidden = client.callTool("read_records", mapOf("collection" to "demo_records"))
+      assertTrue(hidden.isError == true)
+      core.plugins.setEnabled("demo", true)
+      withTimeout(5000) { while (client.listTools().tools.none { it.name == "berill_demo_read" }) delay(20) }
+    }
+  }
+
+  @Test
   fun bridgeReconnectsAfterTheServerRestarts() {
     mcp.setEnabled(true)
     withBridge { client ->
@@ -175,4 +212,16 @@ class EmbeddedMcpTest {
     assertFalse(bridged.desktopClientConfig().contains("Bearer"))
     assertEquals("claude mcp add berill -- \"C:\\Program Files\\Berill\\Berill.exe\" --mcp", bridged.claudeCodeCommand())
   }
+}
+
+private object DemoMcpPlugin : BerillPlugin {
+  override val id = "demo"
+  override val title = "Demo"
+  override val icon = Icons.Outlined.Science
+  override val installedByDefault = true
+  override val collections = listOf("demo_records")
+  override fun provides(ctx: PluginContext): List<Capability> = listOf(object : McpSource {
+    override val pluginId = id
+    override val collections: List<McpCollection> = listOf(TypedMcpCollection(ctx, "demo_records", Note.serializer(), validate = { require(it.title.isNotBlank()) }))
+  })
 }

@@ -72,10 +72,10 @@ abstract class PluginPackageStore(protected val dir: File, private val codeFile:
 
   override fun inspect(bytes: ByteArray): PackageInspection {
     if (bytes.size > MAX_PACKAGE_BYTES)
-      return PackageInspection(null, listOf("пакет больше ${MAX_PACKAGE_BYTES / 1024 / 1024} МБ"))
+      return PackageInspection(null, listOf(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginPackageStore.m0", "p0" to (MAX_PACKAGE_BYTES / 1024 / 1024))))
     val files = runCatching { readPackage(bytes) }
-      .getOrElse { return PackageInspection(null, listOf("не zip-архив")) }
-    val manifestBytes = files.manifest ?: return PackageInspection(null, listOf("нет $MANIFEST_FILE"))
+      .getOrElse { return PackageInspection(null, listOf(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginPackageStore.m1"))) }
+    val manifestBytes = files.manifest ?: return PackageInspection(null, listOf(dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.PluginPackageStore.m2", "p0" to (MANIFEST_FILE))))
     val manifest = runCatching { parseManifest(manifestBytes) }
       .getOrElse { return PackageInspection(null, listOf("$MANIFEST_FILE: ${it.message?.take(200)}")) }
     return PackageInspection(manifest, manifest.problems() + codeProblems(files.code()))

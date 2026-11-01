@@ -95,10 +95,10 @@ fun loadExternalPlugins(
     }
   for (m in manifests) {
     val problems = m.problems().toMutableList()
-    if (m.id in takenIds) problems += "id `${m.id}` уже занят"
+    if (m.id in takenIds) problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.ExternalPluginProxy.m0", "p0" to (m.id))
     m.collections
       .filter { it in takenCollections }
-      .forEach { problems += "коллекция `$it` уже занята" }
+      .forEach { problems += dev.akkraizen.berill.api.i18n.I18n.text("diagnostics.ExternalPluginProxy.m1", "p0" to (it)) }
     if (problems.isNotEmpty()) {
       rejected[m.id] = problems
       continue

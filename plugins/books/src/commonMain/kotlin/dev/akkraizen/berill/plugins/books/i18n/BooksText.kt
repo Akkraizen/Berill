@@ -17,12 +17,12 @@ internal object BooksText {
   val statusReading = pluginI18n.tr("books.statusReading")
   val statusDone = pluginI18n.tr("books.statusDone")
 
-  fun statusLabel(status: String): String =
+  fun statusLabel(status: dev.akkraizen.berill.plugins.books.data.BookStatus): String =
     when (status) {
       NOT_STARTED -> statusNotStarted()
       READING -> statusReading()
       DONE -> statusDone()
-      else -> status
+      else -> status.name
     }
 
   fun readIn(year: Int) = pluginI18n.tr("books.readIn", "year" to year)

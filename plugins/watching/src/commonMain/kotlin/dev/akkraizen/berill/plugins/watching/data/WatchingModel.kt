@@ -7,21 +7,21 @@ import dev.akkraizen.berill.plugins.watching.WatchingPlugin
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-const val PLANNED = "в планах"
-const val WATCHING = "смотрю"
-const val WATCHED = "просмотрено"
+val PLANNED = WatchStatus.PLANNED
+val WATCHING = WatchStatus.WATCHING
+val WATCHED = WatchStatus.WATCHED
 val STATUSES = listOf(PLANNED, WATCHING, WATCHED)
 
-const val ANIME = "аниме"
-const val MOVIE = "фильм"
-const val SERIES = "сериал"
+val ANIME = MediaKind.ANIME
+val MOVIE = MediaKind.MOVIE
+val SERIES = MediaKind.SERIES
 val MEDIA = listOf(ANIME, MOVIE, SERIES)
 
 @Serializable
 data class Title(
   val title: String = "",
-  val media: String = ANIME,
-  val status: String = PLANNED,
+  val media: MediaKind = ANIME,
+  val status: WatchStatus = PLANNED,
   val year: Int? = null,
   val genre: String? = null,
   val format: String? = null,
@@ -39,13 +39,13 @@ data class Title(
   @SerialName("original_name") val originalName: String? = null,
   val body: String? = null
 ) {
-  val normalizedStatus: String
+  val normalizedStatus: WatchStatus
     get() = if (status in STATUSES) status else PLANNED
 
   val isSeries: Boolean
     get() = media != MOVIE && (episodes ?: 0) > 0
 
-  fun moveTo(target: String): Title {
+  fun moveTo(target: WatchStatus): Title {
     val now = today().toString()
     return when (target) {
       WATCHING -> copy(status = target, started = started ?: now, finished = null)

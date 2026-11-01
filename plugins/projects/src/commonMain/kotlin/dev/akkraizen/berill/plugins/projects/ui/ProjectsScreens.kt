@@ -120,7 +120,7 @@ internal fun ProjectsBoard(ctx: PluginContext) {
       KanbanBoard(
         columns = STATUSES.map { s ->
           KanbanColumn(
-            s,
+            s.name,
             STATUS_LABELS.getValue(s),
             byStatus[s].orEmpty().sortedBy { it.value.title.lowercase() },
             ProjectsText.empty(),
@@ -128,7 +128,8 @@ internal fun ProjectsBoard(ctx: PluginContext) {
           )
         },
         itemKey = { it.id },
-        onMove = { item, status ->
+        onMove = { item, statusKey ->
+          val status = dev.akkraizen.berill.plugins.projects.data.ProjectStatus.valueOf(statusKey)
           collection
             .get(item.id)
             ?.takeIf { it.normalizedStatus != status }

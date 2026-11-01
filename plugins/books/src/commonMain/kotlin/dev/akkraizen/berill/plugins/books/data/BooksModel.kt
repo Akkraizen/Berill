@@ -5,16 +5,16 @@ import dev.akkraizen.berill.api.ui.today
 import dev.akkraizen.berill.plugins.books.BooksPlugin
 import kotlinx.serialization.Serializable
 
-const val NOT_STARTED = "не начато"
-const val READING = "в процессе чтения"
-const val DONE = "прочитано"
+val NOT_STARTED = BookStatus.NOT_STARTED
+val READING = BookStatus.READING
+val DONE = BookStatus.DONE
 val STATUSES = listOf(NOT_STARTED, READING, DONE)
 
 @Serializable
 data class Book(
   val title: String = "",
   val author: String? = null,
-  val status: String = NOT_STARTED,
+  val status: BookStatus = NOT_STARTED,
   val genre: String? = null,
   val pages: Int? = null,
   val rating: Int? = null,
@@ -24,10 +24,10 @@ data class Book(
   val body: String? = null
 ) {
 
-  val normalizedStatus: String
+  val normalizedStatus: BookStatus
     get() = if (status in STATUSES) status else NOT_STARTED
 
-  fun moveTo(target: String): Book {
+  fun moveTo(target: BookStatus): Book {
     val now = today().toString()
     return when (target) {
       READING -> copy(status = target, started = started ?: now, finished = null)

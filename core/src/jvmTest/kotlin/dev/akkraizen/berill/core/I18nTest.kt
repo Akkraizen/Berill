@@ -139,6 +139,27 @@ class I18nTest {
   }
 
   @Test
+  fun `search palette translations are bundled in both languages`() {
+    val expected = mapOf(
+      "searchTitle" to ("Поиск" to "Search"),
+      "searchSubtitle" to ("Все разделы и быстрые действия" to "All sections and quick actions"),
+      "searchHint" to ("Что найдём или сделаем?" to "Find something or run a command"),
+      "searchActions" to ("Быстрые действия" to "Quick actions"),
+      "searchResults" to ("Результаты" to "Results"),
+      "searchEmpty" to ("Ничего не нашлось" to "No matches yet"),
+      "searchEmptyHint" to ("Попробуйте другое слово или название" to "Try another word or title"),
+      "searchNavigate" to ("выбрать" to "select"),
+      "searchOpen" to ("открыть" to "open"),
+      "clearSearch" to ("Очистить поиск" to "Clear search")
+    )
+    expected.forEach { (suffix, text) ->
+      val translation = Tr("connections.$suffix")
+      assertEquals(text.first, translation.get(russian), suffix)
+      assertEquals(text.second, translation.get(english), suffix)
+    }
+  }
+
+  @Test
   fun `module catalogs resolve identical keys independently`() {
     val en = Localization(listOf(file("en")))
     val ru = Localization(listOf(file("ru")))

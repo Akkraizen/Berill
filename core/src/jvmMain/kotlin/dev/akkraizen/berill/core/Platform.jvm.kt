@@ -38,6 +38,8 @@ fun createDesktopCore(
     coreScope(),
     DesktopFileAccess(),
     externalPlatform = runCatching { DesktopExternalPlugins(File(dir, "plugins")) }.getOrNull(),
+    attachmentCache = dev.akkraizen.berill.core.attachments.FileAttachmentCache(File(dir, "attachments")),
+    reminderScheduler = dev.akkraizen.berill.core.connections.DesktopReminderScheduler(),
     vault = DesktopVault(File(dir, "secrets")),
     desktop = desktop,
     oauth = LoopbackRedirects(),

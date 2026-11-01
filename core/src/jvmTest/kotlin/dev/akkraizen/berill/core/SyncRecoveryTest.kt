@@ -77,6 +77,19 @@ class SyncRecoveryTest {
   }
 
   @Test
+  fun cancellationLeavesQueuedRecordsAndDoesNotPersistAnError() = runBlocking {
+    store.put("notes", "pending", mapOf("title" to JsonPrimitive("Unsent")))
+    val cancelled = SyncEngine(store, "local", scope, SyncEncryption(store, vault), vault,
+      beforeUpload = { throw kotlinx.coroutines.CancellationException("cancel upload") })
+    kotlin.test.assertFailsWith<kotlinx.coroutines.CancellationException> { cancelled.syncNow() }
+    assertEquals(SyncState.Idle, cancelled.state.value)
+    kotlin.test.assertNull(cancelled.diagnostics().lastError)
+    assertTrue(store.dirty().any { it.first.id == "pending" })
+    engine().syncNow()
+    assertTrue(store.dirty().isEmpty())
+  }
+
+  @Test
   fun recoversPreviouslyAcknowledgedCollectionsWithoutChangingClocksOrTombstones() = runBlocking {
     val original = cleanRecords()
     val engine = engine()

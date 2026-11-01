@@ -27,7 +27,7 @@ import dev.akkraizen.berill.plugins.projects.data.READY
 import dev.akkraizen.berill.plugins.projects.data.projects
 import dev.akkraizen.berill.plugins.projects.i18n.ProjectsText
 
-val STATUS_LABELS: Map<String, String>
+val STATUS_LABELS: Map<dev.akkraizen.berill.plugins.projects.data.ProjectStatus, String>
   get() =
     mapOf(
       IDEA to ProjectsText.statusIdeas(),
@@ -35,7 +35,7 @@ val STATUS_LABELS: Map<String, String>
       PAUSED to ProjectsText.statusPaused(),
       READY to ProjectsText.statusReady()
     )
-val STATUS_ICONS: Map<String, ImageVector> = mapOf(
+val STATUS_ICONS: Map<dev.akkraizen.berill.plugins.projects.data.ProjectStatus, ImageVector> = mapOf(
   IDEA to Icons.Outlined.Lightbulb,
   IN_PROGRESS to Icons.Outlined.Construction,
   PAUSED to Icons.Outlined.PauseCircle,
@@ -48,17 +48,19 @@ internal fun ActiveProjects(ctx: PluginContext) {
   val active = all.filter { it.value.normalizedStatus == IN_PROGRESS }
     .sortedBy { it.value.title.lowercase() }
   if (active.isEmpty()) EmptyHint(ProjectsText.noActiveProjects())
-  FlowRow(
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
-    active.forEach { item ->
-      BerillChip(
-        onClick = {
-          ctx.nav.openPlugin(ProjectsPlugin.id, ProjectsPlugin.PROJECT_ROUTE + item.id)
-        },
-        label = { Text(item.value.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-      )
+  if (active.isNotEmpty()) dev.akkraizen.berill.api.ui.layout.BoundedList {
+    FlowRow(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      active.forEach { item ->
+        BerillChip(
+          onClick = {
+            ctx.nav.openPlugin(ProjectsPlugin.id, ProjectsPlugin.PROJECT_ROUTE + item.id)
+          },
+          label = { Text(item.value.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        )
+      }
     }
   }
 }
