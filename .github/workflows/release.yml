@@ -107,7 +107,7 @@ jobs:
       - name: Generate checksums
         run: |
           $version = (./scripts/release/version.ps1).Name
-          foreach ($name in @("Berill-$version-Setup.exe", "Berill-$version-android.apk", "Berill-$version-android.aab")) {
+          foreach ($name in @("Berill-$version-windows.exe", "Berill-$version-android.apk", "Berill-$version-android.aab")) {
             if (-not (Test-Path -LiteralPath (Join-Path dist $name))) { throw "Missing release file: $name" }
           }
           ./scripts/release/checksums.ps1 -Directory dist
