@@ -4,6 +4,9 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import dev.akkraizen.berill.core.db.Record
 import dev.akkraizen.berill.core.db.BerillDatabase
+import dev.akkraizen.berill.core.sync.ConflictChoice
+import dev.akkraizen.berill.core.sync.ConflictJournal
+import dev.akkraizen.berill.protocol.Collections
 import dev.akkraizen.berill.protocol.HybridClock
 import dev.akkraizen.berill.protocol.SyncRecord
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +32,7 @@ data class PendingDeletion(val collection: String, val id: String, val stamp: St
 class LocalStore(private val db: BerillDatabase, private val clock: HybridClock) {
   private val q = db.recordsQueries
   private val json = Json { ignoreUnknownKeys = true }
-  val conflicts = dev.akkraizen.berill.core.sync.ConflictJournal(::meta, ::setMeta)
+  val conflicts = ConflictJournal(::meta, ::setMeta)
   private val clocksSerializer = MapSerializer(String.serializer(), String.serializer())
 
   private val _localChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 64)
@@ -147,10 +150,11 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
   }
   fun records(): List<SyncRecord> = q.selectAll().executeAsList().map(::toRecord)
 
-  fun deletedRecords(): List<SyncRecord> = records().filter { it.deleted && it.fields["__berill_purged"] != JsonPrimitive(true) }
+  fun deletedRecords(): List<SyncRecord> =
+    q.selectDeleted().executeAsList().map(::toRecord).filter { it.deleted && it.fields[PURGED] != JsonPrimitive(true) }
 
   fun restore(collection: String, id: String) {
-    val record = get(collection, id)?.takeIf { it.deleted && it.fields["__berill_purged"] != JsonPrimitive(true) } ?: return
+    val record = get(collection, id)?.takeIf { it.deleted && it.fields[PURGED] != JsonPrimitive(true) } ?: return
     record.latestClock?.let(clock::observe)
     undoDeletions(listOf(PendingDeletion(collection, id, record.deletedAt!!)))
   }
@@ -164,7 +168,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         if (!current.deleted || current.deletedAt != record.deletedAt) continue
         current.latestClock?.let(clock::observe)
         val stamp = clock.tick()
-        val fields = current.fields.mapValues { JsonNull } + ("__berill_purged" to JsonPrimitive(true))
+        val fields = current.fields.mapValues { JsonNull } + (PURGED to JsonPrimitive(true))
         write(current.copy(fields = JsonObject(fields), clocks = fields.keys.associateWith { stamp }, deletedAt = clock.tick()),
           dirty = true, version = row.version + 1)
         setMeta(baseKey(record.collection, record.id), json.encodeToString(SyncRecord.serializer(), get(record.collection, record.id)!!))
@@ -188,12 +192,12 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
         val row = q.selectOne(remote.collection, remote.id).executeAsOneOrNull()
         val local = row?.let(::toRecord)
         val merged = local?.mergeWith(remote) ?: remote
-        if (remote.collection != dev.akkraizen.berill.protocol.Collections.SETTINGS && row?.dirty == 1L && local != null) {
+        if (remote.collection != Collections.SETTINGS && row?.dirty == 1L && local != null) {
           val base = meta(baseKey(remote.collection, remote.id))?.let { json.decodeFromString(SyncRecord.serializer(), it) }
           conflicts.capture(local, remote, merged, base)
         }
         write(merged, dirty = row?.dirty == 1L, version = row?.version ?: 0)
-        if (remote.collection != dev.akkraizen.berill.protocol.Collections.SETTINGS) {
+        if (remote.collection != Collections.SETTINGS) {
           val known = meta(baseKey(remote.collection, remote.id))?.let { json.decodeFromString(SyncRecord.serializer(), it) }
           setMeta(baseKey(remote.collection, remote.id), json.encodeToString(SyncRecord.serializer(), known?.mergeWith(remote) ?: remote))
         }
@@ -260,7 +264,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
     return result
   }
 
-  fun resolveConflict(id: String, choice: dev.akkraizen.berill.core.sync.ConflictChoice): Boolean {
+  fun resolveConflict(id: String, choice: ConflictChoice): Boolean {
     var resolved = false
     db.transaction {
       val conflict = conflicts.get(id) ?: return@transaction
@@ -268,12 +272,12 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       val recordId = conflict.local.id
       val row = q.selectOne(collection, recordId).executeAsOneOrNull() ?: return@transaction
       val current = toRecord(row)
-      if (choice != dev.akkraizen.berill.core.sync.ConflictChoice.MERGED) {
+      if (choice != ConflictChoice.MERGED) {
         val fresh = if (conflict.deletion) current.sameContentAs(conflict.merged) else conflict.fields.all {
           current.fields[it] == conflict.merged.fields[it] && current.clocks[it] == conflict.merged.clocks[it]
         } && current.deleted == conflict.merged.deleted
         if (!fresh) return@transaction
-        val selected = if (choice == dev.akkraizen.berill.core.sync.ConflictChoice.LOCAL) conflict.local else conflict.remote
+        val selected = if (choice == ConflictChoice.LOCAL) conflict.local else conflict.remote
         current.latestClock?.let(clock::observe)
         conflict.local.latestClock?.let(clock::observe)
         conflict.remote.latestClock?.let(clock::observe)
@@ -337,7 +341,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
   fun setMeta(key: String, value: String) = q.setMeta(key, value)
 
   private fun write(r: SyncRecord, dirty: Boolean, version: Long) {
-    if (dirty && r.collection != dev.akkraizen.berill.protocol.Collections.SETTINGS) {
+    if (dirty && r.collection != Collections.SETTINGS) {
       val row = q.selectOne(r.collection, r.id).executeAsOneOrNull()
       if (row?.dirty != 1L || meta(baseKey(r.collection, r.id)) == null) {
         val base = row?.let(::toRecord) ?: SyncRecord(r.collection, r.id)
@@ -364,4 +368,9 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock)
       clocks = json.decodeFromString(clocksSerializer, row.clocks),
       deletedAt = row.deleted_at
     )
+
+  private companion object {
+    /** Marks a deleted record whose content was erased from the trash; the tombstone stays for sync. */
+    const val PURGED = "__berill_purged"
+  }
 }

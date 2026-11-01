@@ -78,6 +78,7 @@ class BerillCore(
 
   val encryption = SyncEncryption(store, vault)
   val attachments = dev.akkraizen.berill.core.attachments.Attachments(attachmentCache, store, vault, encryption)
+  val archive = dev.akkraizen.berill.core.connections.LocalArchiveService(store, attachments)
   private val pluginFiles = object : FileAccess by files {
     override suspend fun storeAttachment(bytes: ByteArray): String = attachments.put(bytes)
     override suspend fun loadAttachment(hash: String): ByteArray? = attachments.get(hash)

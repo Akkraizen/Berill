@@ -26,6 +26,9 @@ SELECT * FROM record WHERE collection = ? AND id = ?;
 selectAll:
 SELECT * FROM record;
 
+selectDeleted:
+SELECT * FROM record WHERE is_deleted = 1;
+
 selectDirty:
 SELECT * FROM record WHERE dirty = 1;
 

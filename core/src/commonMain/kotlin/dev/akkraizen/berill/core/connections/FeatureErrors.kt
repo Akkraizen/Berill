@@ -15,17 +15,20 @@ enum class FailureReason { UNEXPECTED, NETWORK, ACCESS_DENIED, AUTH_REQUIRED, IN
 enum class FailureOperation { SEARCH, DAY, TRASH, RESTORE, DELETE, COMMAND, EXPORT, IMPORT, HEALTH, REMINDERS, ATTACHMENT, SHARE }
 class FeatureException(val reason: FailureReason, cause: Throwable? = null) : Exception(reason.name, cause)
 
+/** The failure reason shown for an unsuccessful HTTP status of Berill or third-party services. */
+fun reasonForStatus(status: Int): FailureReason = when (status) {
+  401 -> FailureReason.AUTH_REQUIRED
+  403 -> FailureReason.ACCESS_DENIED
+  404 -> FailureReason.SERVER_NOT_FOUND
+  408 -> FailureReason.NETWORK
+  413 -> FailureReason.TOO_LARGE
+  429, in 500..599 -> FailureReason.SERVICE_UNAVAILABLE
+  else -> FailureReason.UNEXPECTED
+}
+
 fun checkServiceStatus(status: Int) {
   if (status in 200..299) return
-  throw FeatureException(when (status) {
-    401 -> FailureReason.AUTH_REQUIRED
-    403 -> FailureReason.ACCESS_DENIED
-    404 -> FailureReason.SERVER_NOT_FOUND
-    408 -> FailureReason.NETWORK
-    413 -> FailureReason.TOO_LARGE
-    429, in 500..599 -> FailureReason.SERVICE_UNAVAILABLE
-    else -> FailureReason.UNEXPECTED
-  })
+  throw FeatureException(reasonForStatus(status))
 }
 
 internal expect fun platformFailureReason(error: Throwable): FailureReason?
@@ -38,18 +41,10 @@ fun failureReason(error: Throwable): FailureReason {
       is dev.akkraizen.berill.api.HttpException -> return when (cause.kind) {
         dev.akkraizen.berill.api.HttpFailureKind.NETWORK, dev.akkraizen.berill.api.HttpFailureKind.TIMEOUT -> FailureReason.NETWORK
         dev.akkraizen.berill.api.HttpFailureKind.INVALID_REQUEST, dev.akkraizen.berill.api.HttpFailureKind.INVALID_RESPONSE -> FailureReason.INVALID_DATA
-        else -> when (cause.status) { 401 -> FailureReason.AUTH_REQUIRED; 403 -> FailureReason.ACCESS_DENIED; 404 -> FailureReason.SERVER_NOT_FOUND; 429, in 500..599 -> FailureReason.SERVICE_UNAVAILABLE; else -> FailureReason.UNEXPECTED }
+        else -> reasonForStatus(cause.status)
       }
       is HttpRequestTimeoutException -> return FailureReason.NETWORK
-      is ResponseException -> return when (cause.response.status.value) {
-        401 -> FailureReason.AUTH_REQUIRED
-        403 -> FailureReason.ACCESS_DENIED
-        404 -> FailureReason.SERVER_NOT_FOUND
-        408 -> FailureReason.NETWORK
-        413 -> FailureReason.TOO_LARGE
-        429, in 500..599 -> FailureReason.SERVICE_UNAVAILABLE
-        else -> FailureReason.UNEXPECTED
-      }
+      is ResponseException -> return reasonForStatus(cause.response.status.value)
       is SerializationException, is IllegalArgumentException -> return FailureReason.INVALID_DATA
     }
     platformFailureReason(cause)?.let { return it }

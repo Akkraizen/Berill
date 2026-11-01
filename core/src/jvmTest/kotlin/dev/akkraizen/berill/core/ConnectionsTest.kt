@@ -78,4 +78,33 @@ class ConnectionsTest {
     assertFailsWith<IllegalStateException> { encryption.encryptAttachment(bytes) }
     Unit
   }
+
+  @Test fun archiveServiceRoundTripsReferencedFilesAndRejectsMissingOnes() = runBlocking {
+    val vault = MemoryVault()
+    val attachments = Attachments(MemoryAttachmentCache(), store, vault, SyncEncryption(store, vault))
+    val hash = attachments.put("photo".encodeToByteArray())
+    store.put("recipe_images", "r1", mapOf("data" to JsonPrimitive("blob:$hash")))
+    store.put("notes", "n1", mapOf("body" to JsonPrimitive("![x](blob:$hash) and blob:${"b".repeat(64)}"), "tags" to JsonArray(listOf(JsonPrimitive("blob:${"c".repeat(64)}")))))
+    assertEquals(setOf(hash, "b".repeat(64), "c".repeat(64)), referencedAttachments(store.records()))
+
+    store.delete("notes", "n1")
+    store.purgeDeleted(store.deletedRecords())
+    val service = LocalArchiveService(store, attachments)
+    val archive = service.export()
+
+    val otherDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    try {
+      BerillDatabase.Schema.create(otherDriver)
+      val other = LocalStore(BerillDatabase(otherDriver), HybridClock("other") { 1L })
+      val otherAttachments = Attachments(MemoryAttachmentCache(), other, vault, SyncEncryption(other, vault))
+      val target = LocalArchiveService(other, otherAttachments)
+      target.apply(target.read(archive))
+      assertEquals(JsonPrimitive("blob:$hash"), other.get("recipe_images", "r1")!!.fields["data"])
+      assertEquals("photo", otherAttachments.cache.get(hash)!!.decodeToString())
+
+      val broken = encodeLocalArchive(listOf(SyncRecord("notes", "x", JsonObject(mapOf("body" to JsonPrimitive("blob:${"d".repeat(64)}"))), mapOf("body" to "s"))))
+      assertEquals(FailureReason.MISSING_ATTACHMENT, assertFailsWith<FeatureException> { target.read(broken) }.reason)
+      assertEquals(FailureReason.INVALID_DATA, assertFailsWith<FeatureException> { target.read("not a zip".encodeToByteArray()) }.reason)
+    } finally { otherDriver.close() }
+  }
 }

@@ -104,11 +104,17 @@ class ReminderCenter(private val store: LocalStore, private val scheduler: Remin
     }
     scope.launch {
       merge(store.changes, preferences.state.map { Unit }, enabled.map { Unit }, plugins.enabled.map { Unit }, flow { while (true) { emit(Unit); delay(60000) } })
-        .collect {
+        .collectLatest {
+          // Every autosaved keystroke emits a change; reschedule once the burst is over.
+          delay(REFRESH_DEBOUNCE_MILLIS)
           try { refresh(plugins) }
           catch (e: CancellationException) { throw e }
           catch (e: Exception) { dev.akkraizen.berill.core.log.AppLog.error("reminders", "refresh", e) }
         }
     }
+  }
+
+  private companion object {
+    const val REFRESH_DEBOUNCE_MILLIS = 750L
   }
 }

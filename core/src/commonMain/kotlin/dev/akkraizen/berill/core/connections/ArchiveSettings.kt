@@ -48,17 +48,13 @@ internal fun ArchiveSettings(core: BerillCore) {
   Text(ConnectionsText.archiveHint(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
   var busy by remember { mutableStateOf(false) }
   var status by remember { mutableStateOf<String?>(null) }
-  var blobs by remember { mutableStateOf(emptyMap<String, ByteArray>()) }
-  var pending by remember { mutableStateOf<List<dev.akkraizen.berill.protocol.SyncRecord>?>(null) }
+  var pending by remember { mutableStateOf<PendingArchiveImport?>(null) }
   ConnectionAction(ConnectionsText.export(), Icons.Outlined.FileDownload, enabled = !busy, onClick = { scope.launch {
     if (busy) return@launch
     busy = true; status = null
     core.notifications.operation(FailureOperation.EXPORT, FeatureProgress.RUNNING)
     try {
-      val records = core.store.records()
-      val hashes = Regex("blob:([0-9a-f]{64})").findAll(records.joinToString { it.fields.toString() }).map { it.groupValues[1] }.toSet()
-      val attachments = hashes.associateWith { hash -> (core.attachments.get(hash) ?: throw FeatureException(FailureReason.MISSING_ATTACHMENT)) }
-      val bytes = withContext(Dispatchers.Default) { encodeLocalArchive(records, attachments) }
+      val bytes = core.archive.export()
       val saved = core.files.saveFile("berill-${today()}.zip", bytes, "application/zip")
       if (saved) status = ConnectionsText.saved()
       core.notifications.operation(FailureOperation.EXPORT, if (saved) FeatureProgress.SUCCESS else FeatureProgress.CANCELLED)
@@ -69,30 +65,21 @@ internal fun ArchiveSettings(core: BerillCore) {
     busy = true; status = null
     try {
       val file = core.files.pickFile(listOf("zip"), 256 * 1024 * 1024)
-      if (file != null) {
-        val decoded = withContext(Dispatchers.Default) {
-          try { decodeLocalArchive(file.bytes) to decodeArchiveAttachments(file.bytes) }
-          catch (e: CancellationException) { throw e } catch (e: Exception) { throw FeatureException(FailureReason.INVALID_DATA, e) }
-        }
-        val hashes = Regex("blob:([0-9a-f]{64})").findAll(decoded.first.joinToString { it.fields.toString() }).map { it.groupValues[1] }.toSet()
-        if (!hashes.all { it in decoded.second || core.attachments.cache.get(it) != null }) throw FeatureException(FailureReason.MISSING_ATTACHMENT)
-        blobs = decoded.second; pending = decoded.first
-      }
+      if (file != null) pending = core.archive.read(file.bytes)
     } catch (e: CancellationException) { throw e } catch (e: Exception) { core.connections.errors.report(FailureOperation.IMPORT, e) } finally { busy = false }
   } })
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   status?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary) }
-  pending?.let { records -> AlertDialog(onDismissRequest = { if (!busy) pending = null },
+  pending?.let { archive -> AlertDialog(onDismissRequest = { if (!busy) pending = null },
     icon = { Icon(Icons.Outlined.SettingsBackupRestore, null) },
-    title = { Text(ConnectionsText.importArchive()) }, text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(ConnectionsText.importConfirm()); Text(records.size.toString(), style = MaterialTheme.typography.titleLarge) } },
+    title = { Text(ConnectionsText.importArchive()) }, text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(ConnectionsText.importConfirm()); Text(archive.records.size.toString(), style = MaterialTheme.typography.titleLarge) } },
     confirmButton = { FilledTonalButton(enabled = !busy, onClick = {
       scope.launch {
         if (busy) return@launch
         busy = true; status = null
         core.notifications.operation(FailureOperation.IMPORT, FeatureProgress.RUNNING)
         try {
-          for (bytes in blobs.values) core.attachments.put(bytes)
-          core.store.applyRemote(records); core.store.enqueueAllForSync(); pending = null; status = ConnectionsText.saved()
+          core.archive.apply(archive); pending = null; status = ConnectionsText.saved()
           core.notifications.operation(FailureOperation.IMPORT, FeatureProgress.SUCCESS)
         } catch (e: CancellationException) { core.notifications.operation(FailureOperation.IMPORT, FeatureProgress.CANCELLED); throw e } catch (e: Exception) { core.connections.errors.report(FailureOperation.IMPORT, e) } finally { busy = false }
       }
