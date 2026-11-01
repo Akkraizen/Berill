@@ -85,5 +85,7 @@ internal fun ArchiveSettings(core: BerillCore) {
       }
     }) { Text(ConnectionsText.restore()) } },
     dismissButton = { TextButton(enabled = !busy, onClick = { pending = null }) { Text(ConnectionsText.close()) } }) }
+  AutoExportSection(core)
+  AttachmentCacheSection(core)
   }
 }

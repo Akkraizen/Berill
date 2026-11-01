@@ -29,6 +29,21 @@ interface FileAccess {
 
   suspend fun pickFile(extensions: List<String>, maxBytes: Int = 20 * 1024 * 1024): PickedFile? =
     null
+
+  /**
+   * Asks for a folder that later writes may use without asking again (automatic export). Returns a
+   * reference to store — a path on desktop, a document tree URI on Android — or null.
+   */
+  suspend fun pickFolder(): String? = null
+
+  /** Short, readable name of a folder reference from [pickFolder]. */
+  fun folderLabel(folder: String): String = folder
+
+  suspend fun writeToFolder(folder: String, name: String, bytes: ByteArray): Boolean = false
+
+  suspend fun listFolder(folder: String): List<String> = emptyList()
+
+  suspend fun deleteFromFolder(folder: String, name: String): Boolean = false
 }
 
 object NoFileAccess : FileAccess {

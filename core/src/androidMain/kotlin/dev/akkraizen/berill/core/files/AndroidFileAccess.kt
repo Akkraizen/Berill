@@ -1,6 +1,7 @@
 package dev.akkraizen.berill.core.files
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
@@ -8,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import dev.akkraizen.berill.api.FileAccess
@@ -23,6 +25,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 object DocumentPicker {
+  internal var folderLaunch: (() -> Unit)? = null
+  internal var folderPending: ((Uri?) -> Unit)? = null
   internal var saveLaunch: ((String) -> Unit)? = null
   internal var savePending: ((Uri?) -> Unit)? = null
   internal var launch: (() -> Unit)? = null
@@ -38,6 +42,11 @@ object DocumentPicker {
       pending = null
     }
     launch = { launcher.launch(arrayOf("*/*")) }
+    val folders = activity.registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+      folderPending?.invoke(uri)
+      folderPending = null
+    }
+    folderLaunch = { folders.launch(null) }
   }
 }
 
@@ -117,6 +126,49 @@ internal class AndroidFileAccess(private val context: Context) : FileAccess {
       } ?: return@withContext null
       PickedFile(name, bytes, "application/octet-stream")
     }
+  }
+
+  override suspend fun pickFolder(): String? {
+    val uri = withContext(Dispatchers.Main) {
+      val launch = DocumentPicker.folderLaunch ?: return@withContext null
+      suspendCancellableCoroutine<Uri?> { cont ->
+        DocumentPicker.folderPending = { if (cont.isActive) cont.resume(it) }
+        cont.invokeOnCancellation { DocumentPicker.folderPending = null }
+        launch()
+      }
+    } ?: return null
+    // Keeps access after restarts, so scheduled exports can write without asking.
+    context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+    return uri.toString()
+  }
+
+  override fun folderLabel(folder: String): String =
+    runCatching { DocumentsContract.getTreeDocumentId(Uri.parse(folder)).substringAfter(':').ifEmpty { folder } }.getOrDefault(folder)
+
+  private fun treeDocument(folder: String): Uri {
+    val tree = Uri.parse(folder)
+    return DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+  }
+
+  private fun children(folder: String): List<Pair<String, String>> {
+    val tree = Uri.parse(folder)
+    val uri = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+    val projection = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+    return context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+      buildList { while (cursor.moveToNext()) add(cursor.getString(0) to cursor.getString(1)) }
+    }.orEmpty()
+  }
+
+  override suspend fun writeToFolder(folder: String, name: String, bytes: ByteArray): Boolean = withContext(Dispatchers.IO) {
+    val document = DocumentsContract.createDocument(context.contentResolver, treeDocument(folder), "application/zip", name) ?: return@withContext false
+    context.contentResolver.openOutputStream(document, "w")?.use { it.write(bytes); true } ?: false
+  }
+
+  override suspend fun listFolder(folder: String): List<String> = withContext(Dispatchers.IO) { children(folder).map { it.second } }
+
+  override suspend fun deleteFromFolder(folder: String, name: String): Boolean = withContext(Dispatchers.IO) {
+    val id = children(folder).firstOrNull { it.second == name }?.first ?: return@withContext false
+    DocumentsContract.deleteDocument(context.contentResolver, DocumentsContract.buildDocumentUriUsingTree(Uri.parse(folder), id))
   }
 
   private fun decode(uri: Uri, maxSide: Int): Bitmap? {

@@ -143,4 +143,38 @@ class AttachmentCacheTest {
     } finally { server.stop(0); driver.close() }
   }
 
+  @Test fun trimRemovesLeastRecentlyUsedFilesButNeverKeptOnes() {
+    val dir = Files.createTempDirectory("photo-trim").toFile()
+    try {
+      val cache = FileAttachmentCache(dir, memoryLimitBytes = 0)
+      val hashes = (1..4).map { i -> ByteArray(100) { i.toByte() }.let { bytes -> attachmentHash(bytes).also { cache.put(it, bytes) } } }
+      hashes.forEachIndexed { i, hash -> java.io.File(dir, hash).setLastModified(1_000_000L * (i + 1)) }
+      assertEquals(400, cache.size())
+      assertNotNull(cache.get(hashes[0])) // used now: becomes the most recent
+      assertEquals(2, cache.trim(maxBytes = 200, keep = setOf(hashes[1])))
+      assertEquals(setOf(hashes[0], hashes[1]), cache.hashes().toSet())
+      assertEquals(0, cache.trim(maxBytes = 0, keep = cache.hashes().toSet()))
+    } finally { dir.deleteRecursively() }
+  }
+
+  @Test fun cacheIsOnlyTrimmedWhenTheServerHasTheFiles() = runBlocking {
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    BerillDatabase.Schema.create(driver)
+    val dir = Files.createTempDirectory("photo-trim-service").toFile()
+    try {
+      val store = LocalStore(BerillDatabase(driver), HybridClock("trim") { 0L })
+      val vault = MemoryVault()
+      val service = Attachments(FileAttachmentCache(dir), store, vault, SyncEncryption(store, vault))
+      service.cacheLimitBytes = 0
+      val pending = service.put("not uploaded".encodeToByteArray())
+      assertEquals(0, service.trimCache(force = true), "without a server the cache is the only copy")
+      store.setMeta(SyncEngine.KEY_URL, "https://example.com")
+      vault.write(SyncEngine.VAULT_TOKEN, "token")
+      val uploaded = attachmentHash("uploaded".encodeToByteArray())
+      FileAttachmentCache(dir).put(uploaded, "uploaded".encodeToByteArray())
+      assertEquals(1, service.trimCache(force = true))
+      assertEquals(listOf(pending), service.cache.hashes())
+      assertEquals(0, service.trimCache(), "trimming runs at most every few hours")
+    } finally { driver.close(); dir.deleteRecursively() }
+  }
 }

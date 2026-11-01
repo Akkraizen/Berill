@@ -79,6 +79,7 @@ class BerillCore(
   val encryption = SyncEncryption(store, vault)
   val attachments = dev.akkraizen.berill.core.attachments.Attachments(attachmentCache, store, vault, encryption)
   val archive = dev.akkraizen.berill.core.connections.LocalArchiveService(store, attachments)
+  val autoExport = dev.akkraizen.berill.core.connections.AutoExport(store, archive, files)
   private val pluginFiles = object : FileAccess by files {
     override suspend fun storeAttachment(bytes: ByteArray): String = attachments.put(bytes)
     override suspend fun loadAttachment(hash: String): ByteArray? = attachments.get(hash)
@@ -101,7 +102,7 @@ class BerillCore(
     now = { Clock.System.now().toEpochMilliseconds() }
   )
 
-  val sync = SyncEngine(store, deviceId, scope, encryption, vault, beforeUpload = { attachments.uploadPending() })
+  val sync = SyncEngine(store, deviceId, scope, encryption, vault, beforeUpload = { attachments.uploadPending(); attachments.trimCache() })
 
   var healthImport: dev.akkraizen.berill.core.connections.HealthImport? = null
 
@@ -167,6 +168,13 @@ class BerillCore(
           }
         }
         kotlinx.coroutines.delay(60000)
+      }
+    }
+    scope.launch {
+      kotlinx.coroutines.delay(60_000) // let startup and the first sync finish first
+      while (true) {
+        autoExport.runIfDue()
+        kotlinx.coroutines.delay(60L * 60 * 1000)
       }
     }
     reminders.start(this.plugins, scope)

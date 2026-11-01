@@ -14,6 +14,7 @@ class ConnectedMaintenanceWorker(context: Context, params: WorkerParameters) : C
         for (source in plugin.provides(core.plugins.context(plugin)).filterIsInstance<MaintenanceSource>()) source.update()
       }
       core.reminders.refresh(core.plugins)
+      core.autoExport.runIfDue()
       Result.success()
     } catch (e: CancellationException) { throw e } catch (_: Exception) { Result.retry() }
   }

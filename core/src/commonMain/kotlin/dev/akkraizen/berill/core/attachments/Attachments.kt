@@ -19,6 +19,10 @@ interface AttachmentCache {
   fun put(hash: String, bytes: ByteArray)
   fun get(hash: String): ByteArray?
   fun hashes(): List<String>
+  /** Bytes used on disk. */
+  fun size(): Long = 0
+  /** Removes least recently used files, except [keep], until at most [maxBytes] remain. Returns removed count. */
+  fun trim(maxBytes: Long, keep: Set<String>): Int = 0
 }
 class MemoryAttachmentCache : AttachmentCache {
   private val data = mutableMapOf<String, ByteArray>()
@@ -34,6 +38,10 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
   private val downloadMutex = Mutex()
   companion object {
     private const val TAG = "attachments"
+    private const val KEY_CACHE_LIMIT = "blobs.cache_limit"
+    private const val KEY_TRIMMED = "blobs.trimmed_at"
+    const val DEFAULT_CACHE_LIMIT = 512L * 1024 * 1024
+    private const val TRIM_INTERVAL = 6L * 60 * 60 * 1000
   }
   private fun pending(): Set<String> = store.meta("blobs.pending")?.split(',')?.filter { it.length == 64 }?.toSet().orEmpty()
   private fun pending(value: Set<String>) = store.setMeta("blobs.pending", value.sorted().joinToString(","))
@@ -44,6 +52,28 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     withContext(Dispatchers.Default) { cache.put(hash, bytes) }
     pending(pending() + hash)
     hash
+  }
+
+  /** Disk limit of downloaded and uploaded files; files that exist only here are never removed. */
+  var cacheLimitBytes: Long
+    get() = store.meta(KEY_CACHE_LIMIT)?.toLongOrNull() ?: DEFAULT_CACHE_LIMIT
+    set(value) { store.setMeta(KEY_CACHE_LIMIT, value.toString()) }
+
+  fun cacheSize(): Long = cache.size()
+
+  /**
+   * Frees space once the server has every file: only possible with sync configured and nothing
+   * pending, because otherwise the cache may hold the only copy. Removed files download again on use.
+   */
+  suspend fun trimCache(force: Boolean = false): Int = mutex.withLock {
+    if (store.meta(SyncEngine.KEY_URL).isNullOrBlank() || vault.read(SyncEngine.VAULT_TOKEN) == null) return@withLock 0
+    val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+    val last = store.meta(KEY_TRIMMED)?.toLongOrNull() ?: 0L
+    if (!force && now - last < TRIM_INTERVAL) return@withLock 0
+    val removed = withContext(Dispatchers.Default) { cache.trim(cacheLimitBytes, pending()) }
+    store.setMeta(KEY_TRIMMED, now.toString())
+    if (removed > 0) AppLog.info(TAG, "removed $removed cached attachment(s) over the ${cacheLimitBytes / (1024 * 1024)} MB limit")
+    removed
   }
 
   suspend fun uploadPending() = mutex.withLock {

@@ -50,6 +50,33 @@ internal class DesktopFileAccess : FileAccess {
     return withContext(Dispatchers.IO) { target.writeBytes(bytes); true }
   }
 
+  override suspend fun pickFolder(): String? = withContext(Dispatchers.Swing) {
+    val chooser = javax.swing.JFileChooser().apply {
+      fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
+      isAcceptAllFileFilterUsed = false
+    }
+    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) chooser.selectedFile?.absolutePath else null
+  }
+
+  override fun folderLabel(folder: String): String = java.io.File(folder).let { it.name.ifEmpty { it.path } }
+
+  override suspend fun writeToFolder(folder: String, name: String, bytes: ByteArray): Boolean = withContext(Dispatchers.IO) {
+    val directory = java.io.File(folder)
+    if (!directory.isDirectory || name.contains('/') || name.contains('\\')) return@withContext false
+    val temporary = java.io.File(directory, ".$name.part")
+    temporary.writeBytes(bytes)
+    java.nio.file.Files.move(temporary.toPath(), java.io.File(directory, name).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    true
+  }
+
+  override suspend fun listFolder(folder: String): List<String> = withContext(Dispatchers.IO) {
+    java.io.File(folder).listFiles().orEmpty().filter { it.isFile }.map { it.name }
+  }
+
+  override suspend fun deleteFromFolder(folder: String, name: String): Boolean = withContext(Dispatchers.IO) {
+    !name.contains('/') && !name.contains('\\') && java.io.File(folder, name).delete()
+  }
+
   override val supportsImageDrop: Boolean get() = true
 
   @OptIn(ExperimentalComposeUiApi::class)
