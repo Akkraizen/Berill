@@ -21,6 +21,9 @@ import coil3.request.crossfade
 import dev.akkraizen.berill.api.ui.*
 import dev.akkraizen.berill.api.ui.display.Ic
 
+// Consumers can report decode failures without changing the public Cover function signature.
+val LocalImageFailure = androidx.compose.runtime.staticCompositionLocalOf<() -> Unit> { {} }
+
 @Composable
 fun Cover(
   url: String?,
@@ -30,6 +33,7 @@ fun Cover(
   bytes: ByteArray? = null,
   contentScale: ContentScale = ContentScale.Crop
 ) {
+  val failure by androidx.compose.runtime.rememberUpdatedState(LocalImageFailure.current)
   Box(
     modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHighest),
     contentAlignment = Alignment.Center
@@ -38,6 +42,7 @@ fun Cover(
     if (bytes != null) {
       AsyncImage(
         model = bytes,
+        onError = { failure() },
         contentDescription = null,
         contentScale = contentScale,
         modifier = Modifier.matchParentSize()
@@ -48,6 +53,7 @@ fun Cover(
         remember(url) { ImageRequest.Builder(context).data(url).crossfade(true).build() }
       AsyncImage(
         model = request,
+        onError = { failure() },
         contentDescription = null,
         contentScale = contentScale,
         modifier = Modifier.matchParentSize()

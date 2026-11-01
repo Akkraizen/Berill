@@ -57,10 +57,17 @@ internal fun rememberImageBytes(data: String?, revision: Int = 0, onFailure: () 
   val failed by rememberUpdatedState(onFailure)
   val files = LocalRecipeFiles.current
   val bytes by androidx.compose.runtime.produceState<ByteArray?>(null, data, files, revision) {
-    value = try {
-      if (data?.startsWith("blob:") == true) files.loadAttachment(data.removePrefix("blob:")).also { if (it == null) failed() }
-      else data?.let { Base64.decode(it) }
-    } catch (e: CancellationException) { throw e } catch (_: Exception) { failed(); null }
+    value = null
+    if (data.isNullOrBlank()) return@produceState
+    for (attempt in 0..2) {
+      try {
+        val loaded = if (data.startsWith("blob:")) files.loadAttachment(data.removePrefix("blob:"))
+          else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Base64.decode(data) }
+        if (loaded != null) { value = loaded; return@produceState }
+      } catch (e: CancellationException) { throw e } catch (_: Exception) { /* Retry transient failures. */ }
+      if (attempt < 2) kotlinx.coroutines.delay((attempt + 1) * 1000L)
+    }
+    failed()
   }
   return bytes
 }
@@ -109,6 +116,7 @@ internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, 
   }
   fun attach() { scope.launch { addSafely { ctx.files.pickImages() } } }
 
+  androidx.compose.runtime.CompositionLocalProvider(dev.akkraizen.berill.api.ui.media.LocalImageFailure provides { photoError = PhotoFailure.LOAD }) {
   Column(
     Modifier.fillMaxWidth().then(ctx.files.imageDropTarget(enabled = !busy, onDrop = { files -> scope.launch { addSafely { files } } })),
     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -203,5 +211,6 @@ internal fun RecipePhotos(ctx: PluginContext, recipeId: String, recipe: Recipe, 
       onMove = ::reorder,
       onDelete = { id -> collection.delete(id); viewing = null }
     )
+  }
   }
 }

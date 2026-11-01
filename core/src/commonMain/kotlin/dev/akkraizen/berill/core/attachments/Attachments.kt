@@ -7,6 +7,8 @@ import dev.akkraizen.berill.core.sync.*
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
@@ -27,13 +29,14 @@ expect fun attachmentHash(bytes: ByteArray): String
 class Attachments(val cache: AttachmentCache, private val store: LocalStore, private val vault: SecretVault, private val encryption: SyncEncryption) {
   private val http = createHttpClient()
   private val mutex = Mutex()
+  private val downloadMutex = Mutex()
   private fun pending(): Set<String> = store.meta("blobs.pending")?.split(',')?.filter { it.length == 64 }?.toSet().orEmpty()
   private fun pending(value: Set<String>) = store.setMeta("blobs.pending", value.sorted().joinToString(","))
 
   suspend fun put(bytes: ByteArray): String = mutex.withLock {
     if (bytes.size > 20 * 1024 * 1024) throw FeatureException(FailureReason.TOO_LARGE)
     val hash = attachmentHash(bytes)
-    cache.put(hash, bytes)
+    withContext(Dispatchers.Default) { cache.put(hash, bytes) }
     pending(pending() + hash)
     hash
   }
@@ -45,7 +48,7 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     val mode = encryption.state.value.name
     if (store.meta("blobs.mode") != mode || store.meta(SyncEngine.KEY_RECONCILED) != "1") pending(pending() + cache.hashes())
     for (hash in pending()) {
-      val bytes = cache.get(hash) ?: throw FeatureException(FailureReason.MISSING_ATTACHMENT)
+      val bytes = withContext(Dispatchers.Default) { cache.get(hash) } ?: throw FeatureException(FailureReason.MISSING_ATTACHMENT)
       val response = http.put("$url/api/blobs/$hash") {
         bearerAuth(token); contentType(ContentType.Application.OctetStream)
         setBody(encryption.encryptAttachment(bytes))
@@ -56,13 +59,17 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     store.setMeta("blobs.mode", mode)
   }
 
-  suspend fun get(hash: String): ByteArray? = try { download(hash) }
+  suspend fun get(hash: String): ByteArray? = try {
+    require(hash.matches(Regex("[0-9a-f]{64}")))
+    // Cached photos must not wait for a slow upload, even when offline or encryption is locked.
+    withContext(Dispatchers.Default) { cache.get(hash) } ?: download(hash)
+  }
   catch (e: kotlinx.coroutines.CancellationException) { throw e }
   catch (e: Exception) { dev.akkraizen.berill.core.log.AppLog.warn("attachments", "download failed", e); throw e }
 
-  private suspend fun download(hash: String): ByteArray? = mutex.withLock {
+  private suspend fun download(hash: String): ByteArray? = downloadMutex.withLock {
     require(hash.matches(Regex("[0-9a-f]{64}")))
-    cache.get(hash)?.let { return@withLock it }
+    withContext(Dispatchers.Default) { cache.get(hash) }?.let { return@withLock it }
     val url = store.meta(SyncEngine.KEY_URL)?.takeIf { it.isNotBlank() } ?: return@withLock null
     val token = vault.read(SyncEngine.VAULT_TOKEN) ?: return@withLock null
     if (encryption.state.value == E2eState.Locked) throw FeatureException(FailureReason.ENCRYPTION_LOCKED)
@@ -71,7 +78,7 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     checkServiceStatus(response.status.value)
     val bytes = encryption.decryptAttachment(response.body<ByteArray>()) ?: throw FeatureException(FailureReason.CORRUPT_ATTACHMENT)
     if (attachmentHash(bytes) != hash) throw FeatureException(FailureReason.CORRUPT_ATTACHMENT)
-    cache.put(hash, bytes)
+    withContext(Dispatchers.Default) { cache.put(hash, bytes) }
     bytes
   }
 }

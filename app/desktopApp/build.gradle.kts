@@ -17,6 +17,7 @@ dependencies {
   implementation(compose.desktop.currentOs)
   implementation(libs.kotlinx.coroutinesSwing)
   implementation(libs.jna)
+  testImplementation(project(":plugins:recipes"))
   testImplementation(libs.kotlin.testJunit)
   testImplementation(libs.sqldelight.sqliteDriver)
 

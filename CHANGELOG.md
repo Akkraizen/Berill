@@ -123,6 +123,7 @@ are released together with them.
 
 ### Fixed
 
+- Cached recipe photos load without waiting for network uploads. Attachment reads run off the UI thread, use a bounded 24 MiB memory cache backed by persistent local files, retry temporary failures, and expose image decoding errors.
 - Windows installer build, publication and update discovery consistently use `-windows.exe`; legacy `-Setup.exe` downloads remain supported.
 - Sync deployment transfers the backup Dockerfile and builds its local image before recreating containers.
 - Release widget tests respect the selected language on English CI runners; failed Windows test reports are retained as workflow artifacts.

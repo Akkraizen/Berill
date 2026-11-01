@@ -7,17 +7,37 @@ import java.security.MessageDigest
 
 actual fun attachmentHash(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
 
-class FileAttachmentCache(private val directory: File) : AttachmentCache {
+class FileAttachmentCache(private val directory: File, private val memoryLimitBytes: Int = 24 * 1024 * 1024) : AttachmentCache {
+  private val memory = LinkedHashMap<String, ByteArray>(16, 0.75f, true)
+  private var memoryBytes = 0
+  private fun remember(hash: String, bytes: ByteArray) {
+    memory.remove(hash)?.let { memoryBytes -= it.size }
+    if (bytes.size > memoryLimitBytes) return
+    while (memoryBytes + bytes.size > memoryLimitBytes && memory.isNotEmpty()) {
+      val oldest = memory.entries.iterator().next()
+      memoryBytes -= oldest.value.size
+      memory.remove(oldest.key)
+    }
+    memory[hash] = bytes.copyOf()
+    memoryBytes += bytes.size
+  }
   init { check(directory.isDirectory || directory.mkdirs()) }
   private fun file(hash: String): File { require(hash.matches(Regex("[0-9a-f]{64}"))); return File(directory, hash) }
   @Synchronized override fun put(hash: String, bytes: ByteArray) {
     require(attachmentHash(bytes) == hash)
     val target = file(hash)
-    if (target.isFile && attachmentHash(target.readBytes()) == hash) return
+    if (target.isFile && attachmentHash(target.readBytes()) == hash) { remember(hash, bytes); return }
     val temporary = File.createTempFile("attachment-", ".tmp", directory)
     try { temporary.writeBytes(bytes); Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING) }
     finally { temporary.delete() }
+    remember(hash, bytes)
   }
-  override fun get(hash: String): ByteArray? = file(hash).takeIf { it.isFile }?.readBytes()?.takeIf { attachmentHash(it) == hash }
+  @Synchronized override fun get(hash: String): ByteArray? {
+    val target = file(hash)
+    memory[hash]?.let { return it.copyOf() }
+    val bytes = target.takeIf { it.isFile }?.readBytes()?.takeIf { attachmentHash(it) == hash } ?: return null
+    remember(hash, bytes)
+    return bytes
+  }
   override fun hashes(): List<String> = directory.listFiles().orEmpty().filter { it.isFile && it.name.matches(Regex("[0-9a-f]{64}")) }.map { it.name }
 }

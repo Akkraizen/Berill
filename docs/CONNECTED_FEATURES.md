@@ -19,3 +19,7 @@ Initialize the repository explicitly before starting remote backups. Remote fail
 
 Health Connect permission flow, launcher previews, tile behavior and delivery under device sleep
 still require verification on a physical Android device before distribution.
+
+## Local photo cache
+
+Android stores attachment originals in the app files directory; Desktop stores them in `~/.berill/attachments`. The cache persists across application restarts and is included in local archives. Files are verified by SHA-256, with a 24 MiB in-memory LRU above the disk store. Memory eviction does not delete originals. Cached images remain readable without a server and while network uploads are in progress. Temporary loading failures are retried; decoding errors in the recipe photo panel show its localized loading error and retry action.
