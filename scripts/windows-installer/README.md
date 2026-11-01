@@ -16,7 +16,7 @@ The application version comes from `version.properties` in the repository root.
 Automated releases and Android signing are documented in [docs/RELEASES.md](../../docs/RELEASES.md).
 
 The script builds `:app:desktopApp:packageReleaseMsi`, reads the version and
-product code directly from that MSI, and compiles `Berill-<version>-Setup.exe`
+product code directly from that MSI, and compiles `Berill-<version>-windows.exe`
 into `app/desktopApp/build/compose/binaries/main-release/branded-exe`.
 Pass `-SkipMsiBuild` to package the latest existing release MSI or
 `-OutputDirectory` to change the output folder. Pass `-MsiPath` to package an exact MSI from an isolated build without rebuilding it.

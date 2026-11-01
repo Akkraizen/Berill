@@ -66,7 +66,7 @@ try {
   if ($CheckUpgrade) { $compilerArgs += '/DUpgradeCheck=1'; $compilerArgs += '/DPreview=1' }
   & $Compiler @compilerArgs (Join-Path $PSScriptRoot 'Berill.iss')
   if ($LASTEXITCODE -ne 0) { throw "EXE build failed: $LASTEXITCODE" }
-  Get-Item (Join-Path $OutputDirectory "Berill-$version-Setup.exe")
+  Get-Item (Join-Path $OutputDirectory "Berill-$version-windows.exe")
 } finally {
   Pop-Location
 }

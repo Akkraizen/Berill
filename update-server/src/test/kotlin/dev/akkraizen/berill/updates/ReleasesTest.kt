@@ -8,6 +8,22 @@ import kotlin.test.assertNull
 
 class ReleasesTest {
   @Test
+  fun supportsNewWindowsNamesAndPrefersThemOverLegacyNames() {
+    val dir = Files.createTempDirectory("windows-releases").toFile()
+    try {
+      val releases = Releases(dir)
+      File(dir, "Berill-1.2.0-Setup.exe").writeText("legacy")
+      assertEquals("/download/Berill-1.2.0-Setup.exe", releases.latest()!!.windows)
+      val current = File(dir, "Berill-1.2.0-windows.exe").apply { writeText("current") }
+      assertEquals("/download/Berill-1.2.0-windows.exe", releases.latest()!!.windows)
+      assertEquals(current, releases.file(current.name))
+      File(dir, "Berill-1.2.1-windows.exe").writeText("next")
+      assertEquals("1.2.1", releases.latest()!!.version)
+      assertEquals("/download/Berill-1.2.1-windows.exe", releases.latest()!!.windows)
+    } finally { dir.deleteRecursively() }
+  }
+
+  @Test
   fun picksNewestVersionAndItsFiles() {
     val dir = Files.createTempDirectory("releases").toFile()
     listOf(

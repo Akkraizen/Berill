@@ -131,14 +131,14 @@ on the default branch for manual runs to be available.
    signature and publisher of the downloaded Inno Setup installer are verified before it runs.
 2. JVM tests and server tests run.
 3. Signed APK and AAB are built and their signatures verified.
-4. The Windows MSI and the `Berill-<version>-Setup.exe` installer are built. The MSI version must
+4. The Windows MSI and the `Berill-<version>-windows.exe` installer are built. The MSI version must
    match `version.properties`.
 5. In parallel, a macOS runner runs the desktop tests and builds `Berill-<version>-macos.dmg`.
 6. In parallel, a Linux runner runs the desktop tests and builds `Berill-<version>-linux.deb` and
    `Berill-<version>-linux.rpm`.
 7. Checksums are computed after all files are built and verified again before the draft is created.
 8. A **draft** GitHub release is created with:
-    - `Berill-<version>-Setup.exe`;
+    - `Berill-<version>-windows.exe`;
     - `Berill-<version>-macos.dmg`;
     - `Berill-<version>-linux.deb`;
     - `Berill-<version>-linux.rpm`;

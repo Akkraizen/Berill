@@ -108,7 +108,7 @@ page can be served by either server; the examples below put it on server 2.
 | `release/version.ps1`                         | Reads and validates `version.properties`, checks that a `vX.Y.Z` tag matches it.          |
 | `release/prepare-android-signing.ps1`         | Restores the Android signing key from a secret into a temporary folder in CI.             |
 | `release/checksums.ps1`                       | Writes `SHA256SUMS.txt` for `.exe`, `.apk`, and `.aab` files.                             |
-| `windows-installer/build.ps1`                 | Builds the MSI and wraps it into the `Berill-<version>-Setup.exe` installer (Inno Setup). |
+| `windows-installer/build.ps1`                 | Builds the MSI and wraps it into the `Berill-<version>-windows.exe` installer (Inno Setup). |
 | `windows-installer/generate-assets.ps1`       | Renders the installer icon from `BerillIcon.kt`.                                          |
 | `windows-installer/prepare-msi.ps1`           | Prepares an MSI copy for testing an upgrade over an older version.                        |
 | `windows-installer/Berill.iss`, `upgrade.iss` | Inno Setup scripts.                                                                       |
@@ -346,7 +346,7 @@ Done once.
 
 1. **Actions → Prepare release → Run workflow**, version `1.1.0`. The workflow bumps the version,
    tags `v1.1.0`, and starts the app and server builds.
-2. **Release** creates a draft release with `Berill-1.1.0-Setup.exe`, `Berill-1.1.0-macos.dmg`,
+2. **Release** creates a draft release with `Berill-1.1.0-windows.exe`, `Berill-1.1.0-macos.dmg`,
    `Berill-1.1.0-linux.deb`, `Berill-1.1.0-linux.rpm`, the APK, the AAB, and `SHA256SUMS.txt`. Check
    the files and click **Publish release**.
 3. **Publish update** uploads the installer, the DMG, Linux packages, and the APK to server 2. The
@@ -409,7 +409,7 @@ remote buckets and credentials must be configured explicitly.
 | `updates` does not answer `/health`           | Check `docker compose logs updates` and that `UPDATES_PORT` is free.                                                                                                                                                   |
 | `port is already allocated`                   | An old server in another folder is still running; run `docker compose down` there (without `-v`).                                                                                                                      |
 | App: "Server responded 401"                   | The token was revoked or mistyped; create a new one.                                                                                                                                                                   |
-| No update is offered                          | Wrong update server address in settings, no `Berill-<version>-android.apk` / `-Setup.exe` / `-macos.dmg` / `-linux.deb` / `-linux.rpm` in `releases/` on server 2, or the version is not newer than the installed one. |
+| No update is offered                          | Wrong update server address in settings, no `Berill-<version>-android.apk` / `-windows.exe` / `-macos.dmg` / `-linux.deb` / `-linux.rpm` in `releases/` on server 2, or the version is not newer than the installed one. |
 | Prepare release: `push declined`              | Branch protection blocks GitHub Actions (see [GitHub setup](#github-setup), step 3).                                                                                                                                   |
 
 ## Related documents

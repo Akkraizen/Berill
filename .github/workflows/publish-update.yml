@@ -40,7 +40,7 @@ jobs:
           mkdir -p dist
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
             --pattern "Berill-$version-android.apk" \
-            --pattern "Berill-$version-Setup.exe" \
+            --pattern "Berill-$version-*.exe" \
             --pattern SHA256SUMS.txt
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
             --pattern "Berill-$version-macos.dmg" || echo "No macOS build in $TAG"
@@ -50,7 +50,10 @@ jobs:
             --pattern "Berill-$version-linux.rpm" || echo "No Linux rpm build in $TAG"
           (cd dist && sha256sum --check --ignore-missing SHA256SUMS.txt)
           test -f "dist/Berill-$version-android.apk"
-          test -f "dist/Berill-$version-Setup.exe"
+          windows="Berill-$version-windows.exe"
+          if [ ! -f "dist/$windows" ]; then windows="Berill-$version-Setup.exe"; fi
+          test -f "dist/$windows"
+          echo "windows=$windows" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/ssh
         with:
@@ -62,12 +65,13 @@ jobs:
       - name: Upload to the update server
         env:
           VERSION: ${{ steps.files.outputs.version }}
+          WINDOWS_FILE: ${{ steps.files.outputs.windows }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/berill' }}
           KEEP: ${{ vars.RELEASES_KEEP || '3' }}
         run: |
           set -euo pipefail
           ssh deploy "rm -rf '$DEPLOY_PATH/releases/.incoming' && mkdir -p '$DEPLOY_PATH/releases/.incoming'"
-          files=("dist/Berill-$VERSION-android.apk" "dist/Berill-$VERSION-Setup.exe")
+          files=("dist/Berill-$VERSION-android.apk" "dist/$WINDOWS_FILE")
           if [ -f "dist/Berill-$VERSION-macos.dmg" ]; then files+=("dist/Berill-$VERSION-macos.dmg"); fi
           if [ -f "dist/Berill-$VERSION-linux.deb" ]; then files+=("dist/Berill-$VERSION-linux.deb"); fi
           if [ -f "dist/Berill-$VERSION-linux.rpm" ]; then files+=("dist/Berill-$VERSION-linux.rpm"); fi
@@ -79,4 +83,5 @@ jobs:
         env:
           UPDATES_URL: ${{ vars.UPDATES_URL }}
           VERSION: ${{ steps.files.outputs.version }}
+          WINDOWS_FILE: ${{ steps.files.outputs.windows }}
         run: curl -fsS -o /dev/null "$UPDATES_URL/download/Berill-$VERSION-android.apk"
