@@ -1,6 +1,6 @@
 package dev.akkraizen.berill.core.update
 
-enum class UpdateFailure { DOWNLOAD, INTEGRITY, PACKAGE, INSTALL, UNSUPPORTED, INSECURE, SERVER_TOO_OLD }
+enum class UpdateFailure { DOWNLOAD, INTEGRITY, PACKAGE, INSTALL, UNSUPPORTED, INSECURE, SERVER_TOO_OLD, SIGNATURE }
 class UpdateException(val reason: UpdateFailure) : Exception(reason.name)
 enum class InstallResult { OPENED, PERMISSION_REQUIRED, EXIT_REQUIRED }
 interface UpdateInstaller {

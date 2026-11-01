@@ -696,6 +696,7 @@
     "core.update.error.UNSUPPORTED": "Встроенная установка недоступна в этом режиме запуска.",
     "core.update.error.INSECURE": "Для загрузки установочных пакетов нужен сервер обновлений с HTTPS.",
     "core.update.error.SERVER_TOO_OLD": "Обновите сервер обновлений: для этого релиза нет данных проверки пакета.",
+    "core.update.error.SIGNATURE": "Пакет не подписан издателем Berill. Установка заблокирована.",
     "core.update.restartInstall": "Перезапустить и установить",
     "core.update.title": "Обновления",
     "core.update.settingsHint": "Загрузка и установка обновлений внутри Berill"

@@ -691,6 +691,7 @@
     "core.update.error.UNSUPPORTED": "In-app installation is unavailable for this launch mode.",
     "core.update.error.INSECURE": "Use an HTTPS update server to download installation packages.",
     "core.update.error.SERVER_TOO_OLD": "Update the update server: this release has no package verification metadata.",
+    "core.update.error.SIGNATURE": "The package is not signed by the Berill publisher. Installation was blocked.",
     "core.update.restartInstall": "Restart and install",
     "core.update.title": "Updates",
     "core.update.settingsHint": "Download and install updates inside Berill"

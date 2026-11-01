@@ -30,9 +30,36 @@ errors to `~/.berill/updates/installation.log`. A failed installation is reporte
 on the next start; its package can be retried or discarded. MSI's existing rollback behavior is retained.
 
 If the installed launcher is Authenticode-signed, the new installer must have a valid signature with
-the same certificate thumbprint. Invalid signatures are rejected. The current release pipeline does
-not provision a Windows signing certificate: unsigned builds rely on the explicitly configured HTTPS
-update server and SHA-256. A checksum is an integrity check, not a publisher signature.
+the same certificate thumbprint. Invalid signatures are rejected. The release pipeline does not
+provision a Windows signing certificate; publisher authenticity comes from the update signature
+below instead.
+
+## Update signatures
+
+The SHA-256 in `/api/release` is computed by the update server, so on its own it only protects
+against damaged downloads: whoever controls the server could publish another installer together with
+its hash. Builds that contain a publisher key therefore also require a signature made in CI:
+
+* `publish-update.yml` signs every package with the `UPDATE_SIGNING_KEY` secret
+  (`scripts/release/sign-update.sh`) and uploads `Berill-<version>-signatures.json` next to them;
+* the update server only relays the signature (`artifacts.<platform>.signature`);
+* the client checks the ECDSA P-256 signature of `berill-update-v1`, the file name, SHA-256, and size
+  with `BuildInfo.UPDATE_PUBLIC_KEY` before downloading and again before installing. A missing or
+  wrong signature stops the update with “The package is not signed by the Berill publisher”.
+
+Setup, once:
+
+1. `bash scripts/release/generate-update-key.sh` — creates `berill-update-signing.pem` and prints
+   the public key.
+2. Add the whole PEM file as the secret `UPDATE_SIGNING_KEY` of the `updates` environment in GitHub,
+   keep an offline copy, and delete the local file. Never commit it.
+3. Put the printed line `berill.updatePublicKey=…` into `gradle.properties` and release a version
+   normally: the first version with the key is still installed by the old updater (SHA-256 only);
+   every later update is verified.
+
+Without `berill.updatePublicKey` (development builds and forks) packages are accepted on SHA-256 as
+before. Clients accept only the key they were built with: after losing or replacing the private key,
+users install the first version with the new key manually.
 
 ## Android installations
 

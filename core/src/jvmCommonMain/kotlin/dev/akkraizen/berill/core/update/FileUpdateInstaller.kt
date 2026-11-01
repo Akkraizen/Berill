@@ -14,6 +14,8 @@ import kotlinx.coroutines.*
 
 abstract class FileUpdateInstaller(protected val directory: File) : UpdateInstaller {
   override val available get() = true
+  /** Publisher key from the build; tests replace it. */
+  protected open val publicKey: String get() = dev.akkraizen.berill.core.BuildInfo.UPDATE_PUBLIC_KEY
   protected fun packageFile(path: String): File {
     val file = File(path).canonicalFile
     if (file.parentFile != directory.canonicalFile || !file.name.startsWith("package-")) throw UpdateException(UpdateFailure.PACKAGE)
@@ -28,6 +30,7 @@ abstract class FileUpdateInstaller(protected val directory: File) : UpdateInstal
     val filename = uri.path.substringAfterLast('/')
     if (!filename.startsWith("Berill-${update.version}-")) throw UpdateException(UpdateFailure.PACKAGE)
     if (!filename.matches(Regex("Berill-[0-9]+(?:\\.[0-9]+){2}-(?:windows\\.exe|Setup\\.exe|android\\.apk|macos\\.dmg|linux\\.deb|linux\\.rpm|windows\\.zip)"))) throw UpdateException(UpdateFailure.PACKAGE)
+    requirePublisherSignature(publicKey, update, filename)
     check(directory.isDirectory || directory.mkdirs())
     val target = File(directory, "package-${UUID.randomUUID()}-${filename}")
     val partial = File(directory, target.name + ".part")
@@ -66,6 +69,8 @@ abstract class FileUpdateInstaller(protected val directory: File) : UpdateInstal
   override suspend fun validate(path: String, update: AppUpdate) = withContext(Dispatchers.IO) {
     val file = packageFile(path)
     if (!file.isFile || file.length() != update.size) throw UpdateException(UpdateFailure.INTEGRITY)
+    val published = PACKAGE_NAME.matchEntire(file.name)?.groupValues?.get(1) ?: throw UpdateException(UpdateFailure.PACKAGE)
+    requirePublisherSignature(publicKey, update, published)
     val digest = MessageDigest.getInstance("SHA-256")
     file.inputStream().use { input ->
       val buffer = ByteArray(65536)
@@ -75,5 +80,9 @@ abstract class FileUpdateInstaller(protected val directory: File) : UpdateInstal
     if (hash != update.sha256) throw UpdateException(UpdateFailure.INTEGRITY)
   }
   override suspend fun remove(path: String) { withContext(Dispatchers.IO) { packageFile(path).delete() }; Unit }
-  companion object { const val MAX_BYTES = 1024L * 1024 * 1024 }
+  companion object {
+    const val MAX_BYTES = 1024L * 1024 * 1024
+    /** `package-<uuid>-<published file name>`, as written by [download]. */
+    private val PACKAGE_NAME = Regex("package-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}-(Berill-.+)")
+  }
 }

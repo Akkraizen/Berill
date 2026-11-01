@@ -35,7 +35,13 @@ data class LatestRelease(
 )
 
 @Serializable
-data class ReleaseArtifact(val path: String, val sha256: String, val size: Long)
+data class ReleaseArtifact(
+  val path: String,
+  val sha256: String,
+  val size: Long,
+  /** Base64 ECDSA P-256 signature of [UpdateSignature.message], made by the release workflow. */
+  val signature: String? = null,
+)
 
 @Serializable
 data class DeviceStatus(

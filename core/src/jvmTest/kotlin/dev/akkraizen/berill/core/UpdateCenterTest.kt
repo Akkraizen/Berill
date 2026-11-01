@@ -169,4 +169,43 @@ class UpdateCenterTest {
       assertEquals(0, installer.calls)
     } finally { scope.cancel(); driver.close() }
   }
+
+  private class Signed(dir: File, override val publicKey: String) : FileUpdateInstaller(dir) {
+    override val platform = "windows"
+    override suspend fun install(path: String, update: AppUpdate): InstallResult = error("Must not launch installers in tests")
+  }
+
+  @Test fun publisherSignatureIsRequiredWhenTheBuildHasAKey() = runBlocking {
+    val keys = java.security.KeyPairGenerator.getInstance("EC").apply { initialize(java.security.spec.ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+    val publicKey = java.util.Base64.getEncoder().encodeToString(keys.public.encoded)
+    fun sign(name: String, sha: String, size: Long, key: java.security.PrivateKey = keys.private) = java.util.Base64.getEncoder().encodeToString(
+      java.security.Signature.getInstance("SHA256withECDSA").run { initSign(key); update(dev.akkraizen.berill.protocol.UpdateSignature.message(name, sha, size).encodeToByteArray()); sign() })
+    val bytes = "signed installer".encodeToByteArray()
+    val name = "Berill-9.0.0-windows.exe"
+    val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+    server.createContext("/") { call -> call.sendResponseHeaders(200, bytes.size.toLong()); call.responseBody.use { it.write(bytes) } }
+    server.start()
+    val directory = Files.createTempDirectory("signed-update").toFile()
+    try {
+      val url = "http://127.0.0.1:${server.address.port}/download/$name"
+      val good = AppUpdate("9.0.0", url, hash(bytes), bytes.size.toLong(), signature = sign(name, hash(bytes), bytes.size.toLong()))
+      val installer = Signed(directory, publicKey)
+      val path = installer.download(good) { _, _ -> }
+      installer.validate(path, good)
+
+      val other = java.security.KeyPairGenerator.getInstance("EC").apply { initialize(java.security.spec.ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+      for (bad in listOf(
+        good.copy(signature = null),
+        good.copy(signature = "not-base64!"),
+        good.copy(signature = sign(name, hash(bytes), bytes.size.toLong(), other.private)),
+        good.copy(signature = sign("Berill-9.0.0-android.apk", hash(bytes), bytes.size.toLong())),
+      )) {
+        assertEquals(UpdateFailure.SIGNATURE, assertFailsWith<UpdateException> { installer.download(bad) { _, _ -> } }.reason)
+        assertEquals(UpdateFailure.SIGNATURE, assertFailsWith<UpdateException> { installer.validate(path, bad) }.reason)
+      }
+      assertEquals(listOf(java.io.File(path).name), directory.listFiles()!!.map { it.name }, "rejected packages are never downloaded")
+      // Builds without a key keep the SHA-256-only behaviour.
+      Signed(directory, "").validate(path, good.copy(signature = null))
+    } finally { server.stop(0); directory.deleteRecursively() }
+  }
 }

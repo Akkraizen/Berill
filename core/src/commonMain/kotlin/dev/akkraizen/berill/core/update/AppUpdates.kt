@@ -23,7 +23,14 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 
 @kotlinx.serialization.Serializable
-data class AppUpdate(val version: String, val url: String?, val sha256: String? = null, val size: Long? = null, val notes: String? = null)
+data class AppUpdate(
+  val version: String,
+  val url: String?,
+  val sha256: String? = null,
+  val size: Long? = null,
+  val notes: String? = null,
+  val signature: String? = null,
+)
 
 @kotlinx.serialization.Serializable
 private data class SavedPackage(val update: AppUpdate, val path: String)
@@ -175,7 +182,7 @@ class AppUpdates(
             val artifact = latest.artifacts[platform] ?: if (platform == "linux") latest.artifacts["linux-deb"] else null
             val selectedPath = artifact?.path ?: path
             require(selectedPath == null || selectedPath.startsWith("/download/") && !selectedPath.contains("..") && !selectedPath.contains('?') && !selectedPath.contains('#'))
-            UpdateCheck.Available(AppUpdate(latest.version, selectedPath?.let { "$url$it" }, artifact?.sha256, artifact?.size, latest.notes))
+            UpdateCheck.Available(AppUpdate(latest.version, selectedPath?.let { "$url$it" }, artifact?.sha256, artifact?.size, latest.notes, artifact?.signature))
           } else {
             UpdateCheck.UpToDate
           }

@@ -56,6 +56,17 @@ jobs:
           echo "windows=$windows" >> "$GITHUB_OUTPUT"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > "dist/Berill-$version-notes.md"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Sign packages for the in-app updater
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          VERSION: ${{ steps.files.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::warning::UPDATE_SIGNING_KEY is not set: clients with a built-in update key will refuse this release"
+            exit 0
+          fi
+          bash scripts/release/sign-update.sh dist "$VERSION"
       - uses: ./.github/actions/ssh
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -76,6 +87,7 @@ jobs:
           if [ -f "dist/Berill-$VERSION-macos.dmg" ]; then files+=("dist/Berill-$VERSION-macos.dmg"); fi
           if [ -f "dist/Berill-$VERSION-linux.deb" ]; then files+=("dist/Berill-$VERSION-linux.deb"); fi
           if [ -f "dist/Berill-$VERSION-linux.rpm" ]; then files+=("dist/Berill-$VERSION-linux.rpm"); fi
+          if [ -f "dist/Berill-$VERSION-signatures.json" ]; then files+=("dist/Berill-$VERSION-signatures.json"); fi
           scp "${files[@]}" "deploy:$DEPLOY_PATH/releases/.incoming/"
           ssh deploy "KEEP='$KEEP' bash -s -- '$DEPLOY_PATH/releases'" < scripts/deploy/publish-release.sh
           echo "### Update $VERSION published" >> "$GITHUB_STEP_SUMMARY"

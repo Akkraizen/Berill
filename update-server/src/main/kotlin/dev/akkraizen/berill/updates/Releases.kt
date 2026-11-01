@@ -1,8 +1,12 @@
 package dev.akkraizen.berill.updates
 
 import dev.akkraizen.berill.protocol.LatestRelease
+import dev.akkraizen.berill.protocol.UpdateSignature
 import dev.akkraizen.berill.protocol.compareVersions
 import java.io.File
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 class Releases(val directory: File) {
   fun latest(): LatestRelease? {
@@ -22,13 +26,27 @@ class Releases(val directory: File) {
     )
     val paths = mapOf("android" to result.android, "windows" to result.windows, "macos" to result.macos,
       "linux-deb" to result.linuxDeb, "linux-rpm" to result.linuxRpm)
+    val signatures = signatures(version)
     val artifacts = paths.mapNotNull { (platform, path) ->
       val source = path?.substringAfterLast('/')?.let(::file) ?: return@mapNotNull null
-      platform to dev.akkraizen.berill.protocol.ReleaseArtifact(path, checksum(source), source.length())
+      platform to dev.akkraizen.berill.protocol.ReleaseArtifact(path, checksum(source), source.length(), signatures[source.name])
     }.toMap()
     val notesFile = File(directory, "Berill-$version-notes.md")
     val notes = if (notesFile.isFile && notesFile.length() <= 64 * 1024) notesFile.readText() else null
     return result.copy(artifacts = artifacts, notes = notes)
+  }
+
+  /** Signatures made by the release workflow; a missing or malformed file means unsigned packages. */
+  private fun signatures(version: String): Map<String, String> {
+    val file = File(directory, UpdateSignature.signaturesFile(version))
+    if (!file.isFile || file.length() > 64 * 1024) return emptyMap()
+    return runCatching {
+      val files = Json.parseToJsonElement(file.readText()).jsonObject["files"]?.jsonObject ?: return emptyMap()
+      files.mapNotNull { (name, value) ->
+        val signature = (value as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return@mapNotNull null
+        if (NAME.matchEntire(name) == null || !SIGNATURE.matches(signature)) null else name to signature
+      }.toMap()
+    }.getOrDefault(emptyMap())
   }
 
   private data class Fingerprint(val size: Long, val modified: Long, val hash: String)
@@ -55,6 +73,7 @@ class Releases(val directory: File) {
   }
 
   companion object {
+    private val SIGNATURE = Regex("[A-Za-z0-9+/]{40,200}={0,2}")
     private val NAME =
       Regex("""Berill-(\d+(?:\.\d+){1,3})-(android\.apk|Setup\.exe|windows\.exe|macos\.dmg|linux\.deb|linux\.rpm)""")
 

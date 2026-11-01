@@ -72,6 +72,7 @@ abstract class GenerateBuildInfo : DefaultTask() {
   @get:Input abstract val versionName: Property<String>
   @get:Input abstract val versionCode: Property<Int>
   @get:Input abstract val updatesUrl: Property<String>
+  @get:Input abstract val updatePublicKey: Property<String>
   @get:Internal abstract val repository: DirectoryProperty
   @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
 
@@ -100,6 +101,7 @@ abstract class GenerateBuildInfo : DefaultTask() {
       |  const val COMMIT_TIME: String = ${q(commitTime)}
       |  const val DIRTY: Boolean = $dirty
       |  const val UPDATES_URL: String = ${q(updatesUrl.get())}
+      |  const val UPDATE_PUBLIC_KEY: String = ${q(updatePublicKey.get().trim())}
       |}
       |""".trimMargin()
     val target = File(outputDirectory.get().asFile, "dev/akkraizen/berill/core/BuildInfo.kt")
@@ -114,6 +116,8 @@ val generateBuildInfo = tasks.register<GenerateBuildInfo>("generateBuildInfo") {
   versionName.set(rootProject.extra["appVersionName"] as String)
   versionCode.set(rootProject.extra["appVersionCode"] as Int)
   updatesUrl.set(providers.gradleProperty("berill.updatesUrl").orElse(""))
+  // Base64 X.509 public key of the update signing key (scripts/release/generate-update-key.sh).
+  updatePublicKey.set(providers.gradleProperty("berill.updatePublicKey").orElse(""))
   repository.set(rootProject.layout.projectDirectory)
   outputDirectory.set(layout.buildDirectory.dir("generated/buildinfo"))
   outputs.upToDateWhen { false }

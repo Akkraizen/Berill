@@ -76,4 +76,23 @@ class ReleasesTest {
   fun emptyDirectoryHasNoRelease() {
     assertNull(Releases(Files.createTempDirectory("releases").toFile()).latest())
   }
+
+  @Test
+  fun relaysWorkflowSignaturesAndIgnoresMalformedOnes() {
+    val dir = Files.createTempDirectory("signed-releases").toFile()
+    try {
+      File(dir, "Berill-9.1.0-windows.exe").writeText("installer")
+      File(dir, "Berill-9.1.0-android.apk").writeText("apk")
+      val signature = "MEUCIQ" + "A".repeat(90) + "=="
+      File(dir, "Berill-9.1.0-signatures.json").writeText(
+        """{"files":{"Berill-9.1.0-windows.exe":"$signature","Berill-9.1.0-android.apk":"not base64 !","../evil.exe":"$signature"}}"""
+      )
+      val release = Releases(dir).latest()!!
+      assertEquals(signature, release.artifacts.getValue("windows").signature)
+      assertNull(release.artifacts.getValue("android").signature)
+      File(dir, "Berill-9.1.0-signatures.json").writeText("{broken")
+      assertNull(Releases(dir).latest()!!.artifacts.getValue("windows").signature)
+      assertNull(Releases(dir).file("Berill-9.1.0-signatures.json"), "signatures are not a download")
+    } finally { dir.deleteRecursively() }
+  }
 }
