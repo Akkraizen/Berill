@@ -128,6 +128,7 @@ jobs:
           ssh deploy "mkdir -p '$DEPLOY_PATH/backup'"
           scp deploy/docker-compose.yml "deploy:$DEPLOY_PATH/docker-compose.yml"
           scp deploy/backup/backup.sh "deploy:$DEPLOY_PATH/backup/backup.sh"
+          scp deploy/backup/Dockerfile "deploy:$DEPLOY_PATH/backup/Dockerfile"
           echo "$GH_TOKEN" | ssh deploy "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin" > /dev/null
           status=0
           ssh deploy "DEPLOY_PATH='$DEPLOY_PATH' bash -s -- '$SERVICE' '$image'" < scripts/deploy/deploy-service.sh || status=$?

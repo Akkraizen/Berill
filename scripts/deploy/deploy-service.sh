@@ -26,7 +26,11 @@ port=$(sed -n "s/^$port_variable=//p" .env | tail -n1)
 port=${port:-$default_port}
 
 mkdir -p releases backups backup
-docker compose pull "$service" "${extra[@]}"
+docker compose pull "$service"
+# Backup is built locally; it has no published registry image. Build before changing containers.
+if [ "$service" = sync ]; then
+  docker compose build --pull backup
+fi
 docker compose up -d --no-build --remove-orphans "$service" "${extra[@]}"
 
 for _ in $(seq 1 45); do
