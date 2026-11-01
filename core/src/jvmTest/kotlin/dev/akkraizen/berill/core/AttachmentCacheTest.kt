@@ -78,4 +78,36 @@ class AttachmentCacheTest {
       assertContentEquals(bytes, service.get(hash))
     } finally { driver.close() }
   }
+
+  @Test fun missingOrRejectedAttachmentsDoNotBlockOtherUploads() = runBlocking {
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    BerillDatabase.Schema.create(driver)
+    val store = LocalStore(BerillDatabase(driver), HybridClock("upload-test") { 0L })
+    val vault = MemoryVault()
+    val cache = MemoryAttachmentCache()
+    val service = Attachments(cache, store, vault, SyncEncryption(store, vault))
+    val large = service.put("too large".encodeToByteArray())
+    val small = service.put("small".encodeToByteArray())
+    val missing = "f".repeat(64)
+    store.setMeta("blobs.pending", listOf(large, small, missing).sorted().joinToString(","))
+    val uploaded = java.util.concurrent.CopyOnWriteArrayList<String>()
+    val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+    server.createContext("/") { call ->
+      val hash = call.requestURI.path.substringAfterLast('/')
+      call.requestBody.readBytes()
+      if (hash == large) call.sendResponseHeaders(413, -1) else { uploaded += hash; call.sendResponseHeaders(204, -1) }
+      call.close()
+    }
+    server.start()
+    try {
+      store.setMeta(SyncEngine.KEY_URL, "http://127.0.0.1:${server.address.port}")
+      store.setMeta(SyncEngine.KEY_RECONCILED, "1")
+      store.setMeta("blobs.mode", SyncEncryption(store, vault).state.value.name)
+      vault.write(SyncEngine.VAULT_TOKEN, "test-token")
+      service.uploadPending()
+      assertEquals(listOf(small), uploaded.toList())
+      assertEquals("", store.meta("blobs.pending"))
+    } finally { server.stop(0); driver.close() }
+  }
+
 }

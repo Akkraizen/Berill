@@ -2,6 +2,7 @@ package dev.akkraizen.berill.core.attachments
 
 import dev.akkraizen.berill.core.connections.*
 import dev.akkraizen.berill.core.data.LocalStore
+import dev.akkraizen.berill.core.log.AppLog
 import dev.akkraizen.berill.core.secure.SecretVault
 import dev.akkraizen.berill.core.sync.*
 import io.ktor.client.call.body
@@ -30,6 +31,9 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
   private val http = createHttpClient()
   private val mutex = Mutex()
   private val downloadMutex = Mutex()
+  companion object {
+    private const val TAG = "attachments"
+  }
   private fun pending(): Set<String> = store.meta("blobs.pending")?.split(',')?.filter { it.length == 64 }?.toSet().orEmpty()
   private fun pending(value: Set<String>) = store.setMeta("blobs.pending", value.sorted().joinToString(","))
 
@@ -48,10 +52,22 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     val mode = encryption.state.value.name
     if (store.meta("blobs.mode") != mode || store.meta(SyncEngine.KEY_RECONCILED) != "1") pending(pending() + cache.hashes())
     for (hash in pending()) {
-      val bytes = withContext(Dispatchers.Default) { cache.get(hash) } ?: throw FeatureException(FailureReason.MISSING_ATTACHMENT)
+      val bytes = withContext(Dispatchers.Default) { cache.get(hash) }
+      if (bytes == null) {
+        // Nothing can ever upload these bytes again; keeping the hash would block every sync.
+        AppLog.warn(TAG, "attachment $hash is missing from the local cache; upload skipped")
+        pending(pending() - hash)
+        continue
+      }
       val response = http.put("$url/api/blobs/$hash") {
         bearerAuth(token); contentType(ContentType.Application.OctetStream)
         setBody(encryption.encryptAttachment(bytes))
+      }
+      if (response.status == HttpStatusCode.PayloadTooLarge) {
+        // A permanent rejection of one file must not stop records and other files from syncing.
+        AppLog.warn(TAG, "server rejected attachment $hash (${bytes.size} bytes) as too large; upload skipped")
+        pending(pending() - hash)
+        continue
       }
       checkServiceStatus(response.status.value)
       pending(pending() - hash)
@@ -65,7 +81,7 @@ class Attachments(val cache: AttachmentCache, private val store: LocalStore, pri
     withContext(Dispatchers.Default) { cache.get(hash) } ?: download(hash)
   }
   catch (e: kotlinx.coroutines.CancellationException) { throw e }
-  catch (e: Exception) { dev.akkraizen.berill.core.log.AppLog.warn("attachments", "download failed", e); throw e }
+  catch (e: Exception) { AppLog.warn(TAG, "download failed", e); throw e }
 
   private suspend fun download(hash: String): ByteArray? = downloadMutex.withLock {
     require(hash.matches(Regex("[0-9a-f]{64}")))
