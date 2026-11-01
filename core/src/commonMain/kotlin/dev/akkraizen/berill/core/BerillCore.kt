@@ -74,6 +74,7 @@ class BerillCore(
   val nav = AppNavigator(newNoteId = data::newId)
   val editorSessions = dev.akkraizen.berill.core.notes.EditorSessions()
   val notes = NotesRepository(data) { Clock.System.now().toEpochMilliseconds() }
+  val dailyNotes = dev.akkraizen.berill.core.notes.DailyNotes(notes, store)
   val http: HttpAccess = KtorHttpAccess()
 
   val encryption = SyncEncryption(store, vault)
@@ -98,7 +99,7 @@ class BerillCore(
     plugins = this.plugins,
     nav = nav,
     store = store,
-    coreProviders = coreWidgets(notes) { except -> widgets.summaries(except) },
+    coreProviders = coreWidgets(notes, { except -> widgets.summaries(except) }, dailyNotes),
     now = { Clock.System.now().toEpochMilliseconds() }
   )
 

@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -25,6 +27,8 @@ import dev.akkraizen.berill.api.ui.today
 import dev.akkraizen.berill.api.ui.dayMonth
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.notes.*
+import dev.akkraizen.berill.core.widgets.MOOD_EMOJI
+import dev.akkraizen.berill.core.widgets.journalMood
 import dev.akkraizen.berill.protocol.SyncRecord
 import kotlinx.coroutines.CancellationException
 import dev.akkraizen.berill.api.i18n.I18n
@@ -146,7 +150,7 @@ internal fun DayDialog(core: BerillCore, close: () -> Unit) {
       catch (e: CancellationException) { throw e } catch (e: Exception) { AppLog.error("day", "load", e); loadError = failureMessage(e) }
     }
   }
-  val noteId = "journal-$date"
+  val noteId = core.dailyNotes.id(date)
   val notes by remember { core.notes.observe().catch { error ->
     if (error is CancellationException) throw error
     if (error is Exception) core.connections.errors.report(FailureOperation.DAY, error) else throw error
@@ -174,12 +178,13 @@ internal fun DayDialog(core: BerillCore, close: () -> Unit) {
     }
     FilledTonalButton(onClick = {
       if (core.connections.errors.run(FailureOperation.COMMAND) {
-        if (core.notes.get(noteId) == null) core.notes.save(noteId, date.toString(), "")
-        core.nav.openNote(noteId)
+        core.nav.openNote(core.dailyNotes.ensure(date))
       }) close()
     }, modifier = Modifier.fillMaxWidth()) {
       Icon(Icons.Outlined.EditNote, null, Modifier.size(22.dp)); Spacer(Modifier.width(8.dp)); Text(ConnectionsText.dayNote())
     }
+    val mood = notes.firstOrNull { it.id == noteId }?.value?.body?.let(::journalMood)
+    MoodRow(mood) { value -> core.connections.errors.run(FailureOperation.COMMAND) { core.dailyNotes.setMood(date, value) } }
     LazyColumn(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(6.dp)) {
       notes.firstOrNull { it.id == noteId }?.value?.body?.takeIf { it.isNotBlank() }?.let { body ->
         item { Surface(shape = RoundedCornerShape(20.dp), color = colors.surfaceContainerHigh) {
@@ -200,6 +205,23 @@ internal fun DayDialog(core: BerillCore, close: () -> Unit) {
       if (entries.isEmpty() && loadError == null && !partial) item {
         Text(ConnectionsText.dayEmpty(), Modifier.fillMaxWidth().padding(vertical = 24.dp), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
       }
+    }
+  }
+}
+
+/** Mood of the selected day, stored as the first line of its daily note (like the journal widget). */
+@Composable
+private fun MoodRow(selected: Int?, onSelect: (Int) -> Unit) {
+  val labels = dev.akkraizen.berill.core.widgets.WidgetText.moods
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+    Text(ConnectionsText.mood(), Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+    MOOD_EMOJI.forEachIndexed { index, emoji ->
+      FilterChip(
+        selected = selected == index,
+        onClick = { onSelect(index) },
+        label = { Text(emoji, style = MaterialTheme.typography.titleMedium) },
+        modifier = Modifier.semantics { contentDescription = labels.getOrNull(index).orEmpty() },
+      )
     }
   }
 }

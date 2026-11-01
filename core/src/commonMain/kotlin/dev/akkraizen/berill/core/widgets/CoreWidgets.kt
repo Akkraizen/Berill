@@ -25,8 +25,8 @@ import dev.akkraizen.berill.core.notes.displayTitle
 import dev.akkraizen.berill.core.notes.preview
 import kotlinx.datetime.LocalDate
 
-internal fun coreWidgets(notes: NotesRepository, summaries: suspend (String) -> List<WidgetRow>): List<WidgetProvider> =
-  listOf(TodayWidget(summaries), QuickNoteWidget(notes), PinnedNoteWidget(notes), JournalWidget(notes))
+internal fun coreWidgets(notes: NotesRepository, summaries: suspend (String) -> List<WidgetRow>, daily: dev.akkraizen.berill.core.notes.DailyNotes? = null): List<WidgetProvider> =
+  listOf(TodayWidget(summaries), QuickNoteWidget(notes), PinnedNoteWidget(notes), JournalWidget(notes, daily))
 
 private fun recentNotes(notes: NotesRepository) = notes.all()
 
@@ -185,7 +185,7 @@ internal fun withJournalMood(body: String, mood: Int, label: String): String {
     line + "\n\n" + body
 }
 
-private class JournalWidget(private val notes: NotesRepository) : WidgetProvider {
+private class JournalWidget(private val notes: NotesRepository, private val daily: dev.akkraizen.berill.core.notes.DailyNotes?) : WidgetProvider {
   override val id = "journal"
   override val title: Tr = WidgetText.journalTitle
   override val description: Tr = WidgetText.journalDescription
@@ -220,6 +220,7 @@ private class JournalWidget(private val notes: NotesRepository) : WidgetProvider
 
   override suspend fun perform(request: WidgetRequest, action: WidgetAction.Run): WidgetEffect {
     val value = action.args[VALUE]?.toIntOrNull()?.takeIf { it in 0 until MOOD_COUNT } ?: return WidgetEffect.Refresh()
+    if (daily != null) { daily.setMood(today(), value); return WidgetEffect.Refresh() }
     val date = today()
     val noteId = journalNoteId(date)
     val note = notes.get(noteId) ?: Note(title = WidgetText.journalNoteTitle(date.ddMMyyyy()))

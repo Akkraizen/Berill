@@ -49,4 +49,15 @@ internal fun EditorSettings(core: BerillCore) {
   Text(I18n.text("editor.fontSize", "size" to prefs.fontSize))
   Slider(value = prefs.fontSize.toFloat(), onValueChange = { core.editorPreferences.set(prefs.copy(fontSize = it.toInt().coerceIn(12, 28))) }, valueRange = 12f..28f, steps = 15)
   TextButton(onClick = { core.editorPreferences.reset() }) { Text(I18n.text("workspace.reset")) }
+  // Synced between devices, unlike the editor appearance above.
+  val template = remember { core.dailyNotes.template() }
+  dev.akkraizen.berill.api.ui.fields.CommitTextField(
+    value = template,
+    onCommit = { core.dailyNotes.setTemplate(it) },
+    label = I18n.text("editor.dailyTemplate"),
+    modifier = Modifier.fillMaxWidth(),
+    singleLine = false,
+    normalize = { it.trimEnd() },
+  )
+  Text(I18n.text("editor.dailyTemplateHint"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }

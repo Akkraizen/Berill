@@ -18,6 +18,7 @@ internal object ConnectionsText {
   val trashEmpty = Tr("connections.trashEmpty")
   val trashEmptyHint = Tr("connections.trashEmptyHint")
   val dayEmpty = Tr("connections.dayEmpty")
+  val mood = Tr("connections.mood")
   val autoExport = Tr("connections.autoExport")
   val autoExportHint = Tr("connections.autoExportHint")
   val autoExportChoose = Tr("connections.autoExportChoose")
