@@ -65,6 +65,7 @@ private fun JournalList(ctx: PluginContext) {
   val collection = remember(ctx) { logs(ctx) }
   val all by remember(collection) { collection.observe() }.collectAsState(emptyList())
   val sorted = all.sortedWith(newestFirst)
+  val catalog = rememberCatalog(ctx)
 
   PluginList {
     item {
@@ -77,6 +78,7 @@ private fun JournalList(ctx: PluginContext) {
       }
     }
     item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx) }
+    item { MuscleBalanceCard(all.map { it.value }, catalog.visible + catalog.hidden) }
     if (sorted.isEmpty()) item { SectionCard { EmptyHint(WorkoutsText.noLogs()) } }
     items(sorted, key = { it.id }) { item ->
       LogRow(item.value) { ctx.nav.open(WorkoutsPlugin.LOG_ROUTE + item.id) }

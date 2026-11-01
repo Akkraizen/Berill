@@ -466,6 +466,21 @@
     "workouts.widget.resting": "Отдых",
     "workouts.widget.restIdle": "Выберите время отдыха",
     "workouts.widget.stop": "Стоп",
-    "workouts.widget.progress": "подходов: {done} из {total}"
-}
+    "workouts.widget.progress": "подходов: {done} из {total}",
+    "workouts.radar.title": "Баланс нагрузки",
+    "workouts.radar.hint": "Отмеченные подходы завершённых тренировок. Это распределение нагрузки, а не измерение роста мышц. Значения: текущий / предыдущий период той же длины.",
+    "workouts.radar.empty": "За эти периоды нет подходящих выполненных подходов.",
+    "workouts.radar.current": "Текущий период · сплошная",
+    "workouts.radar.previous": "Предыдущий · пунктир",
+    "workouts.radar.excluded": "Не учтено подходов: {count}. Это кардио или упражнения без найденной группы мышц.",
+    "workouts.radar.metric.SETS": "Подходы",
+    "workouts.radar.metric.VOLUME": "Тоннаж, кг",
+    "workouts.radar.region.CHEST": "Грудь",
+    "workouts.radar.region.SHOULDERS": "Плечи",
+    "workouts.radar.region.ARMS": "Руки",
+    "workouts.radar.region.CORE": "Кор",
+    "workouts.radar.region.LEGS": "Ноги",
+    "workouts.radar.region.GLUTES": "Ягодицы",
+    "workouts.radar.region.BACK": "Спина"
+  }
 }

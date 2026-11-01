@@ -18,6 +18,7 @@ dependencies {
   implementation(libs.kotlinx.coroutinesSwing)
   implementation(libs.jna)
   testImplementation(project(":plugins:recipes"))
+  testImplementation(project(":plugins:workouts"))
   testImplementation(libs.kotlin.testJunit)
   testImplementation(libs.sqldelight.sqliteDriver)
 

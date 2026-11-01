@@ -461,6 +461,21 @@
     "workouts.widget.resting": "Rest",
     "workouts.widget.restIdle": "Pick a rest time",
     "workouts.widget.stop": "Stop",
-    "workouts.widget.progress": "sets: {done} of {total}"
-}
+    "workouts.widget.progress": "sets: {done} of {total}",
+    "workouts.radar.title": "Muscle balance",
+    "workouts.radar.hint": "Completed sets in finished workouts. Values show training distribution, not measured muscle growth. Current / previous equal-length period.",
+    "workouts.radar.empty": "No matching completed sets in these periods.",
+    "workouts.radar.current": "Current period · solid",
+    "workouts.radar.previous": "Previous period · dashed",
+    "workouts.radar.excluded": "{count} sets excluded: cardio or an exercise without a matched muscle group.",
+    "workouts.radar.metric.SETS": "Completed sets",
+    "workouts.radar.metric.VOLUME": "Volume, kg",
+    "workouts.radar.region.CHEST": "Chest",
+    "workouts.radar.region.SHOULDERS": "Shoulders",
+    "workouts.radar.region.ARMS": "Arms",
+    "workouts.radar.region.CORE": "Core",
+    "workouts.radar.region.LEGS": "Legs",
+    "workouts.radar.region.GLUTES": "Glutes",
+    "workouts.radar.region.BACK": "Back"
+  }
 }
