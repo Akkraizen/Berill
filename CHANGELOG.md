@@ -11,6 +11,42 @@ are released together with them.
 
 ### Added
 
+#### Connected workspace
+
+- Global search and a command palette across enabled modules, available with Ctrl+K / Command+K.
+- A daily overview combining habits, workouts, nutrition, weight, expenses, planner items and a daily note.
+- Note backlinks, a trash view with restore and confirmed permanent deletion, and local ZIP export/import
+  containing JSON records, Markdown notes and attachments without server credentials.
+- Home page configuration for cards and quick actions; compact quick-entry dialogs open over Home,
+  with drafts, recent values, templates and save-and-add-another actions where supported.
+- Configurable keyboard shortcuts and note editor preferences for line numbers, font size and monospace text.
+- Note focus mode with a centered editor, shortcut and Escape exit, preserving drafts and editor state.
+- A notification center, shared reminder scheduling, per-module notification controls, sound preferences
+  and quiet hours that can span midnight.
+- A synchronization conflict viewer with preserved versions and field-level resolution.
+
+#### Module capabilities and Android integration
+
+- Independent SearchSource, DaySummarySource and MCP capabilities supplied by plugin modules.
+- Typed, validated MCP create/update/delete operations, optimistic concurrency checks and read-only mode;
+  tool availability follows enabled plugins. Generic STDIO and authenticated local HTTP configurations.
+- Android text/link sharing, Quick Settings actions for water, habits and expenses, and widget previews.
+- Opt-in Health Connect imports for weight, steps and sleep, with Android permission handling.
+- SM-2 spaced repetition for language cards, recurring financial operations and category budgets.
+- Workout rest notifications and suggested weights from previous completed workouts.
+
+#### Storage and deployment
+
+- Content-addressed attachment files with lazy downloads, per-user server isolation and client-side
+  encryption when end-to-end encryption is enabled; legacy recipe photos migrate from inline base64.
+- Optional private S3-compatible attachment storage with endpoint, region and prefix configuration,
+  signed requests, bounded timeouts and continued access to existing local attachments.
+- PostgreSQL and attachment backups, including S3 attachment mirroring, with optional independent
+  encrypted restic storage, explicit repository initialization and documented restore/rollback steps.
+  External buckets and credentials must be supplied by the operator; no cloud storage is provisioned.
+- Linux desktop distributions and platform integration.
+
+
 #### Platforms
 
 - macOS support for the desktop app (macOS 12 or newer): menu bar icon instead of the system tray,
@@ -28,8 +64,7 @@ are released together with them.
 - An MCP server built into the desktop app (Windows and macOS). It serves the app's own database
   over Streamable HTTP on `127.0.0.1`, requires a bearer token, and rejects non-local `Host` and
   `Origin` headers. It is off by default and is managed in **Settings → AI assistants (MCP)**, with
-  read-only and read-write modes, token management, and ready-to-copy configuration for Claude
-  Desktop and Claude Code.
+  read-only and read-write modes, token management, and ready-to-copy configuration for compatible MCP clients.
 - `Berill --mcp`, a stdio bridge for clients that only start local servers. It connects to the
   running app, starts it in the background when needed, and reconnects after the server restarts.
 
@@ -73,12 +108,30 @@ are released together with them.
 
 ### Changed
 
+- Search, daily overview, trash and workspace dialogs use Material 3 Expressive styling; oversized
+  cards and quick-entry dialogs are smaller, and long secondary lists scroll within bounded areas.
+- Desktop search is centered in an adaptive title bar. Mobile header actions move into an overflow
+  menu so titles remain readable. The desktop synchronization icon has a fixed position beside the logo.
+- Synchronization state is shown in the header/menu instead of routine notification-center events.
+- Disabled plugins stop contributing capabilities, settings and reminders while their data is retained.
+- User-facing Russian literals use localization resources; persisted enum migrations accept legacy values.
+- The sync server Docker image builds and tests its source in a multistage build.
+- Floating Windows windows have rounded corners; maximized and fullscreen windows have square corners.
 - Plugin sources are split into `data`, `ui`, and `i18n` packages.
 - MCP tools moved into a shared `mcp` module used by both `berill-mcp` and the desktop app.
 - The desktop runtime image now includes the `java.net.http` module.
 
 ### Fixed
 
+- Cross-module synchronization recovery, logical clocks and reconciliation after server/dataset changes.
+- Unsaved note drafts are protected against concurrent synchronization and MCP edits, with conflicts retained.
+- Rescheduled planner tasks remain planned and incomplete on the source day and planned on the destination day.
+- API failures are reported consistently without silently dropping failed operations.
+- Windows Hot Reload uses separate startup libraries per launch to avoid deleting JARs locked by a previous JVM.
+- Header action hover/press feedback, icon sizes and colors, stale highlighting after popup dismissal,
+  dropdown widths and unwanted progress-bar stop indicators.
+- Remote backup failures preserve local backups; restic retention groups snapshots consistently even though
+  dump filenames change, and does not mistake connection/authentication errors for an uninitialized repository.
 - Plugin layouts on narrow screens.
 - Alignment of the workout tiles on the home screen.
 - The tray menu now opens at the cursor, and its labels stay on one line.

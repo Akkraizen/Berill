@@ -393,9 +393,9 @@ Run these in `/opt/berill` on the server named in the first column.
 | 2      | Versions being served | `ls releases/` or `curl -s 127.0.0.1:8081/api/release`                                               |
 | —      | Roll back             | **Actions → Sync server** or **Update server → Run workflow** with `image_tag` set to a GHCR tag     |
 
-Backups are stored on the same disk as the database. Copy `backups/` off server 1 weekly, for
-example
-`rsync -av deploy@<server-1>:/opt/berill/backups/ ./berill-backups/`.
+Local backups include PostgreSQL and attachments. For S3-compatible attachment storage and
+encrypted off-server backups, follow [STORAGE.md](STORAGE.md). Local storage remains the default;
+remote buckets and credentials must be configured explicitly.
 
 ## Troubleshooting
 
