@@ -679,6 +679,25 @@
     "notification.event.REMINDER": "Обычные напоминания",
     "notification.event.DEADLINE": "Дедлайны",
     "notification.event.TIMER": "Таймеры",
-    "notification.timeFormat": "Укажите время в формате ЧЧ:ММ."
+    "notification.timeFormat": "Укажите время в формате ЧЧ:ММ.",
+    "core.update.downloadInApp": "Загрузить обновление",
+    "core.update.progress": "{received} / {total} МБ",
+    "core.update.ready": "Пакет проверен и готов к установке.",
+    "core.update.install": "Установить обновление",
+    "core.update.installing": "Подготовка к установке…",
+    "core.update.permission": "Разрешите Berill устанавливать обновления в настройках Android, затем нажмите «Установить» ещё раз.",
+    "core.update.opened": "Системный установщик открыт. Если вы отменили установку, её можно запустить повторно.",
+    "core.update.cancel": "Отменить загрузку",
+    "core.update.discard": "Удалить загруженный пакет",
+    "core.update.error.DOWNLOAD": "Не удалось загрузить обновление. Проверьте подключение и повторите попытку.",
+    "core.update.error.INTEGRITY": "Проверка пакета не пройдена. Загрузите его повторно.",
+    "core.update.error.PACKAGE": "Версия, идентификатор приложения или подпись пакета не подходят для обновления.",
+    "core.update.error.INSTALL": "Не удалось запустить установку. Повторите попытку.",
+    "core.update.error.UNSUPPORTED": "Встроенная установка недоступна в этом режиме запуска.",
+    "core.update.error.INSECURE": "Для загрузки установочных пакетов нужен сервер обновлений с HTTPS.",
+    "core.update.error.SERVER_TOO_OLD": "Обновите сервер обновлений: для этого релиза нет данных проверки пакета.",
+    "core.update.restartInstall": "Перезапустить и установить",
+    "core.update.title": "Обновления",
+    "core.update.settingsHint": "Загрузка и установка обновлений внутри Berill"
   }
 }

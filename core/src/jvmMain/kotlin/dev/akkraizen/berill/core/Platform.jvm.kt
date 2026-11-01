@@ -37,6 +37,7 @@ fun createDesktopCore(
     plugins,
     coreScope(),
     DesktopFileAccess(),
+    updateInstaller = dev.akkraizen.berill.core.update.DesktopUpdateInstaller(File(dir, "updates")),
     externalPlatform = runCatching { DesktopExternalPlugins(File(dir, "plugins")) }.getOrNull(),
     attachmentCache = dev.akkraizen.berill.core.attachments.FileAttachmentCache(File(dir, "attachments")),
     reminderScheduler = dev.akkraizen.berill.core.connections.DesktopReminderScheduler(),

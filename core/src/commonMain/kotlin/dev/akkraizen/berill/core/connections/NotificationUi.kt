@@ -54,7 +54,7 @@ internal fun NotificationDialog(core: BerillCore) {
             Row {
               if (!notice.read) TextButton(onClick = { core.notifications.markRead(notice.id) }) { Text(I18n.text("center.markRead")) }
               if (notice.kind == NoticeKind.CONFLICT) TextButton(onClick = { core.notifications.open.value = false; core.notifications.conflictsOpen.value = true }) { Text(I18n.text("center.view")) }
-              if (notice.kind == NoticeKind.UPDATE) TextButton(onClick = { core.notifications.open.value = false; core.nav.openSettings("about") }) { Text(I18n.text("center.view")) }
+              if (notice.kind == NoticeKind.UPDATE) TextButton(onClick = { core.notifications.open.value = false; core.nav.openSettings(dev.akkraizen.berill.core.ui.settings.SettingsPage.Updates.id) }) { Text(I18n.text("center.view")) }
               if (notice.kind == NoticeKind.REMINDER) TextButton(onClick = {
                 when (val action = notice.open) {
                   is WidgetAction.Open -> action.pluginId?.takeIf { id -> core.plugins.enabled.value.any { it.id == id } }?.let { core.nav.openPlugin(it, action.route, action.page) }

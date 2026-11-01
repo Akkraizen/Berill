@@ -41,7 +41,17 @@ class HttpAccessErrorsTest {
  }
  @Test fun cancellationPropagatesAndTransportFailuresAreTyped() = runBlocking {
   val http = KtorHttpAccess()
-  assertFailsWith<TimeoutCancellationException> { withTimeout(1) { http.getJson("http://127.0.0.1:1/") } }
+  val accepted = java.util.concurrent.CountDownLatch(1)
+  val release = java.util.concurrent.CountDownLatch(1)
+  val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+  server.createContext("/") { call -> accepted.countDown(); release.await(5, java.util.concurrent.TimeUnit.SECONDS); call.close() }
+  server.start()
+  val request = async { http.getJson("http://127.0.0.1:${server.address.port}/") }
+  try {
+   assertTrue(withContext(Dispatchers.IO) { accepted.await(5, java.util.concurrent.TimeUnit.SECONDS) })
+   request.cancel()
+   assertFailsWith<CancellationException> { request.await() }
+  } finally { release.countDown(); request.cancelAndJoin(); server.stop(0) }
   val error = assertFailsWith<HttpException> { http.getJson("http://127.0.0.1:1/") }
   assertEquals(HttpFailureKind.NETWORK, error.kind)
  }

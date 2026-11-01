@@ -8,6 +8,22 @@ import kotlin.test.assertNull
 
 class ReleasesTest {
   @Test
+  fun includesVerifiedMetadataAndReleaseNotes() {
+    val dir = Files.createTempDirectory("update-manifest").toFile()
+    try {
+      val bytes = "installer".encodeToByteArray()
+      File(dir, "Berill-9.0.0-windows.exe").writeBytes(bytes)
+      File(dir, "Berill-9.0.0-notes.md").writeText("Release notes")
+      val artifact = Releases(dir).latest()!!
+      assertEquals("Release notes", artifact.notes)
+      assertEquals(bytes.size.toLong(), artifact.artifacts.getValue("windows").size)
+      val hash = java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
+      assertEquals(hash, artifact.artifacts.getValue("windows").sha256)
+      assertEquals(artifact.windows, artifact.artifacts.getValue("windows").path)
+    } finally { dir.deleteRecursively() }
+  }
+
+  @Test
   fun supportsNewWindowsNamesAndPrefersThemOverLegacyNames() {
     val dir = Files.createTempDirectory("windows-releases").toFile()
     try {

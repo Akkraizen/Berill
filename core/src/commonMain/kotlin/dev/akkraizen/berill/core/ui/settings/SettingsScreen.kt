@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -62,6 +63,7 @@ internal enum class SettingsPage(val icon: ImageVector, private val tr: Tr, priv
   Data(Icons.Outlined.Storage, CoreText.dataOnDevice, Tr("core.settings.dataHint")),
   Desktop(Icons.Outlined.Computer, DesktopText.desktopTitle, Tr("core.settings.desktopHint")),
   Assistants(Icons.Outlined.SmartToy, McpText.title, Tr("core.settings.mcpHint")),
+  Updates(Icons.Outlined.SystemUpdate, Tr("core.update.title"), Tr("core.update.settingsHint")),
   About(Icons.Outlined.Info, DiagText.about, Tr("core.settings.aboutHint"));
 
   val id: String
@@ -171,6 +173,7 @@ private fun SettingsPageContent(core: BerillCore, page: SettingsPage, showTitle:
         item { ShortcutsSettings(core) }
       }
       SettingsPage.Assistants -> core.mcp?.let { mcp -> item { SectionCard { McpSettings(mcp) } } }
+      SettingsPage.Updates -> item { SectionCard { UpdateSection(core) } }
       SettingsPage.About -> {
         item { SectionCard { AboutApp(core) } }
         item { TextButton(onClick = { core.replayOnboarding() }) { Text(OnboardingText.replay()) } }

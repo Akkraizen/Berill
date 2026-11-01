@@ -105,6 +105,9 @@ private fun app(
       core?.mcp?.stop()
       exitApplication()
     }
+    LaunchedEffect(core) {
+      core?.updates?.exitRequested?.collect { requested -> if (requested) exit() }
+    }
     val closeWindow: () -> Unit = {
       persistentWindow.save()
       if (trayAvailable)

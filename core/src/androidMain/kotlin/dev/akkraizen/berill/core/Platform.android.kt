@@ -26,6 +26,7 @@ fun createAndroidCore(context: Context, plugins: List<BerillPlugin>): BerillCore
     plugins = plugins,
     scope = coreScope(),
     reminderScheduler = dev.akkraizen.berill.core.connections.AndroidReminderScheduler(context.applicationContext),
+    updateInstaller = dev.akkraizen.berill.core.update.AndroidUpdateInstaller(context.applicationContext),
     files = AndroidFileAccess(context.applicationContext),
     attachmentCache = dev.akkraizen.berill.core.attachments.FileAttachmentCache(File(context.applicationContext.filesDir, "attachments")),
     externalPlatform = runCatching {

@@ -250,7 +250,7 @@ internal fun AboutApp(core: BerillCore) {
       color = MaterialTheme.colorScheme.onSurfaceVariant
     )
   }
-  UpdateSection(core)
+  TextButton(onClick = { core.nav.openSettings(SettingsPage.Updates.id) }) { Text(dev.akkraizen.berill.api.i18n.Tr("core.update.title")()) }
   OutlinedButton(onClick = { showLog = true }) { Text(DiagText.log()) }
   if (showLog) LogDialog(onDismiss = { showLog = false })
 }

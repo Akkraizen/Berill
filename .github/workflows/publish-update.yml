@@ -54,6 +54,7 @@ jobs:
           if [ ! -f "dist/$windows" ]; then windows="Berill-$version-Setup.exe"; fi
           test -f "dist/$windows"
           echo "windows=$windows" >> "$GITHUB_OUTPUT"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > "dist/Berill-$version-notes.md"
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/ssh
         with:
@@ -71,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh deploy "rm -rf '$DEPLOY_PATH/releases/.incoming' && mkdir -p '$DEPLOY_PATH/releases/.incoming'"
-          files=("dist/Berill-$VERSION-android.apk" "dist/$WINDOWS_FILE")
+          files=("dist/Berill-$VERSION-android.apk" "dist/$WINDOWS_FILE" "dist/Berill-$VERSION-notes.md")
           if [ -f "dist/Berill-$VERSION-macos.dmg" ]; then files+=("dist/Berill-$VERSION-macos.dmg"); fi
           if [ -f "dist/Berill-$VERSION-linux.deb" ]; then files+=("dist/Berill-$VERSION-linux.deb"); fi
           if [ -f "dist/Berill-$VERSION-linux.rpm" ]; then files+=("dist/Berill-$VERSION-linux.rpm"); fi

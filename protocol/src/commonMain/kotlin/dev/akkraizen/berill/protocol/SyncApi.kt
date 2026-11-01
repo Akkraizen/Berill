@@ -29,8 +29,13 @@ data class LatestRelease(
   val windows: String? = null,
   val macos: String? = null,
   val linuxDeb: String? = null,
-  val linuxRpm: String? = null
+  val linuxRpm: String? = null,
+  val artifacts: Map<String, ReleaseArtifact> = emptyMap(),
+  val notes: String? = null
 )
+
+@Serializable
+data class ReleaseArtifact(val path: String, val sha256: String, val size: Long)
 
 @Serializable
 data class DeviceStatus(

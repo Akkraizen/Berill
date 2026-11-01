@@ -54,7 +54,8 @@ class BerillCore(
   private val appearanceCache: AppearanceCache? = null,
   mcpFactory: ((BerillCore) -> McpAccess)? = null,
   reminderScheduler: dev.akkraizen.berill.core.connections.ReminderScheduler = dev.akkraizen.berill.core.connections.NoReminderScheduler,
-  attachmentCache: dev.akkraizen.berill.core.attachments.AttachmentCache = dev.akkraizen.berill.core.attachments.MemoryAttachmentCache()
+  attachmentCache: dev.akkraizen.berill.core.attachments.AttachmentCache = dev.akkraizen.berill.core.attachments.MemoryAttachmentCache(),
+  updateInstaller: dev.akkraizen.berill.core.update.UpdateInstaller = dev.akkraizen.berill.core.update.NoUpdateInstaller
 ) {
   private val db = BerillDatabase(driver)
 
@@ -106,7 +107,7 @@ class BerillCore(
   val shortcuts = dev.akkraizen.berill.core.connections.ShortcutSettings(store)
   val connections = dev.akkraizen.berill.core.connections.Connections(this)
 
-  val updates = AppUpdates(store)
+  val updates = AppUpdates(store, updateInstaller, scope) { editorSessions.prepareMutation() }
 
   val mcp: McpAccess? = mcpFactory?.invoke(this)
 

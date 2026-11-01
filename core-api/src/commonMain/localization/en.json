@@ -674,6 +674,25 @@
     "notification.event.REMINDER": "Regular reminders",
     "notification.event.DEADLINE": "Deadlines",
     "notification.event.TIMER": "Timers",
-    "notification.timeFormat": "Enter a time in HH:MM format."
+    "notification.timeFormat": "Enter a time in HH:MM format.",
+    "core.update.downloadInApp": "Download update",
+    "core.update.progress": "{received} / {total} MB",
+    "core.update.ready": "Package verified. Ready to install.",
+    "core.update.install": "Install update",
+    "core.update.installing": "Preparing installation…",
+    "core.update.permission": "Allow Berill to install updates in Android settings, then press Install again.",
+    "core.update.opened": "The system installer is open. If you cancelled it, you can try again.",
+    "core.update.cancel": "Cancel download",
+    "core.update.discard": "Remove downloaded package",
+    "core.update.error.DOWNLOAD": "Download failed. Check your connection and try again.",
+    "core.update.error.INTEGRITY": "Package verification failed. Download it again.",
+    "core.update.error.PACKAGE": "This package has an incompatible version, app identity or signing certificate.",
+    "core.update.error.INSTALL": "Could not start installation. You can try again.",
+    "core.update.error.UNSUPPORTED": "In-app installation is unavailable for this launch mode.",
+    "core.update.error.INSECURE": "Use an HTTPS update server to download installation packages.",
+    "core.update.error.SERVER_TOO_OLD": "Update the update server: this release has no package verification metadata.",
+    "core.update.restartInstall": "Restart and install",
+    "core.update.title": "Updates",
+    "core.update.settingsHint": "Download and install updates inside Berill"
   }
 }
