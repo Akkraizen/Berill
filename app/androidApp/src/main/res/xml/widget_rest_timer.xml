@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_rest_timer_description"
+    android:previewImage="@drawable/widget_preview_rest_timer"
+    android:previewLayout="@layout/widget_preview_rest_timer"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:minWidth="180dp"
     android:minHeight="110dp"

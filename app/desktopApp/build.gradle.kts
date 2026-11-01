@@ -1,3 +1,7 @@
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ValueSource
+import org.gradle.api.provider.ValueSourceParameters
+import java.util.UUID
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -14,6 +18,7 @@ dependencies {
   implementation(libs.kotlinx.coroutinesSwing)
   implementation(libs.jna)
   testImplementation(libs.kotlin.testJunit)
+  testImplementation(libs.sqldelight.sqliteDriver)
 
   implementation(libs.compose.uiToolingPreview)
 }
@@ -61,6 +66,44 @@ compose.desktop {
     buildTypes.release.proguard {
       configurationFiles.from(project.file("proguard-rules.pro"))
       obfuscate.set(false)
+    }
+  }
+}
+
+
+tasks.withType<Test>().configureEach {
+  systemProperty(
+    "berill.uiEvidenceDir",
+    layout.buildDirectory.dir("test-evidence").get().asFile.absolutePath
+  )
+}
+
+// Hot Reload 1.2 deletes its startup JAR directory when refreshing dependencies.
+// Windows keeps these JARs locked while the previous JVM is alive (including tray instances).
+// Track a launch ID so configuration-cache reuse cannot point a new launch at locked JARs.
+abstract class HotReloadLaunchId : ValueSource<String, ValueSourceParameters.None> {
+  override fun obtain(): String = UUID.randomUUID().toString()
+}
+
+if (System.getProperty("os.name").startsWith("Windows")) {
+  plugins.withId("org.jetbrains.compose.hot-reload") {
+    afterEvaluate {
+      afterEvaluate {
+        // Hot Reload 1.2 defers its setup by two evaluation stages. Resolve its lazy
+        // task wiring first, under this project's Gradle lock, before overriding the directory.
+        (tasks.findByName("hotRun") as? JavaExec)?.classpath?.files
+        tasks.matching { it.name.startsWith("sync") && it.name.endsWith("StartupLibs") }.forEach { task ->
+          // The sync task's type is private; preserve its original copy action and classpath wiring.
+          val getter = task.javaClass.getMethod("getDestinationDir").apply { isAccessible = true }
+          val destination = getter.invoke(task) as DirectoryProperty
+          val launchId = providers.of(HotReloadLaunchId::class.java) {}.get()
+          destination.set(layout.buildDirectory.dir("run/startup-libs/${task.name}/$launchId"))
+        }
+        // @Classpath ignores location-only changes; the argfile must still use the new paths.
+        tasks.matching { it.name.startsWith("hot") && it.name.endsWith("Argfile") }.configureEach {
+          outputs.upToDateWhen { false }
+        }
+      }
     }
   }
 }

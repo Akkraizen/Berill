@@ -8,6 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -85,21 +88,30 @@ class WidgetConfigActivity : ComponentActivity() {
 @Composable
 private fun ConfigScreen(fixedKey: String?, onDone: (String, String?) -> Unit, onCancel: () -> Unit) {
   val context = LocalContext.current
+  val core = remember(context) { WidgetHost.core(context) }
+  val activePlugins by core.plugins.enabled.collectAsState()
   var entries by remember { mutableStateOf<List<PickerEntry>?>(null) }
   var selected by remember { mutableStateOf(fixedKey) }
   var choices by remember { mutableStateOf<List<WidgetChoice>?>(null) }
   var optional by remember { mutableStateOf(false) }
 
-  LaunchedEffect(Unit) {
+  LaunchedEffect(activePlugins) {
     entries = withContext(Dispatchers.IO) {
-      WidgetHost.core(context).widgets.available().map { PickerEntry(it.key, it.title, it.description, it.ownerTitle()) }
+      core.widgets.available().map { PickerEntry(it.key, it.title, it.description, it.ownerTitle()) }
     }
   }
-  LaunchedEffect(selected) {
+  LaunchedEffect(selected, activePlugins) {
     val key = selected ?: return@LaunchedEffect
     choices = null
-    val hub: WidgetHub = withContext(Dispatchers.IO) { WidgetHost.core(context).widgets }
-    val provider = hub.entry(key)?.provider
+    val hub: WidgetHub = core.widgets
+    val entry = hub.available().firstOrNull { it.key == key }
+    if (entry == null) {
+      optional = false
+      choices = emptyList()
+      if (fixedKey == null) selected = null
+      return@LaunchedEffect
+    }
+    val provider = entry.provider
     if (provider?.choices == null) {
       onDone(key, null)
       return@LaunchedEffect
@@ -148,10 +160,18 @@ private fun ConfigScreen(fixedKey: String?, onDone: (String, String?) -> Unit, o
 
 private const val ANY = "\u0000any"
 
-private class Option(val id: String, val title: String, val hint: String?)
+private class Option(val id: String, val title: String, val hint: String?, val preview: Int = 0)
 
 @Composable
 private fun OptionList(options: List<Option>, onPick: (String) -> Unit) {
+  val context = LocalContext.current
+  val previews = remember {
+    val installed = AppWidgetManager.getInstance(context).installedProviders
+    WidgetCatalog.specs.mapNotNull { spec ->
+      val image = installed.firstOrNull { it.provider.packageName == context.packageName && it.provider.className == spec.receiver.name }?.previewImage ?: 0
+      spec.key?.let { it to image }
+    }.toMap()
+  }
   LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
     items(options, key = { it.id }) { option ->
       Surface(
@@ -160,6 +180,8 @@ private fun OptionList(options: List<Option>, onPick: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth().clickable { onPick(option.id) }
       ) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+          val preview = previews[option.id] ?: 0
+          if (preview != 0) Image(painterResource(preview), contentDescription = option.title, modifier = Modifier.fillMaxWidth())
           Text(option.title, style = MaterialTheme.typography.titleMedium)
           option.hint?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -36,6 +36,21 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class)
 class WidgetRendererTest {
+  @Test fun everyWidgetHasALoadablePreviewThumbnail() {
+    val context = ApplicationProvider.getApplicationContext<Application>()
+    for (spec in WidgetCatalog.specs) {
+      val receiver = context.packageManager.getReceiverInfo(ComponentName(context, spec.receiver), PackageManager.GET_META_DATA)
+      val resource = receiver.metaData.getInt("android.appwidget.provider")
+      val parser = context.resources.getXml(resource)
+      try {
+        while (parser.eventType != org.xmlpull.v1.XmlPullParser.START_TAG) parser.next()
+        val preview = parser.getAttributeResourceValue("http://schemas.android.com/apk/res/android", "previewImage", 0)
+        assertTrue(preview != 0)
+        assertNotNull(context.getDrawable(preview))
+      } finally { parser.close() }
+    }
+  }
+
   private val context: Application = ApplicationProvider.getApplicationContext()
 
   private val sample = WidgetContent(

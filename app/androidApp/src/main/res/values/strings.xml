@@ -44,4 +44,7 @@
     <string name="widget_calendar_description">A month with event markers and the selected day\'s events</string>
     <string name="widget_agenda_label">Schedule</string>
     <string name="widget_agenda_description">Events for the next two weeks, day by day</string>
+    <string name="tile_water">Water</string>
+    <string name="tile_habit">Mark a habit</string>
+    <string name="tile_expense">New expense</string>
 </resources>

@@ -16,13 +16,14 @@ internal interface DwmApi : Library {
 
 private const val DWMWA_WINDOW_CORNER_PREFERENCE = 33
 
+private const val DWMWCP_DONOTROUND = 1
 private const val DWMWCP_ROUND = 2
 
-internal fun Window.roundCorners() {
+internal fun Window.setRoundedCorners(rounded: Boolean) {
   if (!System.getProperty("os.name").orEmpty().startsWith("Windows")) return
   runCatching {
     val hwnd = Native.getComponentPointer(this) ?: return
-    val preference = IntByReference(DWMWCP_ROUND)
+    val preference = IntByReference(if (rounded) DWMWCP_ROUND else DWMWCP_DONOTROUND)
     DwmApi.INSTANCE.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, preference.pointer, 4)
   }
 }

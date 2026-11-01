@@ -9,9 +9,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 class BerillApplication : Application() {
+  override fun onCreate() { super.onCreate(); ConnectedMaintenanceWorker.register(this) }
+
   val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
   val core: BerillCore by lazy {
-    createAndroidCore(this, BerillPlugins).also { WidgetHost.observe(this, it, scope) }
+    createAndroidCore(this, BerillPlugins).also { it.healthImport = HealthConnectBridge(this, it); WidgetHost.observe(this, it, scope) }
   }
 }

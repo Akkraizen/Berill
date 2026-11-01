@@ -1,5 +1,8 @@
 package dev.akkraizen.berill
 
+import dev.akkraizen.berill.core.connections.handleShortcut
+import dev.akkraizen.berill.api.ui.interaction.ShortcutCapture
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
@@ -11,6 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.window.Window
@@ -132,14 +137,15 @@ private fun app(
       undecorated = !DesktopOs.isMac,
       onPreviewKeyEvent = { e ->
         when {
-          e.type != KeyEventType.KeyDown -> false
+          ShortcutCapture.active || e.type != KeyEventType.KeyDown -> false
+          core?.handleShortcut(e) == true -> true
           e.key == Key.Escape -> core?.onEscapeKey() ?: false
-          e.key == Key.Enter || e.key == Key.NumPadEnter -> !HotKeys.isTextInputFocused
+          e.key == Key.Enter || e.key == Key.NumPadEnter -> core?.connections?.searchOpen?.value != true && !HotKeys.isTextInputFocused
           else -> false
         }
       }
     ) {
-      DesktopWindowEffects(visible = windowVisible)
+      DesktopWindowEffects(visible = windowVisible, placement = state.placement)
       LaunchedEffect(activations) {
         if (activations > 0) {
           window.toFront()
@@ -155,7 +161,25 @@ private fun app(
           },
           onReady = { core = it },
           windowChrome = { title ->
-            WindowTitleBar(title = title, state = state, onClose = closeWindow)
+            WindowTitleBar(title = title, state = state, onClose = closeWindow, actions = {
+              core?.let { ready ->
+                val onboarded by ready.onboarded.collectAsState()
+                val focusedNote by ready.focusedNote.collectAsState()
+                if (onboarded && focusedNote == null) dev.akkraizen.berill.core.connections.ConnectionTools(ready, compact = true, showSearch = false)
+              }
+            }, search = { compact ->
+              core?.let { ready ->
+                val onboarded by ready.onboarded.collectAsState()
+                val focusedNote by ready.focusedNote.collectAsState()
+                if (onboarded && focusedNote == null) dev.akkraizen.berill.core.connections.ConnectionSearch(ready, compact)
+              }
+            }, status = {
+              core?.let { ready ->
+                val onboarded by ready.onboarded.collectAsState()
+                val focusedNote by ready.focusedNote.collectAsState()
+                if (onboarded && focusedNote == null) dev.akkraizen.berill.core.connections.ConnectionSyncStatus(ready)
+              }
+            })
           },
           overlay = { DesktopImagePicker.Content() }
         )

@@ -298,7 +298,7 @@ class PluginWidgetsTest {
     runBlocking {
       val c = core()
       c.data.collection<StudyTask>(StudyPlugin.TASKS).save("s1", StudyTask(title = "Курсовая", subject = "Сети", deadline = today().plusDays(2).toString()))
-      c.data.collection<StudyTask>(StudyPlugin.TASKS).save("s2", StudyTask(title = "Сдано", deadline = today().toString(), status = "сдано"))
+      c.data.collection<StudyTask>(StudyPlugin.TASKS).save("s2", StudyTask(title = "Сдано", deadline = today().toString(), status = dev.akkraizen.berill.plugins.study.data.SUBMITTED))
       val rows = c.render("study.deadlines").block<WidgetBlock.Rows>().items
       assertEquals(listOf("Сети: Курсовая"), rows.map { it.title })
       c.widgets.perform(WidgetInstance("study.deadlines"), rows.single().action!!)
@@ -311,7 +311,7 @@ class PluginWidgetsTest {
       val c = core()
       val ops = c.data.collection<Operation>(FinancePlugin.OPERATIONS)
       ops.save("o1", Operation(INCOME, 1000.0, "Зарплата", null, today().toString()))
-      ops.save("o2", Operation(EXPENSE, 300.0, "Кафе и рестораны", null, today().toString()))
+      ops.save("o2", Operation(EXPENSE, 300.0, dev.akkraizen.berill.plugins.finance.data.FinanceCategory.CAFES.name, null, today().toString()))
       val month = c.render("finance.month")
       assertEquals("Кафе и рестораны", month.block<WidgetBlock.Bar>().label)
       val free = month.block<WidgetBlock.Metrics>().items.first().value.filter { it.isDigit() }
@@ -319,7 +319,7 @@ class PluginWidgetsTest {
       val quick = c.render("finance.quick").block<WidgetBlock.Buttons>().items
       assertEquals("Кафе и рестораны", quick.first().label)
       c.widgets.perform(WidgetInstance("finance.quick"), quick.first().action)
-      assertEquals(Destination.Plugin(FinancePlugin.id, "add:Кафе и рестораны"), c.nav.stack.value.last())
+      assertEquals(Destination.Plugin(FinancePlugin.id, "add:" + dev.akkraizen.berill.plugins.finance.data.FinanceCategory.CAFES.name), c.nav.stack.value.last())
     }
 
   @Test

@@ -14,6 +14,7 @@ kotlin {
 
 dependencies {
   implementation(project(":app:shared"))
+  implementation("androidx.health.connect:connect-client:1.1.0")
 
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.glance.appwidget)

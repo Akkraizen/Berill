@@ -43,4 +43,7 @@
     <string name="widget_calendar_description">Месяц с отметками событий и события выбранного дня</string>
     <string name="widget_agenda_label">Расписание</string>
     <string name="widget_agenda_description">События на две недели вперёд по дням</string>
+    <string name="tile_water">Вода</string>
+    <string name="tile_habit">Отметить привычку</string>
+    <string name="tile_expense">Новый расход</string>
 </resources>

@@ -7,6 +7,7 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CropSquare
 import androidx.compose.material.icons.outlined.FilterNone
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,69 +45,65 @@ import dev.akkraizen.berill.desktop.DesktopOs
 import dev.akkraizen.berill.desktop.ui.BerillIcon
 
 @Composable
-fun FrameWindowScope.WindowTitleBar(title: String, state: WindowState, onClose: () -> Unit) {
+fun FrameWindowScope.WindowTitleBar(title: String, state: WindowState, onClose: () -> Unit, actions: @Composable () -> Unit = {}, search: @Composable (compact: Boolean) -> Unit = {}, status: @Composable () -> Unit = {}) {
   val maximized = state.placement == WindowPlacement.Maximized
   fun toggleMaximize() {
-    if (state.placement == WindowPlacement.Maximized) {
-      state.placement = WindowPlacement.Floating
-    } else {
-      fitMaximizedBoundsToScreen(window)
-      state.placement = WindowPlacement.Maximized
+    if (maximized) state.placement = WindowPlacement.Floating
+    else { fitMaximizedBoundsToScreen(window); state.placement = WindowPlacement.Maximized }
+  }
+  WindowToolbar(title, Modifier.windowDrag(window, state, onDoubleClick = ::toggleMaximize), DesktopOs.isMac, search, actions, status = status) {
+    if (!DesktopOs.isMac) Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+      CaptionButton(Icons.Outlined.Remove, Tr("windowChrome.WindowTitleBar")()) { state.isMinimized = true }
+      CaptionButton(if (maximized) Icons.Outlined.FilterNone else Icons.Outlined.CropSquare,
+        if (maximized) Tr("windowChrome.WindowTitleBar.2")() else Tr("windowChrome.WindowTitleBar.3")(), onClick = ::toggleMaximize)
+      CaptionButton(Icons.Outlined.Close, Tr("windowChrome.WindowTitleBar.4")(), danger = true, onClick = onClose)
     }
   }
+}
 
-  Row(
-    Modifier.fillMaxWidth()
-      .height(44.dp)
-      .background(MaterialTheme.colorScheme.surface)
-      .padding(start = if (DesktopOs.isMac) MAC_TRAFFIC_LIGHTS_WIDTH else 12.dp, end = 6.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Row(
-      Modifier.weight(1f)
-        .fillMaxHeight()
-        .windowDrag(window, state, onDoubleClick = ::toggleMaximize),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-      Box(
-        Modifier.size(26.dp)
-          .clip(RoundedCornerShape(8.dp))
-          .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(
-          painter = BerillIcon,
-          contentDescription = null,
-          tint = Color.Unspecified,
-          modifier = Modifier.size(16.dp)
-        )
+/** The centered slot has equal room on both sides; narrow windows use a compact search target. */
+@Composable
+internal fun WindowToolbar(title: String, dragModifier: Modifier = Modifier, mac: Boolean = false,
+  search: @Composable (Boolean) -> Unit, actions: @Composable () -> Unit, status: @Composable () -> Unit = {}, captionButtons: @Composable () -> Unit) {
+  BoxWithConstraints(Modifier.fillMaxWidth().height(64.dp).background(MaterialTheme.colorScheme.surface)) {
+    val centered = maxWidth >= 840.dp
+    // A dedicated background target retains dragging and double-click maximize between controls.
+    Box(Modifier.matchParentSize().then(dragModifier))
+    if (centered) {
+      val side = if (mac) 220.dp else 300.dp
+      val searchWidth = minOf(460.dp, maxWidth - side * 2)
+      Box(Modifier.align(Alignment.CenterStart).padding(start = if (mac) MAC_TRAFFIC_LIGHTS_WIDTH else 16.dp)
+        .width((maxWidth - searchWidth) / 2 - if (mac) 94.dp else 32.dp)) { WindowIdentity(title, status = status) }
+      Box(Modifier.align(Alignment.Center).width(searchWidth)) { search(false) }
+      Row(Modifier.align(Alignment.CenterEnd).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        actions()
+        if (!mac) VerticalDivider(Modifier.height(24.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        captionButtons()
       }
-      Text(
-        "Berill",
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary
-      )
-      if (title != "Berill")
-        Text(
-          title,
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
+    } else Row(Modifier.fillMaxSize().padding(start = if (mac) MAC_TRAFFIC_LIGHTS_WIDTH else 12.dp, end = 6.dp),
+      verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      Box(Modifier.weight(1f)) { WindowIdentity(title, compact = true, status = status) }
+      search(true)
+      actions()
+      if (!mac) VerticalDivider(Modifier.height(24.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+      captionButtons()
     }
-    if (!DesktopOs.isMac) Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-      CaptionButton(Icons.Outlined.Remove, Tr("windowChrome.WindowTitleBar")()) {
-        state.isMinimized = true
-      }
-      CaptionButton(
-        if (maximized) Icons.Outlined.FilterNone else Icons.Outlined.CropSquare,
-        if (maximized) Tr("windowChrome.WindowTitleBar.2")() else Tr("windowChrome.WindowTitleBar.3")(),
-        onClick = ::toggleMaximize
-      )
-      CaptionButton(Icons.Outlined.Close, Tr("windowChrome.WindowTitleBar.4")(), danger = true, onClick = onClose)
+  }
+}
+
+@Composable
+private fun WindowIdentity(title: String, compact: Boolean = false, status: @Composable () -> Unit = {}) {
+  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+      Icon(painter = BerillIcon, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(28.dp))
+    }
+    status()
+    Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+      Text("Berill", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      if (!compact && title != "Berill") Text(title, style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
   }
 }
