@@ -9,6 +9,8 @@ are released together with them.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-02
+
 ### Added
 
 #### Health
@@ -297,7 +299,8 @@ First public release.
   processes; a sample `counters` plugin.
 - Release, deployment, and server workflows for GitHub Actions.
 
-[Unreleased]: https://github.com/Akkraizen/Berill/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/Akkraizen/Berill/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/Akkraizen/Berill/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Akkraizen/Berill/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Akkraizen/Berill/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Akkraizen/Berill/releases/tag/v1.0.0
