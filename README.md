@@ -1,7 +1,7 @@
 # Berill
 
 Berill is a local-first personal workspace for **Android, Windows, and macOS**. It brings notes,
-planning, habits, personal collections, workouts, and nutrition into one application, with optional
+planning, habits, personal collections, workouts, nutrition, and health into one application, with optional
 synchronization through a self-hosted server.
 
 The clients share Kotlin Multiplatform business logic and a Compose Multiplatform interface.
@@ -52,6 +52,7 @@ Online catalog searches and remote images require an internet connection.
 | Projects  | A board for ideas and projects, with checklists.                                                          |
 | Workouts  | Training programs, multi-week cycles, exercise catalog, workout journal, timers, and weight calculations. |
 | Nutrition | Food diary, Open Food Facts search, calorie and macronutrient targets, body weight, and water tracking.   |
+| Health    | Medications and supplements with reminders, vital signs, wellbeing and symptoms, sleep and activity.      |
 
 Some external integrations require their own configuration or API credentials. The core local
 workflow does not require these integrations.

@@ -32,7 +32,7 @@ class BerillToolsTest {
     tools.appendToNote(id, "eggs")
     assertEquals("milk\nbread\n\neggs", (tools.readNote(id) as JsonObject).text("body"))
 
-    tools.updateNote(id, "Shopping", null)
+    tools.updateNote(id, "Shopping", null, (tools.readNote(id) as JsonObject).text("etag"))
     val note = tools.readNote(id) as JsonObject
     assertEquals("Shopping", note.text("title"))
     assertEquals("milk\nbread\n\neggs", note.text("body"))
@@ -44,7 +44,7 @@ class BerillToolsTest {
     val id = (tools.createNote("Temp", "") as JsonObject).text("id")
 
     assertFailsWith<ToolException> { tools.deleteNote(id, confirm = false) }
-    tools.deleteNote(id, confirm = true)
+    tools.deleteNote(id, confirm = true, etag = (tools.readNote(id) as JsonObject).text("etag"))
     assertFailsWith<ToolException> { tools.readNote(id) }
   }
 

@@ -4,6 +4,7 @@ import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.plugins.books.BooksPlugin
 import dev.akkraizen.berill.plugins.finance.FinancePlugin
 import dev.akkraizen.berill.plugins.habits.HabitsPlugin
+import dev.akkraizen.berill.plugins.health.HealthPlugin
 import dev.akkraizen.berill.plugins.languages.LanguagesPlugin
 import dev.akkraizen.berill.plugins.nutrition.NutritionPlugin
 import dev.akkraizen.berill.plugins.planner.PlannerPlugin
@@ -24,5 +25,6 @@ val BerillPlugins: List<BerillPlugin> = listOf(
   StudyPlugin,
   ProjectsPlugin,
   WorkoutsPlugin,
-  NutritionPlugin
+  NutritionPlugin,
+  HealthPlugin
 )

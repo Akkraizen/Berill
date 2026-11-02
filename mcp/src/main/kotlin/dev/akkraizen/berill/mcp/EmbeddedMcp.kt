@@ -3,6 +3,7 @@ package dev.akkraizen.berill.mcp
 import dev.akkraizen.berill.core.BerillCore
 import dev.akkraizen.berill.core.log.AppLog
 import dev.akkraizen.berill.core.platform.McpAccess
+import dev.akkraizen.berill.core.platform.McpClientConfig
 import dev.akkraizen.berill.core.platform.McpStatus
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
@@ -24,9 +25,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class McpEndpoint(val url: String, val pid: Long)
@@ -79,32 +77,17 @@ class EmbeddedMcp(
     if (_status.value.enabled) launch()
   }
 
-  override fun desktopClientConfig(): String {
-    val command = bridgeCommand
-    val server = if (command != null)
-      JsonObject(mapOf("command" to JsonPrimitive(command), "args" to JsonArray(listOf(JsonPrimitive(BRIDGE_FLAG)))))
-    else
-      JsonObject(
-        mapOf(
-          "type" to JsonPrimitive("http"),
-          "url" to JsonPrimitive(url()),
-          "headers" to JsonObject(mapOf("Authorization" to JsonPrimitive("Bearer ${token()}")))
-        )
-      )
-    return pretty.encodeToString(JsonObject.serializer(), JsonObject(mapOf("mcpServers" to JsonObject(mapOf(SERVER_NAME to server)))))
-  }
+  override fun desktopClientConfig(): String = McpClients.render(McpClient.CLAUDE_DESKTOP, SERVER_NAME, preferredLaunch())
 
-  override fun httpClientConfig(): String = pretty.encodeToString(JsonObject.serializer(), JsonObject(mapOf("mcpServers" to JsonObject(mapOf(SERVER_NAME to JsonObject(mapOf(
-    "type" to JsonPrimitive("http"), "url" to JsonPrimitive(url()), "headers" to JsonObject(mapOf("Authorization" to JsonPrimitive("Bearer ${token()}")))
-  )))))))
+  override fun httpClientConfig(): String = McpClients.render(McpClient.GENERIC, SERVER_NAME, httpLaunch())
 
-  override fun claudeCodeCommand(): String {
-    val command = bridgeCommand
-    return if (command != null)
-      "claude mcp add $SERVER_NAME -- ${quote(command)} $BRIDGE_FLAG"
-    else
-      "claude mcp add --transport http $SERVER_NAME ${url()} --header \"Authorization: Bearer ${token()}\""
-  }
+  override fun claudeCodeCommand(): String = McpClients.render(McpClient.CLAUDE_CODE, SERVER_NAME, preferredLaunch())
+
+  override fun clientConfigs(): List<McpClientConfig> = McpClients.all(SERVER_NAME, preferredLaunch())
+
+  private fun preferredLaunch(): McpLaunch = bridgeCommand?.let { McpLaunch.Stdio(it, listOf(BRIDGE_FLAG)) } ?: httpLaunch()
+
+  private fun httpLaunch(): McpLaunch.Http = McpLaunch.Http(url(), token())
 
   private fun url(): String = _status.value.url ?: urlFor(store.meta(PORT)?.toIntOrNull() ?: preferredPort)
 
@@ -192,7 +175,5 @@ class EmbeddedMcp(
       val bytes = ByteArray(32).also { SecureRandom().nextBytes(it) }
       return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
-
-    private fun quote(path: String) = if (path.any { it.isWhitespace() }) "\"$path\"" else path
   }
 }

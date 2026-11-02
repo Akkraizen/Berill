@@ -98,12 +98,14 @@ class BerillTools(private val core: BerillCore) {
     val body = (current["body"] as? JsonPrimitive)?.content.orEmpty()
     return notes.update(id, buildJsonObject { put("body", if (body.isBlank()) text else body.trimEnd('\n') + "\n\n" + text) }, current)
   }
-  fun updateNote(id: String, title: String?, body: String?, etag: String?, expected: JsonObject?): JsonElement {
+  fun updateNote(id: String, title: String?, body: String?, etag: String? = null, expected: JsonObject? = null): JsonElement {
     require(title != null || body != null) { "Pass title or body" }
     return notes.update(id, buildJsonObject { title?.let { put("title", it) }; body?.let { put("body", it) } }, notes.expectedFor(id, etag, expected))
   }
-  fun deleteNote(id: String, confirm: Boolean, etag: String?, expected: JsonObject?): JsonElement =
-    notes.delete(id, notes.expectedFor(id, etag, expected), confirm)
+  fun deleteNote(id: String, confirm: Boolean, etag: String? = null, expected: JsonObject? = null): JsonElement {
+    if (!confirm) throw ToolException("Deletion requires confirm=true; ask the user first")
+    return notes.delete(id, notes.expectedFor(id, etag, expected), confirm)
+  }
 
   fun syncStatus(): JsonElement {
     val d = core.sync.diagnostics()

@@ -16,6 +16,7 @@ import dev.akkraizen.berill.plugins.finance.FinancePlugin
 import dev.akkraizen.berill.plugins.finance.data.*
 import dev.akkraizen.berill.plugins.languages.LanguagesPlugin
 import dev.akkraizen.berill.plugins.languages.data.*
+import dev.akkraizen.berill.plugins.health.HealthPlugin
 import dev.akkraizen.berill.plugins.nutrition.NutritionPlugin
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -101,8 +102,11 @@ class ConnectedFeaturesTest {
     core.data.raw(NutritionPlugin.WEIGHTS).patch(date, mapOf("date" to kotlinx.serialization.json.JsonPrimitive(date), "kg" to kotlinx.serialization.json.JsonPrimitive(70.0)))
     source.accept(HealthDay(date, 8000, 450, 80.0))
     assertEquals("70.0", core.data.raw(NutritionPlugin.WEIGHTS).get(date)!!.fields["kg"].toString())
-    val summary = NutritionPlugin.provides(core.plugins.context(NutritionPlugin)).filterIsInstance<HealthSummarySource>().single().day(today())
-    assertEquals(8000L, summary!!.steps)
+    HealthPlugin.provides(core.plugins.context(HealthPlugin)).filterIsInstance<HealthDataSink>().single().accept(HealthDay(date, 8000, 450, 80.0))
+    val summaries = core.plugins.capabilities.all<HealthSummarySource>().mapNotNull { it.day(today()) }
+    assertEquals(listOf(8000L), summaries.mapNotNull { it.steps })
+    assertEquals(listOf(450L), summaries.mapNotNull { it.sleepMinutes })
+    assertEquals(listOf(80.0), summaries.mapNotNull { it.weightKg })
   }
   @Test fun manuallyEditingImportedWeightStopsHealthConnectFromOverwritingIt() {
     val source = NutritionPlugin.provides(core.plugins.context(NutritionPlugin)).filterIsInstance<HealthDataSink>().single()

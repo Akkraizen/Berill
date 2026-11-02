@@ -10,6 +10,8 @@ data class McpStatus(
   val error: String? = null
 )
 
+data class McpClientConfig(val id: String, val title: String, val location: String, val text: String)
+
 interface McpAccess {
   val status: StateFlow<McpStatus>
 
@@ -32,4 +34,6 @@ interface McpAccess {
   fun httpClientConfig(): String = desktopClientConfig()
 
   fun claudeCodeCommand(): String
+
+  fun clientConfigs(): List<McpClientConfig> = emptyList()
 }

@@ -14,5 +14,9 @@ internal class NutritionHealth(private val ctx: PluginContext) : HealthDataSink,
     if (current != null && current.fields["source"]?.jsonPrimitive?.contentOrNull != "health_connect") return
     ctx.data.raw(NutritionPlugin.WEIGHTS).patch(day.date, mapOf("date" to JsonPrimitive(day.date), "kg" to JsonPrimitive(weight), "source" to JsonPrimitive("health_connect")))
   }
-  override fun day(date: LocalDate) = days.get(date.toString())
+  override fun day(date: LocalDate): HealthDay? {
+    val day = days.get(date.toString()) ?: return null
+    if (ctx.capabilities.all<HealthSummarySource>().none { it !is NutritionHealth }) return day
+    return day.weightKg?.let { HealthDay(day.date, weightKg = it) }
+  }
 }

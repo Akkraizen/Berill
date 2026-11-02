@@ -1,9 +1,10 @@
 package dev.akkraizen.berill.core
 
 import androidx.compose.runtime.Composable
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import dev.akkraizen.berill.api.BerillPlugin
+import app.cash.sqldelight.db.SqlDriver
 import dev.akkraizen.berill.core.db.BerillDatabase
+import dev.akkraizen.berill.core.db.SharedSqliteDriver
 import dev.akkraizen.berill.core.external.DesktopExternalPlugins
 import dev.akkraizen.berill.core.files.DesktopFileAccess
 import dev.akkraizen.berill.core.log.AppLog
@@ -15,7 +16,6 @@ import dev.akkraizen.berill.core.secure.LoopbackRedirects
 import dev.akkraizen.berill.core.ui.theme.desktopAppearanceCache
 import java.awt.Desktop
 import java.io.File
-import java.util.Properties
 
 fun createDesktopCore(
   plugins: List<BerillPlugin>,
@@ -30,8 +30,7 @@ fun createDesktopCore(
     "${System.getProperty("os.name")} ${System.getProperty("os.version")}/JVM ${System.getProperty("java.version")}, " +
       "data: ${dir.absolutePath}"
   )
-  val driver =
-    JdbcSqliteDriver("jdbc:sqlite:${File(dir, "berill.db").absolutePath}", Properties(), BerillDatabase.Schema)
+  val driver = openSqliteDriver(File(dir, "berill.db"))
   return BerillCore(
     driver,
     plugins,
@@ -52,3 +51,5 @@ fun createDesktopCore(
 
 @Composable
 internal actual fun PlatformBackHandler(enabled: Boolean, onBack: () -> Unit) = Unit
+
+fun openSqliteDriver(file: File): SqlDriver = SharedSqliteDriver.open(file, BerillDatabase.Schema)

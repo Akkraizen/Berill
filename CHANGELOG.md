@@ -51,6 +51,13 @@ are released together with them.
 - Opt-in Health Connect imports for weight, steps and sleep, with Android permission handling.
 - SM-2 spaced repetition for language cards, recurring financial operations and category budgets.
 - Workout rest notifications and suggested weights from previous completed workouts.
+- A Health module: medications and supplements with schedules, courses, intake tracking and reminders;
+  pulse, blood pressure, temperature, oxygen saturation and blood glucose with charts; daily wellbeing,
+  mood, energy and symptoms; manual sleep log together with Health Connect steps and sleep. All of it is
+  available to assistants through MCP.
+- Ready-made MCP connection settings for Claude Desktop, Claude Code, OpenAI Codex, Cursor, VS Code,
+  Windsurf, Gemini CLI, Zed, opencode, Cline / Roo Code and JetBrains AI Assistant, both in the desktop
+  settings and through `berill-mcp config`.
 
 #### Storage and deployment
 
@@ -148,6 +155,11 @@ are released together with them.
   `LocalArchiveService` and shared helpers; deleted records for the trash are queried in SQL.
 
 ### Fixed
+
+- The MCP STDIO bridge forwards requests concurrently, so long tool calls no longer block pings,
+  cancellations and parallel calls; concurrent requests share one session recovery, and malformed
+  input gets a JSON-RPC parse error instead of being ignored.
+- Health Connect steps and sleep are shown once in daily summaries when the Health module is enabled.
 
 - Cached recipe photos load without waiting for network uploads. Attachment reads run off the UI thread, use a bounded 24 MiB memory cache backed by persistent local files, retry temporary failures, and expose image decoding errors.
 - Windows installer build, publication and update discovery consistently use `-windows.exe`; legacy `-Setup.exe` downloads remain supported.

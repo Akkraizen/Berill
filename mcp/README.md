@@ -1,6 +1,6 @@
 # Berill MCP
 
-Berill exposes the same tools to any compatible MCP client. Use either STDIO (`Berill --mcp`) or the authenticated loopback Streamable HTTP endpoint shown in Settings → AI assistants (MCP). Copy the generated connection configuration; no vendor-specific CLI is required. The installed SDK negotiates the supported protocol version with the client.
+Berill exposes the same tools to any compatible MCP client (Claude Desktop, Claude Code, OpenAI Codex, Cursor, VS Code, Windsurf, Gemini CLI, Zed, opencode, Cline and others). `McpClients` renders the connection settings in each client's own format; the desktop settings page and `berill-mcp config` use it. Use either STDIO (`Berill --mcp`) or the authenticated loopback Streamable HTTP endpoint shown in Settings → AI assistants (MCP). Copy the generated connection configuration; no vendor-specific CLI is required. The installed SDK negotiates the supported protocol version with the client.
 
 The HTTP endpoint requires `Authorization: Bearer <TOKEN>` and rejects untrusted origins. The STDIO bridge obtains the endpoint and credential from the running local application, forwards the negotiated protocol version and server notifications, and never automatically repeats an ambiguously completed request. It can start Berill in the background.
 

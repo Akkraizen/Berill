@@ -19,9 +19,11 @@ private const val USAGE = """Usage:
   berill-mcp login --server URL [--token TOKEN] [--data DIR]
   berill-mcp status [--data DIR]
   berill-mcp logout [--data DIR]
+  berill-mcp config [--client NAME] [--read-only] [--data DIR]
 
 The token and the encryption password can also come from BERILL_TOKEN and BERILL_E2E_PASSWORD.
-Data is kept in ~/.berill-mcp unless --data is given."""
+Data is kept in ~/.berill-mcp unless --data is given.
+`config` prints ready-made settings for MCP clients; NAME is one of: CLIENTS."""
 
 internal class Arguments(args: Array<String>) {
   val command: String
@@ -53,11 +55,11 @@ internal class Arguments(args: Array<String>) {
 
 fun main(args: Array<String>) {
   val arguments = runCatching { Arguments(args) }.getOrElse {
-    System.err.println("${it.message}\n\n$USAGE")
+    System.err.println("${it.message}\n\n${usage()}")
     exitProcess(2)
   }
   if (arguments.flag("help") || arguments.command == "help") {
-    println(USAGE)
+    println(usage())
     return
   }
   val dir = arguments.option("data")?.let(::File) ?: defaultDataDirectory()
@@ -66,8 +68,9 @@ fun main(args: Array<String>) {
     "login" -> login(dir, arguments)
     "status" -> status(dir)
     "logout" -> logout(dir)
+    "config" -> config(arguments)
     else -> {
-      System.err.println("Unknown command `${arguments.command}`\n\n$USAGE")
+      System.err.println("Unknown command `${arguments.command}`\n\n${usage()}")
       2
     }
   }
@@ -121,6 +124,41 @@ private fun login(dir: File, arguments: Arguments): Int = runBlocking {
   }
   println(describe(core))
   0
+}
+
+private fun usage(): String = USAGE.replace("CLIENTS", McpClient.entries.joinToString(", ") { it.id })
+
+private fun config(arguments: Arguments): Int {
+  val extra = buildList {
+    if (arguments.flag("read-only")) add("--read-only")
+    arguments.option("data")?.let { add("--data"); add(File(it).absolutePath) }
+  }
+  val launch = launcher()?.let { script ->
+    if (script.endsWith(".bat", ignoreCase = true)) McpLaunch.Stdio("cmd", listOf("/c", script) + extra)
+    else McpLaunch.Stdio(script, extra)
+  } ?: McpLaunch.Stdio("berill-mcp", extra)
+  val name = arguments.option("client")
+  if (name != null) {
+    val client = McpClient.byId(name) ?: run {
+      System.err.println("Unknown client `$name`. Use one of: ${McpClient.entries.joinToString(", ") { it.id }}")
+      return 2
+    }
+    println(McpClients.render(client, EmbeddedMcp.SERVER_NAME, launch))
+    return 0
+  }
+  McpClients.all(EmbeddedMcp.SERVER_NAME, launch).forEach { config ->
+    println("## ${config.title} (${config.id}) → ${config.location}")
+    println(config.text)
+    println()
+  }
+  return 0
+}
+
+private fun launcher(): String? {
+  val jar = runCatching { File(Arguments::class.java.protectionDomain.codeSource.location.toURI()) }.getOrNull() ?: return null
+  val home = jar.parentFile?.parentFile ?: return null
+  val windows = System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)
+  return File(home, "bin/" + if (windows) "berill-mcp.bat" else "berill-mcp").takeIf { it.isFile }?.absolutePath
 }
 
 private fun status(dir: File): Int {

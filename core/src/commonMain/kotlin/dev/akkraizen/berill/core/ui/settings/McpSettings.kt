@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -57,6 +59,9 @@ internal object McpText {
   val regenerateText = Tr("core.mcp.regenerateText")
   val copy = Tr("core.mcp.copy")
   val copied = Tr("core.mcp.copied")
+  val clientsTitle = Tr("core.mcp.clientsTitle")
+
+  fun clientLocation(location: String) = I18n.text("core.mcp.clientLocation", "location" to location)
   val cancel = Tr("core.cancel")
 
   fun running(url: String) = I18n.text("core.mcp.running", "url" to url)
@@ -95,12 +100,32 @@ internal fun McpSettings(mcp: McpAccess) {
     AnimatedVisibility(status.enabled) {
       Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SettingSwitch(McpText.writable(), McpText.writableHint(), status.writable) { on -> background { mcp.setWritable(on) } }
-        val desktopConfig = remember(status, version) { mcp.desktopClientConfig() }
-        CodeBlock(
-          McpText.desktopTitle(),
-          if (mcp.bridgeCommand != null) McpText.desktopHint() else McpText.desktopHttpHint(),
-          if (showToken) desktopConfig else desktopConfig.replace(mcp.token(), "<TOKEN>"), desktopConfig
-        )
+        val clients = remember(status, version) { mcp.clientConfigs() }
+        if (clients.isEmpty()) {
+          val desktopConfig = remember(status, version) { mcp.desktopClientConfig() }
+          CodeBlock(
+            McpText.desktopTitle(),
+            if (mcp.bridgeCommand != null) McpText.desktopHint() else McpText.desktopHttpHint(),
+            if (showToken) desktopConfig else desktopConfig.replace(mcp.token(), "<TOKEN>"), desktopConfig
+          )
+        } else {
+          var selected by rememberSaveable { mutableStateOf(clients.first().id) }
+          val client = clients.firstOrNull { it.id == selected } ?: clients.first()
+          Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(McpText.clientsTitle(), style = MaterialTheme.typography.titleSmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+              clients.forEach { item ->
+                FilterChip(selected = item.id == client.id, onClick = { selected = item.id }, label = { Text(item.title) })
+              }
+            }
+          }
+          val token = remember(version) { mcp.token() }
+          CodeBlock(
+            client.title,
+            (if (mcp.bridgeCommand != null) McpText.desktopHint() else McpText.desktopHttpHint()) + " " + McpText.clientLocation(client.location),
+            if (showToken) client.text else client.text.replace(token, "<TOKEN>"), client.text
+          )
+        }
         val httpConfig = remember(status, version) { mcp.httpClientConfig() }
         CodeBlock(McpText.codeTitle(), McpText.codeHint(), if (showToken) httpConfig else httpConfig.replace(mcp.token(), "<TOKEN>"), httpConfig)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

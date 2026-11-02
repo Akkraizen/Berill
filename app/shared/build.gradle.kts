@@ -33,6 +33,7 @@ kotlin {
       implementation(project(":plugins:projects"))
       implementation(project(":plugins:workouts"))
       implementation(project(":plugins:nutrition"))
+      implementation(project(":plugins:health"))
     }
     jvmTest.dependencies {
       implementation(libs.kotlin.test)

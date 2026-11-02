@@ -206,11 +206,14 @@ class EmbeddedMcpTest {
   fun clientConfigsPointAtTheBridgeOrTheUrl() {
     mcp.setEnabled(true)
     assertTrue(mcp.desktopClientConfig().contains("Bearer ${mcp.token()}"))
-    assertTrue(mcp.claudeCodeCommand().startsWith("claude mcp add --transport http berill http://127.0.0.1:"))
+    assertTrue(mcp.claudeCodeCommand().startsWith("claude mcp add --scope user --transport http berill http://127.0.0.1:"))
+    assertEquals(McpClient.entries.map { it.id }, mcp.clientConfigs().map { it.id })
+    assertTrue(mcp.clientConfigs().all { "Bearer ${mcp.token()}" in it.text })
     val bridged = EmbeddedMcp(core, dir, bridgeCommand = "C:\\Program Files\\Berill\\Berill.exe", preferredPort = 0)
     assertTrue(bridged.desktopClientConfig().contains("\"--mcp\""))
     assertFalse(bridged.desktopClientConfig().contains("Bearer"))
-    assertEquals("claude mcp add berill -- \"C:\\Program Files\\Berill\\Berill.exe\" --mcp", bridged.claudeCodeCommand())
+    assertEquals("claude mcp add --scope user berill -- \"C:\\Program Files\\Berill\\Berill.exe\" --mcp", bridged.claudeCodeCommand())
+    assertTrue(bridged.clientConfigs().none { "Bearer" in it.text })
   }
 }
 
