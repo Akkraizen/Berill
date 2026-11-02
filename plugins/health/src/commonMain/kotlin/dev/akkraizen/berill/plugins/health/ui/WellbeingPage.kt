@@ -37,7 +37,8 @@ import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
-import dev.akkraizen.berill.api.ui.layout.PluginList
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
 import dev.akkraizen.berill.api.ui.toDateOrNull
 import dev.akkraizen.berill.api.ui.today
@@ -58,7 +59,29 @@ internal fun WellbeingPage(ctx: PluginContext) {
     if (next.isEmpty) collection.delete(date) else collection.save(date, next)
   }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item {
+        SectionCard(HealthText.chart(), Icons.Outlined.ShowChart) {
+          val dates = recentDates(30)
+          val byDate = all.associate { it.id to it.value }
+          val days = dates.map { byDate[it.toString()] }
+          if (days.all { it == null }) EmptyHint(HealthText.noWellbeing())
+          else StatisticsChart(
+            dates.map { it.dayMonthShort() },
+            listOf(
+              ChartSeries(HealthText.wellbeing(), days.map { it?.wellbeing?.toDouble() }),
+              ChartSeries(HealthText.mood(), days.map { it?.mood?.toDouble() }),
+              ChartSeries(HealthText.energy(), days.map { it?.energy?.toDouble() })
+            ),
+            kind = ChartKind.Line,
+            target = 5.0,
+            valueLabel = { formatNumber(it) }
+          )
+        }
+      }
+      return@TabbedPluginList
+    }
     item {
       SectionCard(HealthText.howAreYou(), Icons.Outlined.SentimentSatisfied) {
         DateField(date, { picked -> picked?.toDateOrNull()?.let { date = it.toString() } }, HealthText.date())
@@ -85,25 +108,6 @@ internal fun WellbeingPage(ctx: PluginContext) {
           }
         }
         AddSymptom(date) { name -> update(current.copy(symptoms = current.symptoms + Symptom(name, 1))) }
-      }
-    }
-    item {
-      SectionCard(HealthText.chart(), Icons.Outlined.ShowChart) {
-        val dates = recentDates(30)
-        val byDate = all.associate { it.id to it.value }
-        val days = dates.map { byDate[it.toString()] }
-        if (days.all { it == null }) EmptyHint(HealthText.noWellbeing())
-        else StatisticsChart(
-          dates.map { it.dayMonthShort() },
-          listOf(
-            ChartSeries(HealthText.wellbeing(), days.map { it?.wellbeing?.toDouble() }),
-            ChartSeries(HealthText.mood(), days.map { it?.mood?.toDouble() }),
-            ChartSeries(HealthText.energy(), days.map { it?.energy?.toDouble() })
-          ),
-          kind = ChartKind.Line,
-          target = 5.0,
-          valueLabel = { formatNumber(it) }
-        )
       }
     }
     val history = all.filter { it.id != date }.sortedByDescending { it.id }.take(30)

@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.study.ui
 
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -91,7 +93,11 @@ internal fun StudyScreen(ctx: PluginContext) {
     taskCollection.save(item.id, current.copy(status = nextStatus(current.normalizedStatus)))
   }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { StudyStatistics(shownTasks.map { it.value }) }
+      return@TabbedPluginList
+    }
     item {
       TwoPane(
         left = {
@@ -152,7 +158,6 @@ internal fun StudyScreen(ctx: PluginContext) {
         }
       )
     }
-    item { StudyStatistics(shownTasks.map { it.value }) }
   }
 
   if (addingSubject)

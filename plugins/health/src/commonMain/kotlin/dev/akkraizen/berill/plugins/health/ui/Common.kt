@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.RawRecord
+import dev.akkraizen.berill.api.ui.formatMinutes
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
 import dev.akkraizen.berill.plugins.health.data.MedicationKind
 import dev.akkraizen.berill.plugins.health.data.RATINGS
@@ -29,7 +30,7 @@ fun formatNumber(value: Double): String {
   return if (abs(rounded % 1.0) < 1e-9) rounded.toLong().toString() else rounded.toString()
 }
 
-fun formatDuration(minutes: Int): String = HealthText.duration(minutes / 60, minutes % 60)()
+fun formatDuration(minutes: Int): String = formatMinutes(minutes)
 
 fun vitalLabel(type: VitalType): String =
   when (type) {

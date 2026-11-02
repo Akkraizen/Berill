@@ -10,6 +10,7 @@ import dev.akkraizen.berill.api.ui.fields.parseClock
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.toDateOrNull
 import dev.akkraizen.berill.plugins.health.HealthPlugin
+import dev.akkraizen.berill.plugins.health.data.ActivityDay
 import dev.akkraizen.berill.plugins.health.data.Intake
 import dev.akkraizen.berill.plugins.health.data.IntakeStatus
 import dev.akkraizen.berill.plugins.health.data.Medication
@@ -80,6 +81,20 @@ internal class HealthMcp(ctx: PluginContext) : McpSource {
         value
       },
       validate = { entry -> entry.problem()?.let { throw IllegalArgumentException(it) } }
+    ),
+    TypedMcpCollection(
+      ctx, HealthPlugin.ACTIVITY, ActivityDay.serializer(),
+      createId = { it.date },
+      normalize = { old, next ->
+        val value = next.copy(date = next.date.normalizedDate() ?: next.date)
+        require(old == null || old.date == value.date) { "Activity date is immutable" }
+        value.copy(manualSteps = old?.manualSteps == true || value.steps != old?.steps)
+      },
+      validate = {
+        require(it.date.toDateOrNull() != null) { "A valid date is required" }
+        require(it.steps == null || it.steps in 0..200_000) { "Steps must be between 0 and 200000" }
+        require(it.sleepMinutes == null || it.sleepMinutes in 0..1440) { "Sleep must be between 0 and 1440 minutes" }
+      }
     )
   )
 

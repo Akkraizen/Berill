@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.planner.ui
 
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -76,7 +78,11 @@ internal fun PlannerScreen(ctx: PluginContext) {
     .filter { it < now }
     .flatMap { d -> byDate[d.toString()].orEmpty().filter { !it.value.done }.map { d to it } }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { PlannerStatistics(all.map { it.value }, days) }
+      return@TabbedPluginList
+    }
     item {
       FlowRow(
         Modifier.fillMaxWidth(),
@@ -215,6 +221,5 @@ internal fun PlannerScreen(ctx: PluginContext) {
       item { GoalsCard(data, weekId, goals) }
       item { WeekSummary(data, weekId) }
     }
-    item { PlannerStatistics(all.map { it.value }, days) }
   }
 }

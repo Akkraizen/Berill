@@ -52,6 +52,7 @@ class UpdateCenterRenderTest {
     core.updates.setServerUrl("http://127.0.0.1:${server.address.port}")
     core.updates.check()
     val update = (core.updates.state.value as UpdateCheck.Available).update
+    val installLabel = if (System.getProperty("os.name").startsWith("Windows")) "core.update.restartInstall" else "core.update.install"
     val scene = ImageComposeScene(360, 900) { BerillShell(core) }
     try {
       render(scene, "update-center-available.png")
@@ -59,12 +60,12 @@ class UpdateCenterRenderTest {
       core.updates.download(update)
       withTimeout(5000) { core.updates.transfer.first { it is UpdateTransfer.Ready } }
       render(scene, "update-center-ready.png")
-      assertTrue(text(scene).contains(I18n.text("core.update.restartInstall")))
+      assertTrue(text(scene).contains(I18n.text(installLabel)))
       assertTrue(text(scene).contains(I18n.text("core.update.ready")))
       assertTrue(text(scene).contains(I18n.text("core.update.discard")))
       core.nav.openSettings("updates")
       render(scene, "update-center-settings.png")
-      assertTrue(text(scene).contains(I18n.text("core.update.restartInstall")))
+      assertTrue(text(scene).contains(I18n.text(installLabel)))
       assertTrue(text(scene).contains(I18n.text("core.update.server")))
     } finally { scene.close(); scope.cancel(); driver.close(); server.stop(0) }
   }

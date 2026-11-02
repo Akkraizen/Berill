@@ -42,7 +42,6 @@ import dev.akkraizen.berill.api.ui.charts.ChartSeries
 import dev.akkraizen.berill.api.ui.charts.StatisticsChart
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.fields.IntField
-import dev.akkraizen.berill.api.ui.layout.DetailHeader
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.minusDays
@@ -162,7 +161,6 @@ internal fun HabitsStatsScreen(data: HabitsData) {
     )
   }
   PluginList {
-    item { DetailHeader(HabitsText.statistics(), Icons.Outlined.Insights) }
     if (stats.habits.isEmpty()) {
       item { EmptyHint(HabitsText.noHabits()) }
       return@PluginList

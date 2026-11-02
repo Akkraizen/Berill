@@ -1,7 +1,7 @@
 package dev.akkraizen.berill.plugins.workouts.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
-import dev.akkraizen.berill.api.ui.selection.BerillTabs
+import dev.akkraizen.berill.api.ui.layout.TabsToolbar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,7 +39,6 @@ import dev.akkraizen.berill.api.ui.dayMonth
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.interaction.interactive
-import dev.akkraizen.berill.api.ui.layout.DetailHeader
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.toDateOrNull
 import dev.akkraizen.berill.plugins.workouts.WorkoutsPlugin
@@ -78,19 +76,17 @@ private fun JournalList(ctx: PluginContext) {
   val savedTabs = rememberSaveableStateHolder()
 
   Column(Modifier.fillMaxSize()) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-      DetailHeader(WorkoutsText.journal(), Icons.Outlined.EventNote) {
+    TabsToolbar(
+      tabs = JournalTab.entries.map { pluginI18n.text("workouts.journal.tab.${it.name}") },
+      selected = selected.ordinal,
+      onSelect = { selected = JournalTab.entries[it] },
+      actions = {
         FilledTonalButton(onClick = { startWorkout(ctx, WorkoutsText.workoutTitle(), null, emptyList()) }) {
           Ic(BerillIcons.Add, size = 18.dp)
           Spacer(Modifier.width(8.dp))
           Text(WorkoutsText.emptyWorkout())
         }
       }
-    }
-    BerillTabs(
-      labels = JournalTab.entries.map { pluginI18n.text("workouts.journal.tab.${it.name}") },
-      selected = selected.ordinal,
-      onSelect = { selected = JournalTab.entries[it] },
     )
     savedTabs.SaveableStateProvider(selected.name) {
       when (selected) {

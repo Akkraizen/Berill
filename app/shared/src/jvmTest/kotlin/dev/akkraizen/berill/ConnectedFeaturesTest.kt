@@ -32,7 +32,7 @@ class ConnectedFeaturesTest {
 
   @Test fun homeQuickActionsOfferPopupsWithoutCreatingRecordsOrNavigating() {
     val before = core.nav.current
-    val plugins = listOf(FinancePlugin, NutritionPlugin, dev.akkraizen.berill.plugins.workouts.WorkoutsPlugin)
+    val plugins = listOf(FinancePlugin, NutritionPlugin, dev.akkraizen.berill.plugins.workouts.WorkoutsPlugin, dev.akkraizen.berill.plugins.health.HealthPlugin)
     plugins.forEach { plugin ->
       val actions = plugin.quickActions(core.plugins.context(plugin))
       assertTrue(actions.isNotEmpty())
@@ -43,6 +43,8 @@ class ConnectedFeaturesTest {
     assertTrue(core.data.raw(FinancePlugin.OPERATIONS).all().isEmpty())
     assertTrue(core.data.raw(NutritionPlugin.FOODS).all().isEmpty())
     assertTrue(core.data.raw(dev.akkraizen.berill.plugins.workouts.WorkoutsPlugin.LOGS).all().isEmpty())
+    assertTrue(core.data.raw(dev.akkraizen.berill.plugins.health.HealthPlugin.VITALS).all().isEmpty())
+    assertTrue(core.data.raw(dev.akkraizen.berill.plugins.health.HealthPlugin.WELLBEING).all().isEmpty())
   }
 
   @Test fun closingPopupDoesNotPopUnderlyingNavigationAndRetainsPluginServices() {

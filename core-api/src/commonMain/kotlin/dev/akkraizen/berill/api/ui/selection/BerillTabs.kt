@@ -1,6 +1,7 @@
 package dev.akkraizen.berill.api.ui.selection
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,11 +29,17 @@ import androidx.compose.ui.unit.dp
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun BerillTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun BerillTabs(
+  labels: List<String>,
+  selected: Int,
+  onSelect: (Int) -> Unit,
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+) {
   val focus = LocalFocusManager.current
   val colors = MaterialTheme.colorScheme
   Row(
-    modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).semantics { selectableGroup() },
+    modifier.fillMaxWidth().padding(contentPadding).semantics { selectableGroup() },
     horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
   ) {
     labels.forEachIndexed { index, label ->

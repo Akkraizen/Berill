@@ -11,6 +11,11 @@ import dev.akkraizen.berill.plugins.health.data.WellbeingDay
 import dev.akkraizen.berill.plugins.health.data.dosesOn
 import dev.akkraizen.berill.plugins.health.data.intakeId
 import dev.akkraizen.berill.plugins.health.i18n.HealthText
+import dev.akkraizen.berill.plugins.health.ui.DoseState
+import dev.akkraizen.berill.plugins.health.ui.formatDuration
+import dev.akkraizen.berill.plugins.health.ui.state
+import dev.akkraizen.berill.api.i18n.AppLanguage
+import dev.akkraizen.berill.api.i18n.I18n
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -84,5 +89,28 @@ class HealthModelTest {
     assertEquals("Health", HealthText.title.get("en"))
     assertEquals("Принято 1 из 3", HealthText.dosesDone(1, 3).get("ru"))
     assertEquals("Time to take Magnesium", HealthText.reminderTitle("Magnesium").get("en"))
+  }
+
+  @Test
+  fun sleepIsShownInWholeHoursAndRemainingMinutes() {
+    val previous = I18n.language
+    try {
+      I18n.language = AppLanguage.fromCode("ru")!!
+      assertEquals("8 ч", formatDuration(480))
+      assertEquals("7 ч 30 мин", formatDuration(450))
+      assertEquals("45 мин", formatDuration(45))
+    } finally {
+      I18n.language = previous
+    }
+  }
+
+  @Test
+  fun overdueDosesAreDistinguishedFromPendingOnes() {
+    val today = dev.akkraizen.berill.api.ui.today()
+    val dose = dosesOn(today, listOf("a" to Medication("Iron", times = listOf("08:00", "20:00"))), emptyMap())
+    assertEquals(DoseState.DUE, dose[0].state(nowMinutes = 12 * 60))
+    assertEquals(DoseState.PENDING, dose[1].state(nowMinutes = 12 * 60))
+    val taken = dose[0].copy(intake = Intake("a", today.toString(), "08:00", IntakeStatus.TAKEN, 1))
+    assertEquals(DoseState.TAKEN, taken.state(nowMinutes = 12 * 60))
   }
 }

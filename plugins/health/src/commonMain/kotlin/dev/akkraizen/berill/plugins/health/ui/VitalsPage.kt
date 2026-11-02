@@ -40,7 +40,8 @@ import dev.akkraizen.berill.api.ui.fields.clockText
 import dev.akkraizen.berill.api.ui.fields.parseClock
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.layout.FieldsRow
-import dev.akkraizen.berill.api.ui.layout.PluginList
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import dev.akkraizen.berill.api.ui.localDateTime
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.parseAmount
@@ -60,26 +61,27 @@ internal fun VitalsPage(ctx: PluginContext) {
   val entries = all.filter { it.value.type == type }
     .sortedWith(compareByDescending<dev.akkraizen.berill.api.Item<VitalEntry>> { it.value.date }.thenByDescending { it.value.time ?: "" })
 
-  PluginList {
-    item {
-      SectionCard(HealthText.measure(), Icons.Outlined.MonitorHeart) {
-        ChoiceChips(VitalType.entries, type, ::vitalLabel, { type = it })
-        MeasureForm(ctx, type)
-      }
-    }
-    item {
-      SectionCard(HealthText.chart(), Icons.Outlined.ShowChart) {
-        val points = entries.reversed().takeLast(30)
-        if (points.isEmpty()) EmptyHint(HealthText.noVitals())
-        else {
-          val labels = points.map { item -> item.value.date.toDateOrNull()?.dayMonthShort() ?: item.value.date }
-          val series = buildList {
-            add(ChartSeries(vitalLabel(type), points.map { it.value.value }))
-            if (type.paired) add(ChartSeries(HealthText.diastolic(), points.map { it.value.value2 }))
+  TabbedPluginList { tab ->
+    item { ChoiceChips(VitalType.entries, type, ::vitalLabel, { type = it }) }
+    if (tab == TAB_STATISTICS) {
+      item {
+        SectionCard(HealthText.chart(), Icons.Outlined.ShowChart) {
+          val points = entries.reversed().takeLast(30)
+          if (points.isEmpty()) EmptyHint(HealthText.noVitals())
+          else {
+            val labels = points.map { item -> item.value.date.toDateOrNull()?.dayMonthShort() ?: item.value.date }
+            val series = buildList {
+              add(ChartSeries(vitalLabel(type), points.map { it.value.value }))
+              if (type.paired) add(ChartSeries(HealthText.diastolic(), points.map { it.value.value2 }))
+            }
+            StatisticsChart(labels, series, kind = ChartKind.Line, valueLabel = { "${formatNumber(it)} ${vitalUnit(type)}" })
           }
-          StatisticsChart(labels, series, kind = ChartKind.Line, valueLabel = { "${formatNumber(it)} ${vitalUnit(type)}" })
         }
       }
+      return@TabbedPluginList
+    }
+    item {
+      SectionCard(HealthText.measure(), Icons.Outlined.MonitorHeart) { MeasureForm(ctx, type) }
     }
     if (entries.isNotEmpty())
       item {
@@ -103,52 +105,69 @@ internal fun VitalsPage(ctx: PluginContext) {
 
 @Composable
 private fun MeasureForm(ctx: PluginContext, type: VitalType) {
-  var first by remember(type) { mutableStateOf("") }
-  var second by remember(type) { mutableStateOf("") }
-  var note by remember(type) { mutableStateOf("") }
-  var date by rememberSaveable { mutableStateOf<String?>(null) }
-  var time by rememberSaveable { mutableStateOf(localDateTime(nowMillis()).time.clockText()) }
-  val entry = VitalEntry(
+  val draft = remember(type) { VitalDraft(type) }
+  val problem = draft.entry().problem()
+  fun submit() {
+    if (problem != null) return
+    vitals(ctx).save(ctx.data.newId(), draft.entry().copy(createdAt = nowMillis()))
+    draft.clear()
+  }
+  VitalInputs(draft, ::submit)
+  FilledTonalButton(onClick = ::submit, enabled = problem == null) { Text(HealthText.save()) }
+}
+
+internal class VitalDraft(type: VitalType) {
+  var type by mutableStateOf(type)
+  var first by mutableStateOf("")
+  var second by mutableStateOf("")
+  var note by mutableStateOf("")
+  var date by mutableStateOf(today().toString())
+  var time by mutableStateOf(localDateTime(nowMillis()).time.clockText())
+
+  fun entry() = VitalEntry(
     type = type,
-    date = date?.toDateOrNull()?.toString() ?: today().toString(),
+    date = date.toDateOrNull()?.toString() ?: today().toString(),
     time = parseClock(time)?.clockText(),
     value = parseAmount(first) ?: Double.NaN,
     value2 = if (type.paired) parseAmount(second) ?: Double.NaN else null,
     note = note.trim().ifEmpty { null }
   )
-  val problem = entry.problem()
-  fun submit() {
-    if (problem != null) return
-    vitals(ctx).save(ctx.data.newId(), entry.copy(createdAt = nowMillis()))
+
+  fun clear() {
     first = ""
     second = ""
     note = ""
   }
+}
+
+@Composable
+internal fun VitalInputs(draft: VitalDraft, onSubmit: () -> Unit) {
+  val type = draft.type
+  val problem = draft.entry().problem()
   FieldsRow(minItemWidth = 140.dp) {
     BerillTextField(
-      first, { first = it.take(6) },
+      draft.first, { draft.first = it.take(6) },
       label = { Text(if (type.paired) HealthText.systolic() else vitalUnit(type), maxLines = 1, overflow = TextOverflow.Ellipsis) },
       singleLine = true,
-      isError = first.isNotBlank() && problem != null && (parseAmount(first)?.let { it !in type.min..type.max } ?: true),
+      isError = draft.first.isNotBlank() && problem != null && (parseAmount(draft.first)?.let { it !in type.min..type.max } ?: true),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
       modifier = Modifier.fillMaxWidth(),
-      onSubmit = ::submit
+      onSubmit = onSubmit
     )
     if (type.paired)
       BerillTextField(
-        second, { second = it.take(6) },
+        draft.second, { draft.second = it.take(6) },
         label = { Text(HealthText.diastolic(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
-        isError = second.isNotBlank() && problem != null,
+        isError = draft.second.isNotBlank() && problem != null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth(),
-        onSubmit = ::submit
+        onSubmit = onSubmit
       )
   }
   FieldsRow(minItemWidth = 140.dp) {
-    DateField(date ?: today().toString(), { date = it }, HealthText.date())
-    TimeField(time, { time = it }, HealthText.time())
+    DateField(draft.date, { picked -> draft.date = picked?.toDateOrNull()?.toString() ?: today().toString() }, HealthText.date())
+    TimeField(draft.time, { draft.time = it }, HealthText.time())
   }
-  BerillTextField(note, { note = it.take(200) }, label = { Text(HealthText.note()) }, singleLine = true, modifier = Modifier.fillMaxWidth(), onSubmit = ::submit)
-  FilledTonalButton(onClick = ::submit, enabled = problem == null) { Text(HealthText.save()) }
+  BerillTextField(draft.note, { draft.note = it.take(200) }, label = { Text(HealthText.note()) }, singleLine = true, modifier = Modifier.fillMaxWidth(), onSubmit = onSubmit)
 }

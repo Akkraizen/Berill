@@ -107,12 +107,19 @@ The recommended way is **Actions → Prepare release → Run workflow** with the
 | Equal to `versionName`, for example the first `1.0.0` | Tags the current commit as `v1.0.0` without a bump; `versionCode` stays as is.                      |
 | Lower than `versionName`, or the tag already exists   | Fails without changing anything.                                                                    |
 
+In the same commit it turns `## [Unreleased]` in `CHANGELOG.md` into `## [<version>] - <date>`,
+adds an empty `## [Unreleased]` above it and updates the comparison links at the end of the file. If
+the changelog already has a section for the version, it is left as is; an empty `[Unreleased]`
+section stops the workflow before tagging.
+
 Then it starts **Release** and, with `deploy_servers`, both server workflows. Run `git pull`
 afterwards to get the version commit.
 
 Manually:
 
-1. Increase both values in `version.properties`.
+1. Increase both values in `version.properties` and rename `## [Unreleased]` in `CHANGELOG.md` to
+   `## [<version>] - <date>` (`python3 scripts/release/changelog.py release <version> --date <date>
+   --repository Akkraizen/Berill` does both changelog edits).
 2. Commit and push the change.
 3. Create a tag that matches the version and push it:
 
@@ -137,7 +144,9 @@ on the default branch for manual runs to be available.
 6. In parallel, a Linux runner runs the desktop tests and builds `Berill-<version>-linux.deb` and
    `Berill-<version>-linux.rpm`.
 7. Checksums are computed after all files are built and verified again before the draft is created.
-8. A **draft** GitHub release is created with:
+8. A **draft** GitHub release is created. Its notes are the version's section of `CHANGELOG.md`
+   followed by a link to that section at the release tag; the build stops at the start if the section
+   is missing. The draft contains:
     - `Berill-<version>-windows.exe`;
     - `Berill-<version>-macos.dmg`;
     - `Berill-<version>-linux.deb`;

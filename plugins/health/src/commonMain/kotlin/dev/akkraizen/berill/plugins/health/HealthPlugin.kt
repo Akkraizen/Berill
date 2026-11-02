@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.SentimentSatisfied
 import androidx.compose.material.icons.outlined.Today
+import androidx.compose.runtime.Composable
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.api.Capability
 import dev.akkraizen.berill.api.CollectionDaySource
@@ -19,10 +20,13 @@ import dev.akkraizen.berill.plugins.health.data.MedicationReminders
 import dev.akkraizen.berill.plugins.health.i18n.HealthText
 import dev.akkraizen.berill.plugins.health.mcp.HealthMcp
 import dev.akkraizen.berill.plugins.health.ui.HealthHomeCard
+import dev.akkraizen.berill.plugins.health.ui.HealthSettings
 import dev.akkraizen.berill.plugins.health.ui.MedicationsPage
 import dev.akkraizen.berill.plugins.health.ui.SleepPage
 import dev.akkraizen.berill.plugins.health.ui.TodayPage
 import dev.akkraizen.berill.plugins.health.ui.VitalsPage
+import dev.akkraizen.berill.plugins.health.ui.QuickVitalDialog
+import dev.akkraizen.berill.plugins.health.ui.QuickWellbeingDialog
 import dev.akkraizen.berill.plugins.health.ui.WellbeingPage
 import dev.akkraizen.berill.plugins.health.ui.describeSleep
 import dev.akkraizen.berill.plugins.health.ui.describeVital
@@ -52,6 +56,11 @@ object HealthPlugin : BerillPlugin {
     get() = HealthText.description()
 
   override val installedByDefault = true
+  override val hasSettings = true
+
+  @Composable
+  override fun Settings(ctx: PluginContext) = HealthSettings(ctx)
+
   override val collections = listOf(MEDICATIONS, INTAKES, VITALS, WELLBEING, SLEEP, ACTIVITY)
 
   override val pages = listOf(
@@ -69,10 +78,10 @@ object HealthPlugin : BerillPlugin {
     listOf(
       QuickAction("wellbeing", HealthText.quickWellbeing, Icons.Outlined.SentimentSatisfied) {
         ctx.nav.openPlugin(id, page = PAGE_WELLBEING)
-      },
+      }.withPopup { close, error -> QuickWellbeingDialog(ctx, close, error) },
       QuickAction("vitals", HealthText.quickVitals, Icons.Outlined.MonitorHeart) {
         ctx.nav.openPlugin(id, page = PAGE_VITALS)
-      }
+      }.withPopup { close, error -> QuickVitalDialog(ctx, close, error) }
     )
 
   override fun provides(ctx: PluginContext): List<Capability> = listOf(

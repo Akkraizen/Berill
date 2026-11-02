@@ -39,7 +39,9 @@ jobs:
         id: version
         run: |
           if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select a version tag when running this workflow manually.' }
-          ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME -GithubOutput $env:GITHUB_OUTPUT
+          $version = ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME -GithubOutput $env:GITHUB_OUTPUT
+          python scripts/release/changelog.py notes $version.Name --repository $env:GITHUB_REPOSITORY | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "CHANGELOG.md has no section for $($version.Name)." }
       - name: Install Android SDK components
         run: |
           $sdk = Join-Path $env:ANDROID_HOME 'cmdline-tools/latest/bin/sdkmanager.bat'
@@ -248,6 +250,7 @@ jobs:
             exit 1
           fi
           if [ -z "$existing" ]; then
-            gh release create "$tag" --verify-tag --draft --title "Berill $VERSION" --generate-notes
+            python3 scripts/release/changelog.py notes "$VERSION" --repository "$GITHUB_REPOSITORY" --tag "$tag" > "$RUNNER_TEMP/notes.md"
+            gh release create "$tag" --verify-tag --draft --title "Berill $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
           fi
           gh release upload "$tag" dist/* --clobber

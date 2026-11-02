@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.books.ui
 
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -78,8 +80,11 @@ internal fun BooksBoard(ctx: PluginContext) {
   val reading = byStatus[READING].orEmpty().sortedByDescending { it.value.started ?: "" }
   val done = byStatus[DONE].orEmpty().sortedByDescending { it.value.finished ?: "" }
 
-  PluginList {
-    item { Text(BooksText.board(), style = MaterialTheme.typography.titleLarge) }
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { BooksStatistics(all.map { it.value }) }
+      return@TabbedPluginList
+    }
     item {
       FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -137,7 +142,6 @@ internal fun BooksBoard(ctx: PluginContext) {
         card = { item -> BookCard(item) { ctx.nav.open(BooksPlugin.BOOK_ROUTE + item.id) } }
       )
     }
-    item { BooksStatistics(all.map { it.value }) }
   }
 
   if (adding)
@@ -155,7 +159,7 @@ internal fun BooksBoard(ctx: PluginContext) {
 private fun BookCard(item: Item<Book>, onOpen: () -> Unit) {
   val b = item.value
   Row(
-    Modifier.fillMaxWidth().interactive(bleed = 6.dp, onClick = onOpen),
+    Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     Cover(b.cover, Icons.Outlined.MenuBook, Modifier.size(48.dp, 72.dp))
@@ -164,7 +168,8 @@ private fun BookCard(item: Item<Book>, onOpen: () -> Unit) {
         b.title,
         style = MaterialTheme.typography.titleSmall,
         maxLines = 3,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.interactive(bleed = 6.dp, onClick = onOpen)
       )
       if (!b.author.isNullOrBlank())
         Text(

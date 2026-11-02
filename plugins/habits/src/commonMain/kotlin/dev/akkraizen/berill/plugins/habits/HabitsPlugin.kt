@@ -16,7 +16,6 @@ import dev.akkraizen.berill.plugins.habits.i18n.HabitsText
 import dev.akkraizen.berill.plugins.habits.ui.HabitsEditScreen
 import dev.akkraizen.berill.plugins.habits.ui.HabitsScreen
 import dev.akkraizen.berill.plugins.habits.ui.HabitsSettings
-import dev.akkraizen.berill.plugins.habits.ui.HabitsStatsScreen
 import dev.akkraizen.berill.plugins.habits.ui.HabitsTodayCard
 import dev.akkraizen.berill.plugins.habits.widgets.habitsWidgets
 
@@ -55,7 +54,7 @@ object HabitsPlugin : BerillPlugin {
     val route by ctx.nav.route.collectAsState()
     AnimatedRoute(route) { route ->
       when (route) {
-        STATS -> HabitsStatsScreen(data)
+        STATS -> HabitsScreen(data, statistics = true)
         EDIT -> HabitsEditScreen(data)
         else -> HabitsScreen(data)
       }

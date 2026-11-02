@@ -38,7 +38,8 @@ import dev.akkraizen.berill.api.ui.fields.MonthSwitcher
 import dev.akkraizen.berill.api.ui.formatRub
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.layout.FieldsRow
-import dev.akkraizen.berill.api.ui.layout.PluginList
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
 import dev.akkraizen.berill.api.ui.parseAmount
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
@@ -114,7 +115,21 @@ internal fun FinanceScreen(ctx: PluginContext) {
     .toList()
     .sortedByDescending { it.second }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { MonthSwitcher(month, { month = it }) }
+      item { FinanceStatistics(ops.map { it.value }, month) }
+      if (byCategory.isNotEmpty())
+        item {
+          SectionCard(FinanceText.expensesByCategory(), Icons.Outlined.PieChart) {
+            val max = byCategory.first().second.coerceAtLeast(1.0)
+            byCategory.forEach { (category, sum) ->
+              CategoryBar(category, sum, (sum / max).toFloat())
+            }
+          }
+        }
+      return@TabbedPluginList
+    }
     item {
       TwoPane(
         left = {
@@ -153,16 +168,6 @@ internal fun FinanceScreen(ctx: PluginContext) {
       }
     }
     item { FinanceAutomation(ctx, ops) }
-    item { FinanceStatistics(ops.map { it.value }, month) }
-    if (byCategory.isNotEmpty())
-      item {
-        SectionCard(FinanceText.expensesByCategory(), Icons.Outlined.PieChart) {
-          val max = byCategory.first().second.coerceAtLeast(1.0)
-          byCategory.forEach { (category, sum) ->
-            CategoryBar(category, sum, (sum / max).toFloat())
-          }
-        }
-      }
   }
 
   editingOp?.let { item ->

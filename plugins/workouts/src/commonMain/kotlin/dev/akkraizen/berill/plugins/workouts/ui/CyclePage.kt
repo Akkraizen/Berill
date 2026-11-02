@@ -31,7 +31,7 @@ import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
-import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.PageActions
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.mondayOfWeek
 import dev.akkraizen.berill.api.ui.nowMillis
@@ -72,7 +72,7 @@ private fun CycleList(ctx: PluginContext) {
 
   PluginList {
     item {
-      DetailHeader(WorkoutsText.cycles(), Icons.Outlined.CalendarMonth) {
+      PageActions {
         FilledTonalButton(onClick = { creating = true }) {
           Ic(BerillIcons.Add, size = 18.dp)
           Spacer(Modifier.width(8.dp))
@@ -114,8 +114,8 @@ private fun CycleCard(ctx: PluginContext, item: Item<Cycle>) {
   SectionCard(
     c.title.ifBlank { WorkoutsText.pageCycle() },
     Icons.Outlined.CalendarMonth,
-    onTitleClick = open,
-    trailing = { TextButton(onClick = open) { Text(WorkoutsText.edit()) } }
+    trailing = { TextButton(onClick = open) { Text(WorkoutsText.edit()) } },
+    collapseKey = "workouts/cycle/${item.id}"
   ) {
     Text(
       listOfNotNull(
@@ -130,7 +130,7 @@ private fun CycleCard(ctx: PluginContext, item: Item<Cycle>) {
     if (now != null)
       c.daysForWeek(now).forEachIndexed { d, day ->
         val planned = day.exercises.indices.map { e -> c.planned(now, d, e, prefs.maxes, prefs.rounding) }
-        DayStartRow(day.title, planned.map { plannedSummary(it) }) {
+        DayStartRow(day.title, planned.map { plannedSummary(it) }, collapseKey = "workouts/cycle/${item.id}/$now/$d") {
           startWorkout(
             ctx,
             WorkoutsText.fromCycle(c.title, now, day.title)(),

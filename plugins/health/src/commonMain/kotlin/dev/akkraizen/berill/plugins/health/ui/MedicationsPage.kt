@@ -3,13 +3,14 @@ package dev.akkraizen.berill.plugins.health.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import dev.akkraizen.berill.api.ui.feedback.EmptyHint
 import dev.akkraizen.berill.api.ui.fields.DateField
 import dev.akkraizen.berill.api.ui.fields.parseClock
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
+import dev.akkraizen.berill.api.ui.layout.PageActions
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
@@ -61,9 +63,16 @@ internal fun MedicationsPage(ctx: PluginContext) {
 
   PluginList {
     item {
-      SectionCard(HealthText.pageMedications(), Icons.Outlined.Medication, trailing = {
-        FilledTonalButton(onClick = { editing = NEW }) { Text(HealthText.add()) }
-      }) {
+      PageActions {
+        FilledTonalButton(onClick = { editing = NEW }) {
+          Ic(BerillIcons.Add, size = 18.dp)
+          Spacer(Modifier.width(8.dp))
+          Text(HealthText.newMedication())
+        }
+      }
+    }
+    item {
+      SectionCard {
         if (sorted.isEmpty()) EmptyHint(HealthText.noMedications())
         sorted.forEach { item -> MedicationRow(item) { editing = item.id } }
       }

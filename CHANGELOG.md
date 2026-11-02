@@ -11,12 +11,98 @@ are released together with them.
 
 ### Added
 
-- Workout radar can compare actual calendar-week load with a selected program treated as a weekly plan, with week navigation and explicit warnings for incomplete planned tonnage.
+#### Health
 
+- A Health module: medications and supplements with schedules, courses, intake tracking and reminders;
+  pulse, blood pressure, temperature, oxygen saturation and blood glucose with charts; daily wellbeing,
+  mood, energy and symptoms; manual sleep log together with Health Connect steps and sleep. All of it is
+  available to assistants through MCP.
+- Manual step entry for any day; manually entered steps are kept when Health Connect imports the same
+  day, while imported sleep still updates.
+- Health settings: three styles for marking doses (cards, timeline, chips), medication reminders with a
+  configurable lead time, daily sleep and step goals, and whether the Home card shows today's activity.
+- Quick actions **Wellbeing** and **Log a measurement** open dialogs over Home instead of leaving the page:
+  ratings, symptoms and a note for any day, or a measurement with date, time and note, including
+  save-and-add-another and undo.
+
+#### Workspace and interface
+
+- Home layout is edited in place: cards and quick actions are dragged directly on the page, a button on
+  each card hides it, and hidden items can be restored from a bar above the grid.
+- On wide screens, cards in Books and Watching can be dragged between the status columns of the board.
+- Bulky elements such as workout program days and cycle weeks collapse to their title and remember
+  whether they are expanded.
 - An in-app update center with progress, cancellation, persistent verified downloads, release notes,
   Android package/signature checks and system installation, and Windows install/relaunch with saved drafts.
+- Signed in-app updates: CI signs every package (ECDSA P-256); builds with `berill.updatePublicKey`
+  refuse unsigned or wrongly signed packages before downloading and before installing.
+- Full-text search over all records (SQLite FTS4): words are matched by prefix in any language,
+  results with the query in the title come first, and the index is built once for existing data.
+- Automatic local export on a schedule (daily or weekly) into a chosen folder — a directory on desktop,
+  a document tree with persistent access on Android — keeping the latest seven archives.
+- A size limit for the attachment cache (256 MB – 2 GB): once the server has every file, the least
+  recently used ones are removed from the device and downloaded again when opened.
+- A synced template for daily notes with `{{date}}`, `{{weekday}}` and `{{iso}}`, and mood selection in Day.
+- `POST /api/blobs/missing` on the sync server, so clients re-upload only the attachments it lacks.
+
+#### Workouts
+
 - A Material 3 Expressive workout radar comparing completed sets or tonnage by muscle region with the
   preceding equal-length period, including custom catalog exercises and accessible group totals.
+- The radar can compare actual calendar-week load with a selected program treated as a weekly plan,
+  with week navigation and explicit warnings for incomplete planned tonnage.
+
+#### AI assistants (MCP)
+
+- Ready-made MCP connection settings for Claude Desktop, Claude Code, OpenAI Codex, Cursor, VS Code,
+  Windsurf, Gemini CLI, Zed, opencode, Cline / Roo Code and JetBrains AI Assistant, both in the desktop
+  settings and through `berill-mcp config --client`.
+
+### Changed
+
+- Sections that have both records and statistics — Books, Watching, Projects, Study, Planner, Finance,
+  Languages, Habits, Health and the workout journal — split them into the same localized tabs, keeping
+  each tab's scroll and filters.
+- Page headers are lighter: duplicated page titles are gone, page actions sit next to the tabs, and the
+  title bar shows the date subtitle only on Home.
+- Book and title cards open their details from the title only, so the rest of the card can be dragged.
+- Home settings show the editable Home page itself instead of a settings panel, a preview and a list of cards.
+- Sleep durations are shown as hours and minutes (for example, “8 h 15 min”) instead of minutes.
+- MCP lists return a short `etag` per record instead of repeating all fields as `expected`; updates and
+  deletes accept the etag (older clients may still pass `expected`).
+- Stored enum values of older versions live in each plugin's `data/LegacyValues.kt` instead of translation
+  files; typed saves keep a stored value this version does not understand unless that field was edited.
+- Base snapshots for conflict detection are kept only while a record has unsent changes; old ones are
+  removed once. The conflict journal is no longer re-read after every synchronization.
+- Global search, archive export/import and status-code handling were moved out of UI code into
+  `LocalArchiveService` and shared helpers; deleted records for the trash are queried in SQL.
+
+### Fixed
+
+- The MCP STDIO bridge forwards requests concurrently, so long tool calls no longer block pings,
+  cancellations and parallel calls; concurrent requests share one session recovery, and malformed
+  input gets a JSON-RPC parse error instead of being ignored.
+- `berill-mcp` no longer fails with `SQLITE_BUSY` under parallel tool calls: its database uses a single
+  shared connection in WAL mode with a busy timeout.
+- Health Connect steps and sleep are shown once in daily summaries when the Health module is enabled.
+- The “Saved” message with undo from one quick-entry dialog no longer reappears in the next dialog and
+  covers its buttons.
+- Cached recipe photos load without waiting for network uploads. Attachment reads run off the UI thread,
+  use a bounded 24 MiB memory cache backed by persistent local files, retry temporary failures, and
+  expose image decoding errors.
+- Workout journal views (entries and statistics) switch with a Material 3 Expressive connected button
+  group instead of tabs that left a grey rectangle behind the selected tab (`BerillTabs` in the UI kit).
+- A missing or rejected (HTTP 413) attachment no longer blocks all synchronization; it is skipped and logged.
+- Reminders are rescheduled once after a burst of changes instead of on every autosaved keystroke.
+- Stamps from a device whose clock runs far ahead no longer poison other devices: the server rejects them
+  with `clock_skew` (the app asks to fix the date and time), local clocks ignore them, unsent changes are
+  re-stamped after the clock is corrected, and edits of such existing data still win.
+- The update center test expects the install button label of the platform it runs on, so macOS and
+  Linux release builds pass.
+
+## [1.2.0] - 2026-11-01
+
+### Added
 
 #### Connected workspace
 
@@ -31,16 +117,6 @@ are released together with them.
 - A notification center, shared reminder scheduling, per-module notification controls, sound preferences
   and quiet hours that can span midnight.
 - A synchronization conflict viewer with preserved versions and field-level resolution.
-- Full-text search over all records (SQLite FTS4): words are matched by prefix in any language,
-  results with the query in the title come first, and the index is built once for existing data.
-- Automatic local export on a schedule (daily or weekly) into a chosen folder — a directory on desktop,
-  a document tree with persistent access on Android — keeping the latest seven archives.
-- A size limit for the attachment cache (256 MB – 2 GB): once the server has every file, the least
-  recently used ones are removed from the device and downloaded again when opened.
-- A synced template for daily notes with `{{date}}`, `{{weekday}}` and `{{iso}}`, and mood selection in Day.
-- Signed in-app updates: CI signs every package (ECDSA P-256); builds with `berill.updatePublicKey`
-  refuse unsigned or wrongly signed packages before downloading and before installing.
-- `POST /api/blobs/missing` on the sync server, so clients re-upload only the attachments it lacks.
 
 #### Module capabilities and Android integration
 
@@ -51,13 +127,6 @@ are released together with them.
 - Opt-in Health Connect imports for weight, steps and sleep, with Android permission handling.
 - SM-2 spaced repetition for language cards, recurring financial operations and category budgets.
 - Workout rest notifications and suggested weights from previous completed workouts.
-- A Health module: medications and supplements with schedules, courses, intake tracking and reminders;
-  pulse, blood pressure, temperature, oxygen saturation and blood glucose with charts; daily wellbeing,
-  mood, energy and symptoms; manual sleep log together with Health Connect steps and sleep. All of it is
-  available to assistants through MCP.
-- Ready-made MCP connection settings for Claude Desktop, Claude Code, OpenAI Codex, Cursor, VS Code,
-  Windsurf, Gemini CLI, Zed, opencode, Cline / Roo Code and JetBrains AI Assistant, both in the desktop
-  settings and through `berill-mcp config`.
 
 #### Storage and deployment
 
@@ -70,6 +139,39 @@ are released together with them.
   External buckets and credentials must be supplied by the operator; no cloud storage is provisioned.
 - Linux desktop distributions and platform integration.
 
+### Changed
+
+- Search, daily overview, trash and workspace dialogs use Material 3 Expressive styling; oversized
+  cards and quick-entry dialogs are smaller, and long secondary lists scroll within bounded areas.
+- Desktop search is centered in an adaptive title bar. Mobile header actions move into an overflow
+  menu so titles remain readable. The desktop synchronization icon has a fixed position beside the logo.
+- Synchronization state is shown in the header/menu instead of routine notification-center events.
+- Disabled plugins stop contributing capabilities, settings and reminders while their data is retained.
+- User-facing Russian literals use localization resources; persisted enum migrations accept legacy values.
+- The sync server Docker image builds and tests its source in a multistage build.
+- Floating Windows windows have rounded corners; maximized and fullscreen windows have square corners.
+- The built-in MCP server settings offer configuration for compatible MCP clients in general.
+
+### Fixed
+
+- Windows installer build, publication and update discovery consistently use `-windows.exe`; legacy
+  `-Setup.exe` downloads remain supported.
+- Sync deployment transfers the backup Dockerfile and builds its local image before recreating containers.
+- Release widget tests respect the selected language on English CI runners; failed Windows test reports
+  are retained as workflow artifacts.
+- Cross-module synchronization recovery, logical clocks and reconciliation after server/dataset changes.
+- Unsaved note drafts are protected against concurrent synchronization and MCP edits, with conflicts retained.
+- Rescheduled planner tasks remain planned and incomplete on the source day and planned on the destination day.
+- API failures are reported consistently without silently dropping failed operations.
+- Windows Hot Reload uses separate startup libraries per launch to avoid deleting JARs locked by a previous JVM.
+- Header action hover/press feedback, icon sizes and colors, stale highlighting after popup dismissal,
+  dropdown widths and unwanted progress-bar stop indicators.
+- Remote backup failures preserve local backups; restic retention groups snapshots consistently even though
+  dump filenames change, and does not mistake connection/authentication errors for an uninitialized repository.
+
+## [1.1.0] - 2026-10-28
+
+### Added
 
 #### Platforms
 
@@ -88,7 +190,8 @@ are released together with them.
 - An MCP server built into the desktop app (Windows and macOS). It serves the app's own database
   over Streamable HTTP on `127.0.0.1`, requires a bearer token, and rejects non-local `Host` and
   `Origin` headers. It is off by default and is managed in **Settings → AI assistants (MCP)**, with
-  read-only and read-write modes, token management, and ready-to-copy configuration for compatible MCP clients.
+  read-only and read-write modes, token management, and ready-to-copy configuration for Claude
+  Desktop and Claude Code.
 - `Berill --mcp`, a stdio bridge for clients that only start local servers. It connects to the
   running app, starts it in the background when needed, and reconnects after the server restarts.
 
@@ -132,59 +235,16 @@ are released together with them.
 
 ### Changed
 
-- Workout Journal separates entries and statistics into localized tabs, preserving each tab's scroll and filters.
-- Search, daily overview, trash and workspace dialogs use Material 3 Expressive styling; oversized
-  cards and quick-entry dialogs are smaller, and long secondary lists scroll within bounded areas.
-- Desktop search is centered in an adaptive title bar. Mobile header actions move into an overflow
-  menu so titles remain readable. The desktop synchronization icon has a fixed position beside the logo.
-- Synchronization state is shown in the header/menu instead of routine notification-center events.
-- Disabled plugins stop contributing capabilities, settings and reminders while their data is retained.
-- User-facing Russian literals use localization resources; persisted enum migrations accept legacy values.
-- The sync server Docker image builds and tests its source in a multistage build.
-- Floating Windows windows have rounded corners; maximized and fullscreen windows have square corners.
 - Plugin sources are split into `data`, `ui`, and `i18n` packages.
 - MCP tools moved into a shared `mcp` module used by both `berill-mcp` and the desktop app.
 - The desktop runtime image now includes the `java.net.http` module.
-- MCP lists return a short `etag` per record instead of repeating all fields as `expected`; updates and
-  deletes accept the etag (older clients may still pass `expected`).
-- Stored enum values of older versions live in each plugin's `data/LegacyValues.kt` instead of translation
-  files; typed saves keep a stored value this version does not understand unless that field was edited.
-- Base snapshots for conflict detection are kept only while a record has unsent changes; old ones are
-  removed once. The conflict journal is no longer re-read after every synchronization.
-- Global search, archive export/import and status-code handling were moved out of UI code into
-  `LocalArchiveService` and shared helpers; deleted records for the trash are queried in SQL.
 
 ### Fixed
 
-- The MCP STDIO bridge forwards requests concurrently, so long tool calls no longer block pings,
-  cancellations and parallel calls; concurrent requests share one session recovery, and malformed
-  input gets a JSON-RPC parse error instead of being ignored.
-- Health Connect steps and sleep are shown once in daily summaries when the Health module is enabled.
-
-- Cached recipe photos load without waiting for network uploads. Attachment reads run off the UI thread, use a bounded 24 MiB memory cache backed by persistent local files, retry temporary failures, and expose image decoding errors.
-- Windows installer build, publication and update discovery consistently use `-windows.exe`; legacy `-Setup.exe` downloads remain supported.
-- Sync deployment transfers the backup Dockerfile and builds its local image before recreating containers.
-- Release widget tests respect the selected language on English CI runners; failed Windows test reports are retained as workflow artifacts.
-- Cross-module synchronization recovery, logical clocks and reconciliation after server/dataset changes.
-- Unsaved note drafts are protected against concurrent synchronization and MCP edits, with conflicts retained.
-- Rescheduled planner tasks remain planned and incomplete on the source day and planned on the destination day.
-- API failures are reported consistently without silently dropping failed operations.
-- Windows Hot Reload uses separate startup libraries per launch to avoid deleting JARs locked by a previous JVM.
-- Header action hover/press feedback, icon sizes and colors, stale highlighting after popup dismissal,
-  dropdown widths and unwanted progress-bar stop indicators.
-- Remote backup failures preserve local backups; restic retention groups snapshots consistently even though
-  dump filenames change, and does not mistake connection/authentication errors for an uninitialized repository.
 - Plugin layouts on narrow screens.
 - Alignment of the workout tiles on the home screen.
 - The tray menu now opens at the cursor, and its labels stay on one line.
 - Field labels and task times no longer wrap onto a second line.
-- Workout journal views (entries and statistics) switch with a Material 3 Expressive connected button
-  group instead of tabs that left a grey rectangle behind the selected tab (`BerillTabs` in the UI kit).
-- A missing or rejected (HTTP 413) attachment no longer blocks all synchronization; it is skipped and logged.
-- Reminders are rescheduled once after a burst of changes instead of on every autosaved keystroke.
-- Stamps from a device whose clock runs far ahead no longer poison other devices: the server rejects them
-  with `clock_skew` (the app asks to fix the date and time), local clocks ignore them, unsent changes are
-  re-stamped after the clock is corrected, and edits of such existing data still win.
 
 ## [1.0.0] - 2026-10-25
 
@@ -237,5 +297,7 @@ First public release.
   processes; a sample `counters` plugin.
 - Release, deployment, and server workflows for GitHub Actions.
 
-[Unreleased]: https://github.com/Akkraizen/Berill/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Akkraizen/Berill/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Akkraizen/Berill/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/Akkraizen/Berill/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Akkraizen/Berill/releases/tag/v1.0.0

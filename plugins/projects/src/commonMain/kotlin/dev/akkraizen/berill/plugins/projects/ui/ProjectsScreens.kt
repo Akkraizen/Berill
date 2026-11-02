@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.projects.ui
 
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -88,7 +90,11 @@ internal fun ProjectsBoard(ctx: PluginContext) {
     }
   }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { ProjectsStatistics(all.map { it.value }) }
+      return@TabbedPluginList
+    }
     item {
       FieldWithActions(
         field = {
@@ -140,7 +146,6 @@ internal fun ProjectsBoard(ctx: PluginContext) {
         }
       )
     }
-    item { ProjectsStatistics(all.map { it.value }) }
   }
 }
 

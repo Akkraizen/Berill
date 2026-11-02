@@ -1,13 +1,8 @@
 package dev.akkraizen.berill.plugins.health.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.SentimentSatisfied
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,11 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.cards.SectionCard
 import dev.akkraizen.berill.api.ui.display.HealthSummary
@@ -34,6 +24,7 @@ import dev.akkraizen.berill.plugins.health.data.IntakeStatus
 import dev.akkraizen.berill.plugins.health.data.WellbeingDay
 import dev.akkraizen.berill.plugins.health.data.dosesOn
 import dev.akkraizen.berill.plugins.health.data.intakes
+import dev.akkraizen.berill.plugins.health.data.rememberHealthPrefs
 import dev.akkraizen.berill.plugins.health.data.medications
 import dev.akkraizen.berill.plugins.health.data.wellbeing
 import dev.akkraizen.berill.plugins.health.i18n.HealthText
@@ -66,33 +57,15 @@ internal fun toggleDose(ctx: PluginContext, dose: Dose, status: IntakeStatus = I
 @Composable
 internal fun DosesCard(ctx: PluginContext) {
   val doses = rememberTodayDoses(ctx)
+  val prefs = rememberHealthPrefs(ctx)
   SectionCard(HealthText.todayDoses(), Icons.Outlined.Medication) {
     if (doses.isEmpty()) EmptyHint(HealthText.noDosesToday())
-    doses.forEach { dose -> DoseRow(ctx, dose) }
+    else {
+      DayProgress(doses)
+      DoseList(ctx, doses, prefs.doseStyle)
+    }
     TextButton(onClick = { ctx.nav.openPlugin(HealthPlugin.id, page = HealthPlugin.PAGE_MEDICATIONS) }) {
       Text(HealthText.manageMedications())
-    }
-  }
-}
-
-@Composable
-internal fun DoseRow(ctx: PluginContext, dose: Dose) {
-  val status = dose.intake?.status
-  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    Checkbox(checked = status == IntakeStatus.TAKEN, onCheckedChange = { toggleDose(ctx, dose) })
-    Column(Modifier.weight(1f)) {
-      Text(
-        dose.medication.name,
-        style = MaterialTheme.typography.bodyLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        textDecoration = if (status == IntakeStatus.SKIPPED) TextDecoration.LineThrough else null
-      )
-      val details = listOfNotNull(dose.time ?: HealthText.anyTime(), dose.medication.dose?.takeIf { it.isNotBlank() }, if (status == IntakeStatus.SKIPPED) HealthText.skipped() else null)
-      Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    TextButton(onClick = { toggleDose(ctx, dose, IntakeStatus.SKIPPED) }) {
-      Text(if (status == IntakeStatus.SKIPPED) HealthText.undo() else HealthText.skip())
     }
   }
 }

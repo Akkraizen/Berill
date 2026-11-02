@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -57,7 +57,13 @@ import dev.akkraizen.berill.api.ui.interaction.BerillChip
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.UiText
 import dev.akkraizen.berill.api.ui.layout.PluginList
+import dev.akkraizen.berill.api.ui.layout.TAB_RECORDS
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabsToolbar
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import dev.akkraizen.berill.api.ui.minusDays
 import dev.akkraizen.berill.api.ui.plusDays
 import dev.akkraizen.berill.api.ui.today
@@ -74,7 +80,27 @@ import kotlinx.datetime.LocalDate
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun HabitsScreen(data: HabitsData) {
+internal fun HabitsScreen(data: HabitsData, statistics: Boolean = false) {
+  var tab by rememberSaveable { mutableIntStateOf(if (statistics) TAB_STATISTICS else TAB_RECORDS) }
+  val saved = rememberSaveableStateHolder()
+  Column(Modifier.fillMaxSize()) {
+    TabsToolbar(listOf(UiText.tabRecords(), UiText.tabStatistics()), tab, { tab = it }, actions = {
+      OutlinedButton(onClick = { data.ctx.nav.open(HabitsPlugin.EDIT) }) {
+        Ic(BerillIcons.Edit, size = 18.dp)
+        Spacer(Modifier.width(8.dp))
+        Text(HabitsText.habits())
+      }
+    })
+    saved.SaveableStateProvider(tab) {
+      Box(Modifier.weight(1f)) {
+        if (tab == TAB_STATISTICS) HabitsStatsScreen(data) else HabitsDay(data)
+      }
+    }
+  }
+}
+
+@Composable
+private fun HabitsDay(data: HabitsData) {
   val defs by remember(data) { data.defs.observe() }.collectAsState(emptyList())
   val days by remember(data) { data.days.observe() }.collectAsState(emptyList())
   val now = today()
@@ -120,20 +146,6 @@ internal fun HabitsScreen(data: HabitsData) {
         modifier = Modifier.fillMaxWidth(),
         stopSize = 0.dp
       )
-    }
-    item {
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilledTonalButton(onClick = { data.ctx.nav.open(HabitsPlugin.STATS) }) {
-          Ic(Icons.Outlined.Insights, size = 18.dp)
-          Spacer(Modifier.width(8.dp))
-          Text(HabitsText.statistics())
-        }
-        OutlinedButton(onClick = { data.ctx.nav.open(HabitsPlugin.EDIT) }) {
-          Ic(BerillIcons.Edit, size = 18.dp)
-          Spacer(Modifier.width(8.dp))
-          Text(HabitsText.habits())
-        }
-      }
     }
     item {
       BoxWithConstraints(Modifier.fillMaxWidth()) {

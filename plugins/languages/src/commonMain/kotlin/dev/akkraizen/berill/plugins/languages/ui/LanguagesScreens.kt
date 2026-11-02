@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.languages.ui
 
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -152,7 +154,11 @@ internal fun LanguagesHome(ctx: PluginContext) {
     ctx.nav.open(LanguagesPlugin.LESSON_ROUTE + id)
   }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { LanguageStatistics(langLessons.map { it.value }) }
+      return@TabbedPluginList
+    }
     item {
       Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -261,7 +267,6 @@ internal fun LanguagesHome(ctx: PluginContext) {
         }
       )
     }
-    item { LanguageStatistics(langLessons.map { it.value }) }
   }
 }
 

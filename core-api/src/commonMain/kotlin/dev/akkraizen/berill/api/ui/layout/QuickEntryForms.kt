@@ -67,8 +67,9 @@ fun QuickEntryFeedback(modifier: Modifier = Modifier) {
   val entries = LocalQuickEntries.current
   val saved = entries.saved
   val host = remember { SnackbarHostState() }
+  val earlier = remember(entries) { entries.saved?.id }
   LaunchedEffect(saved?.id) {
-    val token = saved ?: return@LaunchedEffect
+    val token = saved?.takeIf { it.id != earlier } ?: return@LaunchedEffect
     val result = host.showSnackbar(I18n.text("quick.saved"), I18n.text("quick.undo"), withDismissAction = true, duration = SnackbarDuration.Long)
     try {
       if (result == SnackbarResult.ActionPerformed) {

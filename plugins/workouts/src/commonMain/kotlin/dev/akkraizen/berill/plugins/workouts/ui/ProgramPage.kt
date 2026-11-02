@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FitnessCenter
-import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +31,17 @@ import dev.akkraizen.berill.api.ui.animation.AnimatedRoute
 import dev.akkraizen.berill.api.ui.cards.SectionCard
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.feedback.EmptyHint
-import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.PageActions
+import dev.akkraizen.berill.api.ui.cards.CollapseToggle
+import dev.akkraizen.berill.api.ui.cards.rememberExpanded
+import dev.akkraizen.berill.api.ui.interaction.interactive
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.plugins.workouts.WorkoutsPlugin
@@ -67,7 +76,7 @@ private fun ProgramList(ctx: PluginContext) {
 
   PluginList {
     item {
-      DetailHeader(WorkoutsText.programs(), Icons.Outlined.ListAlt) {
+      PageActions {
         FilledTonalButton(onClick = { creating = true }) {
           Ic(BerillIcons.Add, size = 18.dp)
           Spacer(Modifier.width(8.dp))
@@ -103,12 +112,12 @@ private fun ProgramCard(ctx: PluginContext, item: Item<Program>) {
   SectionCard(
     p.title.ifBlank { WorkoutsText.pageProgram() },
     Icons.Outlined.FitnessCenter,
-    onTitleClick = open,
-    trailing = { TextButton(onClick = open) { Text(WorkoutsText.edit()) } }
+    trailing = { TextButton(onClick = open) { Text(WorkoutsText.edit()) } },
+    collapseKey = "workouts/program/${item.id}"
   ) {
     if (p.days.isEmpty()) EmptyHint(WorkoutsText.programSummaryEmpty())
     p.days.forEachIndexed { d, day ->
-      DayStartRow(day.title, day.exercises.map { exerciseSummary(it, prefs.maxes, prefs.rounding) }) {
+      DayStartRow(day.title, day.exercises.map { exerciseSummary(it, prefs.maxes, prefs.rounding) }, collapseKey = "workouts/program/${item.id}/$d") {
         startWorkout(ctx, WorkoutsText.fromProgram(p.title, day.title)(), "program:${item.id}:$d", logFromDay(day, prefs.maxes, prefs.rounding))
       }
     }
@@ -128,7 +137,9 @@ internal fun exerciseSummary(e: Exercise, maxes: Map<String, Double> = emptyMap(
 }
 
 @Composable
-internal fun DayStartRow(title: String, exercises: List<String>, onStart: () -> Unit) {
+internal fun DayStartRow(title: String, exercises: List<String>, collapseKey: String? = null, onStart: () -> Unit) {
+  var expanded by rememberExpanded(collapseKey)
+  val collapsible = collapseKey != null && exercises.isNotEmpty()
   Column(
     Modifier.fillMaxWidth().padding(vertical = 8.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -138,30 +149,45 @@ internal fun DayStartRow(title: String, exercises: List<String>, onStart: () -> 
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+      Row(
+        Modifier.weight(1f).let { if (collapsible) it.interactive(bleed = 6.dp) { expanded = !expanded } else it },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
+        if (collapsible) CollapseToggle(expanded) { expanded = !expanded }
+        Column {
+          Text(title, style = MaterialTheme.typography.titleSmall)
+          if (collapsible && !expanded)
+            Text(WorkoutsText.exercises(exercises.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+      }
       FilledTonalButton(onClick = onStart) {
         Ic(Icons.Outlined.PlayArrow, size = 18.dp)
         Spacer(Modifier.width(6.dp))
         Text(WorkoutsText.start())
       }
     }
-    exercises.forEachIndexed { index, exercise ->
-      Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
-      ) {
-        Text(
-          "${index + 1}.",
-          modifier = Modifier.width(28.dp),
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-          exercise,
-          modifier = Modifier.weight(1f),
-          style = MaterialTheme.typography.bodyMedium
-        )
+    AnimatedVisibility(!collapsible || expanded, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        exercises.forEachIndexed { index, exercise ->
+          Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
+          ) {
+            Text(
+              "${index + 1}.",
+              modifier = Modifier.width(28.dp),
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+              exercise,
+              modifier = Modifier.weight(1f),
+              style = MaterialTheme.typography.bodyMedium
+            )
+          }
+        }
       }
     }
   }

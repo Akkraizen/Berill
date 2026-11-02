@@ -40,7 +40,6 @@ import dev.akkraizen.berill.api.ui.dialogs.ConfirmDialog
 import dev.akkraizen.berill.api.ui.display.Ic
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
-import dev.akkraizen.berill.api.ui.layout.DetailHeader
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
 import dev.akkraizen.berill.plugins.habits.data.HabitDef
@@ -59,7 +58,6 @@ internal fun HabitsEditScreen(data: HabitsData) {
     defs.sortedWith(compareBy<Item<HabitDef>> { it.value.archived }.thenBy { it.value.order })
 
   PluginList {
-    item { DetailHeader(HabitsText.habits(), BerillIcons.Edit) }
     sorted.forEachIndexed { index, h ->
       item(key = h.id) {
         Surface(

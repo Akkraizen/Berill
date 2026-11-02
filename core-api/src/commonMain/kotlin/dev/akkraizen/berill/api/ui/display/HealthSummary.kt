@@ -29,7 +29,7 @@ fun HealthSummary(ctx: PluginContext, date: LocalDate = today()) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
     days.forEach { day ->
       day.steps?.let { HealthMetric(Tr("connections.steps")() + ": $it", Icons.Outlined.DirectionsWalk) }
-      day.sleepMinutes?.let { HealthMetric(Tr("connections.sleep")() + ": " + Tr("ui.minutes", "m" to it)(), Icons.Outlined.Bedtime) }
+      day.sleepMinutes?.let { HealthMetric(Tr("connections.sleep")() + ": " + dev.akkraizen.berill.api.ui.formatMinutes(it.toInt()), Icons.Outlined.Bedtime) }
       day.weightKg?.let { HealthMetric("$it " + Tr("connections.kilograms")(), Icons.Outlined.MonitorWeight) }
     }
   }

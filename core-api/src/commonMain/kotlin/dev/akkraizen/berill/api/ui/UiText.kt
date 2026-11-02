@@ -57,6 +57,13 @@ object UiText {
 
   fun minutes(m: Int) = Tr("ui.minutes", "m" to m)
 
+  val tabRecords = Tr("ui.tabRecords")
+  val drag = Tr("ui.drag")
+  val collapse = Tr("ui.collapse")
+  val expand = Tr("ui.expand")
+  val hide = Tr("ui.hide")
+  val tabStatistics = Tr("ui.tabStatistics")
+
   fun hours(h: Int) = Tr("ui.hours", "h" to h)
 
   fun hoursMinutes(h: Int, m: Int) = Tr("ui.hoursMinutes", "h" to h, "m" to m)

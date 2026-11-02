@@ -155,7 +155,8 @@ data class ActivityDay(
   val date: String = "",
   val steps: Long? = null,
   val sleepMinutes: Long? = null,
-  val source: String? = null
+  val source: String? = null,
+  val manualSteps: Boolean = false
 )
 
 val RATINGS = 1..5

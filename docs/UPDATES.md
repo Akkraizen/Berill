@@ -49,8 +49,10 @@ its hash. Builds that contain a publisher key therefore also require a signature
 
 Setup, once:
 
-1. `bash scripts/release/generate-update-key.sh` — creates `berill-update-signing.pem` and prints
-   the public key.
+1. `bash scripts/release/generate-update-key.sh` or, on Windows,
+   `powershell -ExecutionPolicy Bypass -File scripts\release\generate-update-key.ps1` — creates
+   `berill-update-signing.pem` (readable only by the current user) and prints the public key. Both
+   accept an output path as the first argument and refuse to overwrite an existing key.
 2. Add the whole PEM file as the secret `UPDATE_SIGNING_KEY` of the `updates` environment in GitHub,
    keep an offline copy, and delete the local file. Never commit it.
 3. Put the printed line `berill.updatePublicKey=…` into `gradle.properties` and release a version

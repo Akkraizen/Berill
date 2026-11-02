@@ -1,0 +1,256 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      BERILL_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      BERILL_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    outputs:
+      version: ${{ steps.version.outputs.name }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Validate release version
+        id: version
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select a version tag when running this workflow manually.' }
+          $version = ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME -GithubOutput $env:GITHUB_OUTPUT
+          python scripts/release/changelog.py notes $version.Name --repository $env:GITHUB_REPOSITORY | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "CHANGELOG.md has no section for $($version.Name)." }
+      - name: Install Android SDK components
+        run: |
+          $sdk = Join-Path $env:ANDROID_HOME 'cmdline-tools/latest/bin/sdkmanager.bat'
+          & $sdk 'platforms;android-37.0' 'build-tools;37.0.0'
+          if ($LASTEXITCODE -ne 0) { throw 'Android SDK setup failed.' }
+      - name: Run tests
+        id: tests
+        run: |
+          ./gradlew.bat jvmTest :server:test :update-server:test --no-configuration-cache --console=plain
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+      - name: Upload failed test reports
+        if: failure() && steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-test-reports
+          path: |
+            **/build/test-results/**/*.xml
+            **/build/reports/tests/**
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Prepare Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./scripts/release/prepare-android-signing.ps1
+      - name: Build signed Android packages
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew.bat :app:androidApp:assembleRelease :app:androidApp:bundleRelease --no-configuration-cache --console=plain
+          if ($LASTEXITCODE -ne 0) { throw 'Android release build failed.' }
+          $sdk = Join-Path $env:ANDROID_HOME 'build-tools/37.0.0/apksigner.bat'
+          & $sdk verify --verbose 'app/androidApp/build/outputs/apk/release/androidApp-release.apk'
+          if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed.' }
+          $bundleVerification = & "$env:JAVA_HOME/bin/jarsigner.exe" '-J-Duser.language=en' '-J-Duser.country=US' -verify 'app/androidApp/build/outputs/bundle/release/androidApp-release.aab' 2>&1
+          if ($LASTEXITCODE -ne 0 -or -not ($bundleVerification -match 'jar verified\.')) { throw 'AAB signature verification failed.' }
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          $version = (./scripts/release/version.ps1).Name
+          Copy-Item 'app/androidApp/build/outputs/apk/release/androidApp-release.apk' "dist/Berill-$version-android.apk"
+          Copy-Item 'app/androidApp/build/outputs/bundle/release/androidApp-release.aab' "dist/Berill-$version-android.aab"
+      - name: Install Windows packaging tools
+        run: |
+          $wix = @(Get-ChildItem "${env:ProgramFiles(x86)}/WiX Toolset v3.*/bin/candle.exe" -ErrorAction SilentlyContinue)
+          if ($wix.Count -eq 0) {
+            choco install wixtoolset --version=3.14.1 --yes --no-progress --limit-output
+            if ($LASTEXITCODE -ne 0) { throw 'WiX installation failed.' }
+            $wix = @(Get-ChildItem "${env:ProgramFiles(x86)}/WiX Toolset v3.*/bin/candle.exe")
+          }
+          if ($wix.Count -eq 0) { throw 'WiX 3 compiler not found.' }
+          $wix[0].DirectoryName | Add-Content -LiteralPath $env:GITHUB_PATH
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe' -OutFile $installer
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'CN=Pyrsys B\.V\.') { throw 'Inno Setup publisher verification failed.' }
+          $destination = Join-Path $env:RUNNER_TEMP 'InnoSetup'
+          $process = Start-Process -FilePath $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', "/DIR=`"$destination`"") -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw 'Inno Setup installation failed.' }
+          "INNO_COMPILER=$destination/ISCC.exe" | Add-Content -LiteralPath $env:GITHUB_ENV
+      - name: Build Windows installer
+        run: ./scripts/windows-installer/build.ps1 -Compiler $env:INNO_COMPILER -OutputDirectory (Join-Path $PWD dist)
+      - name: Generate checksums
+        run: |
+          $version = (./scripts/release/version.ps1).Name
+          foreach ($name in @("Berill-$version-windows.exe", "Berill-$version-android.apk", "Berill-$version-android.aab")) {
+            if (-not (Test-Path -LiteralPath (Join-Path dist $name))) { throw "Missing release file: $name" }
+          }
+          ./scripts/release/checksums.ps1 -Directory dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-files
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove temporary Android key
+        if: always()
+        run: |
+          $path = Join-Path $env:RUNNER_TEMP 'berill-release.jks'
+          if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
+
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      BERILL_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      BERILL_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select a version tag when running this workflow manually.' }
+          ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME
+      - name: Build macOS app
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:desktopApp:test :app:desktopApp:packageReleaseDmg --no-configuration-cache --console=plain
+          version=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          mkdir -p dist
+          cp app/desktopApp/build/compose/binaries/main-release/dmg/*.dmg "dist/Berill-$version-macos.dmg"
+          (cd dist && shasum -a 256 "Berill-$version-macos.dmg" > SHA256SUMS-macos.txt)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-files
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BERILL_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      BERILL_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Validate release version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'tag') { throw 'Select a version tag when running this workflow manually.' }
+          ./scripts/release/version.ps1 -Tag $env:GITHUB_REF_NAME
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fakeroot rpm
+      - name: Build Linux packages
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:desktopApp:test :app:desktopApp:packageReleaseDeb :app:desktopApp:packageReleaseRpm --no-configuration-cache --console=plain
+          version=$(sed -n 's/^versionName=//p' version.properties | tr -d '\r')
+          mkdir -p dist
+          cp app/desktopApp/build/compose/binaries/main-release/deb/*.deb "dist/Berill-$version-linux.deb"
+          cp app/desktopApp/build/compose/binaries/main-release/rpm/*.rpm "dist/Berill-$version-linux.rpm"
+          (cd dist && sha256sum "Berill-$version-linux.deb" "Berill-$version-linux.rpm" > SHA256SUMS-linux.txt)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-files
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    needs: [ build, macos, linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-files
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: macos-files
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-files
+          path: dist
+      - name: Verify release checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          sha256sum --check SHA256SUMS.txt SHA256SUMS-macos.txt SHA256SUMS-linux.txt
+          cat SHA256SUMS.txt SHA256SUMS-macos.txt SHA256SUMS-linux.txt | sort -k 2 > SHA256SUMS.merged
+          mv SHA256SUMS.merged SHA256SUMS.txt
+          rm SHA256SUMS-macos.txt SHA256SUMS-linux.txt
+          sha256sum --check SHA256SUMS.txt
+      - name: Create or update release draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | [.tag_name, .draft] | @tsv' > "$RUNNER_TEMP/releases.tsv"
+          existing=$(awk -F '\t' -v tag="$tag" '$1 == tag { print $2 }' "$RUNNER_TEMP/releases.tsv")
+          if [ "$existing" = "false" ]; then
+            echo 'Published releases cannot be overwritten.' >&2
+            exit 1
+          fi
+          if [ -z "$existing" ]; then
+            python3 scripts/release/changelog.py notes "$VERSION" --repository "$GITHUB_REPOSITORY" --tag "$tag" > "$RUNNER_TEMP/notes.md"
+            gh release create "$tag" --verify-tag --draft --title "Berill $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+          gh release upload "$tag" dist/* --clobber

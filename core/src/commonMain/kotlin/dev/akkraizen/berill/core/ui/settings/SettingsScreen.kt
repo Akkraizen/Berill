@@ -154,10 +154,17 @@ private fun SettingsNavRow(page: SettingsPage, selected: Boolean, showChevron: B
 
 @Composable
 private fun SettingsPageContent(core: BerillCore, page: SettingsPage, showTitle: Boolean) {
+  if (page == SettingsPage.Home) {
+    Column(Modifier.fillMaxSize()) {
+      if (showTitle) Text(page.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp))
+      HomeSettings(core, Modifier.weight(1f))
+    }
+    return
+  }
   PluginList {
     if (showTitle) item { Text(page.title, style = MaterialTheme.typography.headlineSmall) }
     when (page) {
-      SettingsPage.Home -> item { SectionCard { HomeSettings(core) } }
+      SettingsPage.Home -> Unit
       SettingsPage.Notifications -> item { SectionCard { NotificationSettings(core) } }
       SettingsPage.Editor -> item { SectionCard { EditorSettings(core) } }
       SettingsPage.Appearance -> item { SectionCard { AppearanceSettings(core) } }

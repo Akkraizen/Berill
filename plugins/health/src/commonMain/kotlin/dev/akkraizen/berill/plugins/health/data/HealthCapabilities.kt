@@ -11,6 +11,7 @@ import dev.akkraizen.berill.api.widgets.WidgetAction
 import dev.akkraizen.berill.plugins.health.HealthPlugin
 import dev.akkraizen.berill.plugins.health.i18n.HealthText
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -24,11 +25,18 @@ internal class HealthActivity(private val ctx: PluginContext) : HealthDataSink, 
     if (day.steps == null && day.sleepMinutes == null) return
     val days = activity(ctx)
     val old = days.get(day.date)
-    val next = ActivityDay(day.date, day.steps ?: old?.steps, day.sleepMinutes ?: old?.sleepMinutes, SOURCE_HEALTH_CONNECT)
+    val steps = if (old?.manualSteps == true) old.steps else day.steps ?: old?.steps
+    val next = ActivityDay(day.date, steps, day.sleepMinutes ?: old?.sleepMinutes, SOURCE_HEALTH_CONNECT, old?.manualSteps == true)
     if (next != old) days.save(day.date, next)
   }
 
   override fun day(date: LocalDate): HealthDay? = summary(ctx, date)
+}
+
+internal fun saveManualSteps(ctx: PluginContext, date: String, steps: Long) {
+  val days = activity(ctx)
+  val old = days.get(date)
+  days.save(date, ActivityDay(date, steps, old?.sleepMinutes, old?.source, manualSteps = true))
 }
 
 internal fun summary(ctx: PluginContext, date: LocalDate): HealthDay? {
@@ -42,6 +50,9 @@ internal fun summary(ctx: PluginContext, date: LocalDate): HealthDay? {
 
 internal class MedicationReminders(private val ctx: PluginContext) : ReminderSource {
   override fun reminders(): List<Reminder> {
+    val prefs = healthPrefs(ctx)
+    if (!prefs.reminders) return emptyList()
+    val lead = prefs.reminderLeadMinutes.coerceIn(0, 120).minutes
     val zone = TimeZone.currentSystemDefault()
     val now = Clock.System.now()
     val today = now.toLocalDateTime(zone).date
@@ -52,7 +63,7 @@ internal class MedicationReminders(private val ctx: PluginContext) : ReminderSou
       dosesOn(date, meds, done).mapNotNull { dose ->
         val clock = parseClock(dose.time) ?: return@mapNotNull null
         if (dose.intake != null) return@mapNotNull null
-        val at = LocalDateTime(date, clock).toInstant(zone)
+        val at = LocalDateTime(date, clock).toInstant(zone) - lead
         if (at <= now) return@mapNotNull null
         Reminder(
           "${ctx.pluginId}:${dose.id}",

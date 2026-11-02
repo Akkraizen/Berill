@@ -109,7 +109,8 @@ fun BerillShell(
       Box(Modifier.fillMaxSize().onPreviewKeyEvent { e -> core.handleShortcut(e)
       }) {
         Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-          windowChrome?.invoke(if (onboarded) title else "Berill")
+          val headed = current !is Destination.Home
+          windowChrome?.invoke(if (onboarded && !headed) title else "Berill")
 
           AnimatedContent(
             targetState = onboarded,

@@ -19,6 +19,8 @@ dependencies {
   implementation(libs.jna)
   testImplementation(project(":plugins:recipes"))
   testImplementation(project(":plugins:workouts"))
+  testImplementation(project(":plugins:health"))
+  testImplementation(project(":plugins:books"))
   testImplementation(libs.kotlin.testJunit)
   testImplementation(libs.sqldelight.sqliteDriver)
 

@@ -1,5 +1,7 @@
 package dev.akkraizen.berill.plugins.watching.ui
 
+import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
+import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -91,7 +93,11 @@ internal fun WatchBoard(ctx: PluginContext) {
   val watching = byStatus[WATCHING].orEmpty().sortedByDescending { it.value.started ?: "" }
   val watched = byStatus[WATCHED].orEmpty().sortedByDescending { it.value.finished ?: "" }
 
-  PluginList {
+  TabbedPluginList { tab ->
+    if (tab == TAB_STATISTICS) {
+      item { WatchingStatistics(shown.map { it.value }) }
+      return@TabbedPluginList
+    }
     item { ChoiceChips(FILTERS, filter, ::filterLabel, { filter = it }, icon = ::filterIcon) }
     item {
       FlowRow(
@@ -168,7 +174,6 @@ internal fun WatchBoard(ctx: PluginContext) {
         }
       )
     }
-    item { WatchingStatistics(shown.map { it.value }) }
   }
 
   if (adding)
@@ -188,14 +193,15 @@ private fun TitleCard(item: Item<Title>, onOpen: () -> Unit, onPlusOne: () -> Un
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
     Cover(t.cover, mediaIcon(t.media), Modifier.size(48.dp, 72.dp))
     Column(
-      Modifier.weight(1f).interactive(bleed = 6.dp, onClick = onOpen),
+      Modifier.weight(1f),
       verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
       Text(
         t.title,
         style = MaterialTheme.typography.titleSmall,
         maxLines = 3,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.interactive(bleed = 6.dp, onClick = onOpen)
       )
       Text(
         listOfNotNull(WatchingText.mediaLabel(t.media), t.year?.toString())
