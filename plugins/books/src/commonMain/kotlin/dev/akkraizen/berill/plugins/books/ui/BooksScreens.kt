@@ -3,6 +3,7 @@ package dev.akkraizen.berill.plugins.books.ui
 import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
 import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.MenuBook
@@ -47,7 +49,14 @@ import dev.akkraizen.berill.api.ui.fields.CommitTextField
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.layout.CollectionGroup
+import dev.akkraizen.berill.api.ui.layout.GroupedCollection
 import dev.akkraizen.berill.api.ui.layout.KanbanBoard
+import dev.akkraizen.berill.api.ui.layout.ListLayout
+import dev.akkraizen.berill.api.ui.layout.ListLayoutKey
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSetting
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSwitcher
+import dev.akkraizen.berill.api.ui.layout.rememberListLayout
 import dev.akkraizen.berill.api.ui.layout.KanbanColumn
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.media.Cover
@@ -68,17 +77,24 @@ internal val ICONS: Map<dev.akkraizen.berill.plugins.books.data.BookStatus, Imag
   DONE to Icons.Outlined.TaskAlt
 )
 
+internal val BOOKS_LAYOUT = ListLayoutKey("listLayout", listOf(ListLayout.BOARD, ListLayout.CARDS, ListLayout.ROWS), ListLayout.BOARD)
+internal val BOOKS_ORDER = dev.akkraizen.berill.api.ui.layout.ManualOrder("listOrder")
+
 @Composable
 internal fun BooksBoard(ctx: PluginContext) {
   val collection = remember(ctx) { books(ctx) }
   val all by remember(collection) { collection.observe() }.collectAsState(emptyList())
   var adding by remember { mutableStateOf(false) }
   var searching by rememberSaveable { mutableStateOf(false) }
+  val layout = rememberListLayout(ctx, BOOKS_LAYOUT)
+  val modes = dev.akkraizen.berill.api.ui.layout.rememberCollectionModes()
+  val manual = dev.akkraizen.berill.api.ui.layout.rememberManualOrder(ctx, BOOKS_ORDER)
+  fun arrange(list: List<dev.akkraizen.berill.api.Item<Book>>) = if (layout == ListLayout.BOARD) list else dev.akkraizen.berill.api.ui.layout.applyManualOrder(list, manual) { it.id }
 
   val byStatus = all.groupBy { it.value.normalizedStatus }
-  val notStarted = byStatus[NOT_STARTED].orEmpty().sortedBy { it.value.title.lowercase() }
-  val reading = byStatus[READING].orEmpty().sortedByDescending { it.value.started ?: "" }
-  val done = byStatus[DONE].orEmpty().sortedByDescending { it.value.finished ?: "" }
+  val notStarted = arrange(byStatus[NOT_STARTED].orEmpty().sortedBy { it.value.title.lowercase() })
+  val reading = arrange(byStatus[READING].orEmpty().sortedByDescending { it.value.started ?: "" })
+  val done = arrange(byStatus[DONE].orEmpty().sortedByDescending { it.value.finished ?: "" })
 
   TabbedPluginList { tab ->
     if (tab == TAB_STATISTICS) {
@@ -100,13 +116,45 @@ internal fun BooksBoard(ctx: PluginContext) {
           Spacer(Modifier.width(8.dp))
           Text(BooksText.manually())
         }
+        ListLayoutSwitcher(ctx, BOOKS_LAYOUT, modes.takeIf { layout != ListLayout.BOARD })
         IconButton(onClick = { ctx.nav.openSettings() }) {
           Icon(Icons.Outlined.Settings, contentDescription = BooksText.sectionSettings())
         }
       }
     }
+    if (layout != ListLayout.BOARD && !modes.idle) item {
+      dev.akkraizen.berill.api.ui.layout.CollectionModeBar(
+        modes,
+        listOf(
+          dev.akkraizen.berill.api.ui.layout.BulkAction(
+            dev.akkraizen.berill.api.ui.UiText.bulkStatus(), Icons.Outlined.SwapHoriz,
+            choices = STATUSES.map { status -> BooksText.statusLabel(status) to { ids: List<String> -> ids.forEach { id -> collection.get(id)?.let { collection.save(id, it.moveTo(status)) } } } }
+          ),
+          dev.akkraizen.berill.api.ui.layout.BulkAction(dev.akkraizen.berill.api.ui.UiText.bulkDelete(), BerillIcons.Delete, destructive = true) { ids -> ids.forEach(collection::delete) }
+        ),
+        (reading + notStarted + done).map { it.id }
+      )
+    }
     if (searching) item { BookSearch(ctx) { searching = false } }
-    item {
+    if (layout != ListLayout.BOARD) item {
+      GroupedCollection(
+        listOf(
+          CollectionGroup(BooksText.statusLabel(READING), ICONS[READING], reading),
+          CollectionGroup(BooksText.statusLabel(NOT_STARTED), ICONS[NOT_STARTED], notStarted),
+          CollectionGroup(BooksText.statusLabel(DONE), ICONS[DONE], done)
+        ),
+        layout,
+        minCardWidth = 112.dp,
+        maxColumns = 12,
+        emptyText = BooksText.noBooks(),
+        id = { it.id },
+        modes = modes,
+        onReorder = { ids -> BOOKS_ORDER.save(ctx, ids) },
+        row = { item -> BookCard(item) { ctx.nav.open(BooksPlugin.BOOK_ROUTE + item.id) } },
+        card = { item, modifier -> BookTile(item, modifier) { ctx.nav.open(BooksPlugin.BOOK_ROUTE + item.id) } }
+      )
+    }
+    if (layout == ListLayout.BOARD) item {
       KanbanBoard(
         columns = listOf(
           KanbanColumn(
@@ -153,6 +201,18 @@ internal fun BooksBoard(ctx: PluginContext) {
         adding = false
       }
     )
+}
+
+@Composable
+private fun BookTile(item: Item<Book>, modifier: Modifier, onOpen: () -> Unit) {
+  val b = item.value
+  Column(modifier.interactive(MaterialTheme.shapes.large, onClick = onOpen), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Cover(b.cover, Icons.Outlined.MenuBook, Modifier.fillMaxWidth().aspectRatio(2f / 3f), MaterialTheme.shapes.large)
+    Text(b.title, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    if (!b.author.isNullOrBlank())
+      Text(b.author, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Stars(b.rating)
+  }
 }
 
 @Composable
@@ -233,21 +293,24 @@ internal fun BooksSettings(ctx: PluginContext) {
     ctx.secrets.observe(GOOGLE_BOOKS_KEY)
   }
     .collectAsState(ctx.secrets.get(GOOGLE_BOOKS_KEY))
-  SectionCard("Google Books API", Icons.Outlined.Key) {
-    Text(
-      BooksText.settingsHint(),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    CommitTextField(
-      key ?: "",
-      { ctx.secrets.set(GOOGLE_BOOKS_KEY, it.trim()) },
-      BooksText.apiKeyOptional()
-    )
-    Text(
-      BooksText.keyStorageHint(),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    SectionCard(BooksText.view()) { ListLayoutSetting(ctx, BOOKS_LAYOUT, BooksText.listView()) }
+    SectionCard("Google Books API", Icons.Outlined.Key) {
+      Text(
+        BooksText.settingsHint(),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+      CommitTextField(
+        key ?: "",
+        { ctx.secrets.set(GOOGLE_BOOKS_KEY, it.trim()) },
+        BooksText.apiKeyOptional()
+      )
+      Text(
+        BooksText.keyStorageHint(),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
   }
 }

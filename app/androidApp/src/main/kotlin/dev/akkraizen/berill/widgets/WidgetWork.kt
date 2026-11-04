@@ -20,7 +20,21 @@ class WidgetActionCallback : ActionCallback {
 
 class WidgetRefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
   override suspend fun doWork(): Result {
-    WidgetHost.refreshAll(applicationContext)
+    val appWidgetId = inputData.getInt(APP_WIDGET_ID, android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID)
+    if (appWidgetId == android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID) WidgetHost.refreshAll(applicationContext)
+    else WidgetHost.refreshOne(applicationContext, appWidgetId)
+    return Result.success()
+  }
+
+  companion object {
+    const val APP_WIDGET_ID = "appWidgetId"
+  }
+}
+
+class WidgetMidnightWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+  override suspend fun doWork(): Result {
+    WidgetHost.refreshChanged(applicationContext, null)
+    WidgetHost.scheduleMidnight(applicationContext)
     return Result.success()
   }
 }

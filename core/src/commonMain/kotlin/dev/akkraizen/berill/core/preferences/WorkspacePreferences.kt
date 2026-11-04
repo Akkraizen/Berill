@@ -8,7 +8,13 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 
 @Serializable
-data class HomePreferences(val hiddenCards: Set<String> = emptySet(), val cardOrder: List<String> = emptyList(), val hiddenActions: Set<String> = emptySet(), val actionOrder: List<String> = emptyList(), val greeting: Boolean = true)
+data class HomePreferences(val hiddenCards: Set<String> = emptySet(), val cardOrder: List<String> = emptyList(), val hiddenActions: Set<String> = emptySet(), val actionOrder: List<String> = emptyList(), val greeting: Boolean = true, val cardColumns: Map<String, Map<String, Int>> = emptyMap())
+@Serializable
+data class DisplayPreferences(val lists: dev.akkraizen.berill.api.ui.layout.ListLayout? = null, val compact: Boolean = false)
+@Serializable
+enum class NoteSort { UPDATED, TITLE, COLOR, MANUAL }
+@Serializable
+data class NotesViewPreferences(val sort: NoteSort = NoteSort.UPDATED, val manualOrder: List<String> = emptyList())
 @Serializable
 data class EditorPreferences(val lineNumbers: Boolean = false, val fontSize: Int = 16, val monospace: Boolean = false)
 

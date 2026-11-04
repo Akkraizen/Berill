@@ -9,10 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +24,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import dev.akkraizen.berill.api.ui.layout.reorderable
+import dev.akkraizen.berill.api.ui.layout.columnDraggable
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.zIndex
@@ -42,6 +40,7 @@ import dev.akkraizen.berill.api.QuickAction
 import dev.akkraizen.berill.api.BerillPlugin
 import dev.akkraizen.berill.core.connections.FailureOperation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -114,24 +113,22 @@ private fun HomeContent(core: BerillCore, editing: Boolean) {
     else -> CoreText.goodNight()
   }
 
-  val cardReorder = remember { Reorder() }
-  val actionReorder = remember { Reorder() }
+  val cardDrag = remember { dev.akkraizen.berill.api.ui.layout.ColumnDragState() }
+  val actionReorder = remember { dev.akkraizen.berill.api.ui.layout.ReorderState() }
   fun prefs() = core.homePreferences.state.value
   val actionKeys = dev.akkraizen.berill.core.preferences.orderedKeys(listOf("core/new-note") + actions.map { (p, a) -> "${p.id}/${a.id}" }, preferences.actionOrder).filterNot { it in preferences.hiddenActions }
-  val keys = dev.akkraizen.berill.core.preferences.orderedKeys(listOf("core/notes") + cards.map { (p, card) -> "${p.id}/${card.id}" }, preferences.cardOrder).filterNot { it in preferences.hiddenCards }
+  val keys = dev.akkraizen.berill.core.preferences.orderedKeys(listOf("core/today", "core/notes") + cards.map { (p, card) -> "${p.id}/${card.id}" }, if ("core/today" in preferences.cardOrder) preferences.cardOrder else listOf("core/today") + preferences.cardOrder).filterNot { it in preferences.hiddenCards }
   val latestActions by androidx.compose.runtime.rememberUpdatedState(actionKeys)
   val latestCards by androidx.compose.runtime.rememberUpdatedState(keys)
 
   Column(Modifier.fillMaxWidth()) {
   if (editing) HiddenBar(core, enabled)
   Box(Modifier.fillMaxWidth()) {
-  LazyVerticalStaggeredGrid(
-    columns = StaggeredGridCells.Adaptive(340.dp),
+  androidx.compose.foundation.lazy.LazyColumn(
     contentPadding = PaddingValues(16.dp),
-    horizontalArrangement = Arrangement.spacedBy(12.dp),
-    verticalItemSpacing = 12.dp
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    if (preferences.greeting) item(key = "core/greeting", span = StaggeredGridItemSpan.FullLine) {
+    if (preferences.greeting) item(key = "core/greeting") {
       EditableFrame(editing, onHide = { core.homePreferences.set(prefs().copy(greeting = false)) }) {
         Column(Modifier.fillMaxWidth()) {
           Text(greeting, style = MaterialTheme.typography.displaySmall)
@@ -144,12 +141,12 @@ private fun HomeContent(core: BerillCore, editing: Boolean) {
       }
     }
     if (update is UpdateCheck.Available && !editing)
-      item(key = "core/update", span = StaggeredGridItemSpan.FullLine) {
+      item(key = "core/update") {
         HomeUpdateBanner(core)
       }
-    item(key = "core/actions", span = StaggeredGridItemSpan.FullLine) {
+    item(key = "core/actions") {
       FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        actionKeys.forEach { actionKey ->
+        actionKeys.forEach { actionKey -> androidx.compose.runtime.key(actionKey) {
           val action = actions.firstOrNull { (p, a) -> "${p.id}/${a.id}" == actionKey }
           if (editing) {
             val label = if (actionKey == "core/new-note") CoreText.newNote() else action?.second?.label?.invoke() ?: actionKey
@@ -163,17 +160,29 @@ private fun HomeContent(core: BerillCore, editing: Boolean) {
           else action?.let { (p, a) ->
             BerillChip(onClick = { if (a.popup != null) quickPopup = p to a else core.connections.errors.run(FailureOperation.COMMAND, a.run) }, label = { Text(a.label(), maxLines = 1, overflow = TextOverflow.Ellipsis) }, leadingIcon = { Ic(a.icon, size = 18.dp) })
           }
-        }
+        } }
       }
     }
-    items(keys, key = { it }) { cardKey ->
-      val modifier = if (editing) Modifier.reorderable(cardReorder, cardKey, { latestCards }) { order -> core.homePreferences.set(prefs().let { it.copy(cardOrder = dev.akkraizen.berill.core.preferences.mergeOrder(it.cardOrder, order)) }) } else Modifier
-      Box(if (cardReorder.dragging != null) modifier.animateItem(fadeInSpec = null, fadeOutSpec = null) else modifier) {
-        EditableFrame(editing, onHide = { core.homePreferences.set(prefs().let { it.copy(hiddenCards = it.hiddenCards + cardKey) }) }) {
-          if (cardKey == "core/notes") RecentNotesCard(core, editing)
-          else cards.firstOrNull { (p, card) -> "${p.id}/${card.id}" == cardKey }?.let { (p, card) ->
-            HomeCardFrame(icon = p.icon, title = card.title(), editing = editing, onOpen = { core.nav.openSection(p.id) }) {
-              PluginScope(p) { card.content() }
+    item(key = "core/cards") {
+      val fullWidth: (String) -> Boolean = { it == "core/today" }
+      val columnOf: (String, Int) -> Int? = { cardKey, count -> preferences.cardColumns[count.toString()]?.get(cardKey) }
+      dev.akkraizen.berill.api.ui.layout.CardColumns(
+        keys,
+        fullWidth = fullWidth,
+        columnOf = columnOf,
+        drag = cardDrag
+      ) { cardKey ->
+        val modifier = if (editing) Modifier.columnDraggable(cardDrag, cardKey, { latestCards }, fullWidth, columnOf) { order, columns, count ->
+          core.homePreferences.set(prefs().let { it.copy(cardOrder = dev.akkraizen.berill.core.preferences.mergeOrder(it.cardOrder, order), cardColumns = it.cardColumns + (count.toString() to columns)) })
+        } else Modifier
+        Box(modifier) {
+          EditableFrame(editing, onHide = { core.homePreferences.set(prefs().let { it.copy(hiddenCards = it.hiddenCards + cardKey) }) }) {
+            if (cardKey == "core/today") TodayCard(core, editing)
+            else if (cardKey == "core/notes") RecentNotesCard(core, editing)
+            else cards.firstOrNull { (p, card) -> "${p.id}/${card.id}" == cardKey }?.let { (p, card) ->
+              HomeCardFrame(icon = p.icon, title = card.title(), editing = editing, onOpen = { core.nav.openSection(p.id) }) {
+                PluginScope(p) { card.content() }
+              }
             }
           }
         }
@@ -234,57 +243,6 @@ private fun RecentNotesCard(core: BerillCore, editing: Boolean = false) {
       }
 }
 
-private class Reorder {
-  var dragging by mutableStateOf<String?>(null)
-  var pointer by mutableStateOf(Offset.Zero)
-  var grab by mutableStateOf(Offset.Zero)
-  var settled: String? = null
-  val bounds = mutableStateMapOf<String, Rect>()
-}
-
-@Composable
-private fun Modifier.reorderable(state: Reorder, key: String, order: () -> List<String>, onOrder: (List<String>) -> Unit): Modifier {
-  val dragged = state.dragging == key
-  return this
-    .onGloballyPositioned { state.bounds[key] = it.boundsInRoot() }
-    .zIndex(if (dragged) 1f else 0f)
-    .graphicsLayer {
-      if (dragged) {
-        val origin = state.bounds[key]?.topLeft ?: Offset.Zero
-        val shift = state.pointer - state.grab - origin
-        translationX = shift.x
-        translationY = shift.y
-        scaleX = 1.02f
-        scaleY = 1.02f
-        shadowElevation = 16f
-      }
-    }
-    .dragAnywhere(
-      key,
-      onStart = { at ->
-        state.dragging = key
-        state.settled = null
-        state.grab = at
-        state.pointer = (state.bounds[key]?.topLeft ?: Offset.Zero) + at
-      },
-      onMove = { delta ->
-        state.pointer += delta
-        val current = order()
-        state.settled?.let { last -> if (state.bounds[last]?.contains(state.pointer) != true) state.settled = null }
-        val target = state.bounds.entries.firstOrNull { (k, rect) ->
-          k != key && k != state.settled && k in current && rect.deflate(minOf(rect.width, rect.height) * 0.2f).contains(state.pointer)
-        }?.key
-        if (target != null) {
-          state.settled = target
-          val next = current.toMutableList().apply { remove(key); add(current.indexOf(target), key) }
-          if (next != current) onOrder(next)
-        }
-      },
-      onEnd = { state.dragging = null },
-      onCancel = { state.dragging = null }
-    )
-}
-
 @Composable
 private fun EditableFrame(editing: Boolean, onHide: () -> Unit, content: @Composable () -> Unit) {
   if (!editing) return content()
@@ -318,7 +276,7 @@ private fun EditableChip(label: String, icon: ImageVector, modifier: Modifier, o
 @Composable
 private fun HiddenBar(core: BerillCore, enabled: List<BerillPlugin>) {
   val prefs by core.homePreferences.state.collectAsState()
-  val cardNames = listOf("core/notes" to CoreText.recentNotes()) + enabled.flatMap { p -> p.homeCards(core.plugins.context(p)).map { "${p.id}/${it.id}" to it.title() } }
+  val cardNames = listOf("core/today" to CoreText.today(), "core/notes" to CoreText.recentNotes()) + enabled.flatMap { p -> p.homeCards(core.plugins.context(p)).map { "${p.id}/${it.id}" to it.title() } }
   val actionNames = listOf("core/new-note" to CoreText.newNote()) + enabled.flatMap { p -> p.quickActions(core.plugins.context(p)).map { "${p.id}/${it.id}" to it.label() } }
   val hiddenCards = cardNames.filter { it.first in prefs.hiddenCards }
   val hiddenActions = actionNames.filter { it.first in prefs.hiddenActions }

@@ -1,5 +1,11 @@
 package dev.akkraizen.berill.plugins.study.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import dev.akkraizen.berill.api.ui.layout.rememberListLayout
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSwitcher
+import dev.akkraizen.berill.api.ui.layout.ListLayoutKey
+import dev.akkraizen.berill.api.ui.layout.ListLayout
+import dev.akkraizen.berill.api.ui.layout.CardGrid
 import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
 import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Column
@@ -9,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.AddTask
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.ExpandLess
@@ -66,6 +73,8 @@ import dev.akkraizen.berill.plugins.study.i18n.StudyText
 internal val NO_SUBJECT: String
   get() = StudyText.noSubject()
 
+internal val STUDY_LAYOUT = ListLayoutKey("listLayout", listOf(ListLayout.ROWS, ListLayout.CARDS), ListLayout.ROWS)
+
 @Composable
 internal fun StudyScreen(ctx: PluginContext) {
   val taskCollection = remember(ctx) { tasks(ctx) }
@@ -77,6 +86,7 @@ internal fun StudyScreen(ctx: PluginContext) {
   val taskTypes = rememberTaskTypes(ctx)
   var showDone by rememberSaveable { mutableStateOf(false) }
   var addingSubject by remember { mutableStateOf(false) }
+  val layout = rememberListLayout(ctx, STUDY_LAYOUT)
 
   val subjectsSorted = allSubjects.sortedWith(
     compareByDescending<Item<Subject>> { it.value.isExam }
@@ -104,23 +114,35 @@ internal fun StudyScreen(ctx: PluginContext) {
           SectionCard(
             StudyText.deadlines() + (filter?.let { " · $it" } ?: ""),
             Icons.Outlined.Alarm,
-            trailing = if (filter != null) {
-              {
-                TextButton(onClick = { filter = null }) {
-                  Ic(BerillIcons.Close, size = 18.dp)
-                  Spacer(Modifier.width(6.dp))
-                  Text(StudyText.allSubjects())
-                }
+            trailing = {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                if (filter != null)
+                  TextButton(onClick = { filter = null }) {
+                    Ic(BerillIcons.Close, size = 18.dp)
+                    Spacer(Modifier.width(6.dp))
+                    Text(StudyText.allSubjects())
+                  }
+                ListLayoutSwitcher(ctx, STUDY_LAYOUT)
               }
-            } else
-              null
+            }
           ) {
             if (active.isEmpty()) EmptyHint(StudyText.noActiveTasks())
-            active.forEach { item ->
-              TaskRow(
-                item,
-                onCycle = { cycle(item) },
-                onOpen = { ctx.nav.open(StudyPlugin.TASK_ROUTE + item.id) })
+            if (layout == ListLayout.CARDS)
+              CardGrid(active, minCardWidth = 190.dp, maxColumns = 3, spacing = 10.dp) { item, modifier ->
+                TaskTile(item, modifier, onCycle = { cycle(item) }, onOpen = { ctx.nav.open(StudyPlugin.TASK_ROUTE + item.id) })
+              }
+            else active.forEach { item ->
+              dev.akkraizen.berill.api.ui.interaction.SwipeActions(
+                start = dev.akkraizen.berill.api.ui.interaction.RowSwipeAction(StudyText.statusLabel(SUBMITTED), Icons.Outlined.TaskAlt) {
+                  taskCollection.get(item.id)?.let { taskCollection.save(item.id, it.copy(status = SUBMITTED)) }
+                },
+                end = dev.akkraizen.berill.api.ui.interaction.RowSwipeAction(dev.akkraizen.berill.api.ui.UiText.bulkDelete(), BerillIcons.Delete, destructive = true) { taskCollection.delete(item.id) }
+              ) {
+                TaskRow(
+                  item,
+                  onCycle = { cycle(item) },
+                  onOpen = { ctx.nav.open(StudyPlugin.TASK_ROUTE + item.id) })
+              }
             }
             if (done.isNotEmpty()) {
               TextButton(onClick = { showDone = !showDone }) {
@@ -170,6 +192,27 @@ internal fun StudyScreen(ctx: PluginContext) {
         ctx.nav.open(StudyPlugin.SUBJECT_ROUTE + id)
       }
     )
+}
+
+@Composable
+private fun TaskTile(item: Item<StudyTask>, modifier: Modifier, onCycle: () -> Unit, onOpen: () -> Unit) {
+  val t = item.value
+  val info = deadlineInfo(t.deadline.toDateOrNull())
+  val tone = info.tone.color()
+  Surface(modifier.interactive(MaterialTheme.shapes.large, onClick = onOpen), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(info.label, style = MaterialTheme.typography.titleMedium, color = tone, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        IconButton(onClick = onCycle) {
+          Icon(statusIcon(t.normalizedStatus), contentDescription = StudyText.statusDescription(t.normalizedStatus)(), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+      }
+      Text(t.shortTitle, style = MaterialTheme.typography.titleSmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+      val sub = listOfNotNull(t.subject, t.type, t.normalizedStatus.takeIf { it != TODO }?.let { StudyText.statusLabel(it) }).joinToString(" · ")
+      if (sub.isNotEmpty())
+        Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+  }
 }
 
 @Composable

@@ -19,6 +19,11 @@ import androidx.compose.material.icons.outlined.CenterFocusStrong
 import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,12 +67,14 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberUpdatedState
 import dev.akkraizen.berill.protocol.SyncRecord
 import dev.akkraizen.berill.protocol.Collections
 import dev.akkraizen.berill.core.connections.FailureOperation
 import kotlinx.serialization.json.*
 
+private val DRAFT_FIELDS = setOf("title", "body", "updatedAt")
 private val noteJson = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
 private fun SyncRecord?.asEditorNote(): Note? = this?.takeUnless { it.deleted }?.let { noteJson.decodeFromJsonElement(Note.serializer(), it.fields) }
 private class NoteDraft(initial: SyncRecord?) {
@@ -102,6 +109,7 @@ internal fun NoteEditor(core: BerillCore, id: String, showBack: Boolean) {
   val flush = rememberUpdatedState<() -> Unit> {
     if (!draft.deleted && (draft.dirty() || draft.conflictId != null)) {
       val desired = noteJson.encodeToJsonElement(Note.serializer(), Note(draft.title, draft.body, kotlin.time.Clock.System.now().toEpochMilliseconds())).jsonObject
+        .let { JsonObject(it.filterKeys { key -> key in DRAFT_FIELDS }) }
       val saved = core.store.mergeDraft(Collections.NOTES, id, draft.baseline, desired, draft.conflictId)
       if (saved.conflictId == null) draft.accept(saved.record)
       else {
@@ -165,6 +173,7 @@ internal fun NoteEditor(core: BerillCore, id: String, showBack: Boolean) {
           Icon(BerillIcons.Back, contentDescription = CoreText.back())
         }
       Spacer(Modifier.weight(1f))
+      if (!focusMode) NoteMetaActions(core, id)
       IconButton(onClick = { core.focusedNote.value = if (focusMode) null else id }) {
         Icon(if (focusMode) Icons.Outlined.CenterFocusWeak else Icons.Outlined.CenterFocusStrong,
           dev.akkraizen.berill.api.i18n.I18n.text(if (focusMode) "editor.exitFocus" else "editor.focus"))
@@ -267,7 +276,32 @@ private fun NotePreview(core: BerillCore, draft: NoteDraft, id: String) {
 }
 
 private fun openWikiLink(core: BerillCore, page: String) {
-  val id = core.notes.findByTitle(page)
-    ?: core.data.newId().also { core.notes.save(it, page.trim(), "") }
-  core.nav.openNote(id)
+  core.notes.findByTitle(page)?.let { core.nav.openNote(it); return }
+  core.scope.launch {
+    val record = core.connections.findRecord(page)
+    if (record != null) record.open()
+    else core.nav.openNote(core.data.newId().also { core.notes.save(it, page.trim(), "") })
+  }
+}
+
+@Composable
+private fun NoteMetaActions(core: BerillCore, id: String) {
+  val note by remember(id) { core.notes.observeNote(id) }.collectAsState(core.notes.get(id))
+  val current = note ?: return
+  var palette by remember { mutableStateOf(false) }
+  IconButton(onClick = { core.notes.setPinned(id, !current.pinned) }) {
+    Icon(
+      if (current.pinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+      if (current.pinned) CoreText.unpinNote() else CoreText.pinNote(),
+      tint = if (current.pinned) MaterialTheme.colorScheme.primary else LocalContentColor.current
+    )
+  }
+  androidx.compose.foundation.layout.Box {
+    IconButton(onClick = { palette = true }) {
+      Icon(Icons.Outlined.Palette, CoreText.noteColor(), tint = noteHue(current.color) ?: LocalContentColor.current)
+    }
+    DropdownMenu(palette, onDismissRequest = { palette = false }) {
+      NoteColorRow(current.color) { core.notes.setColor(id, it); palette = false }
+    }
+  }
 }

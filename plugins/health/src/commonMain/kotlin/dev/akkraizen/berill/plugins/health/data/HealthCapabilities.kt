@@ -77,3 +77,21 @@ internal class MedicationReminders(private val ctx: PluginContext) : ReminderSou
     }
   }
 }
+
+internal class HealthToday(private val ctx: PluginContext) : dev.akkraizen.berill.api.TodaySource {
+  override fun today(date: LocalDate): kotlinx.coroutines.flow.Flow<List<dev.akkraizen.berill.api.TodayItem>> =
+    kotlinx.coroutines.flow.combine(medications(ctx).observe(), intakes(ctx).observe()) { meds, taken ->
+      dosesOn(date, meds.map { it.id to it.value }, taken.associate { it.id to it.value }).map { dose ->
+        dev.akkraizen.berill.api.TodayItem(
+          id = "${ctx.pluginId}/${dose.id}",
+          title = dose.medication.name,
+          kind = dev.akkraizen.berill.api.TodayKind.DOSE,
+          pluginId = ctx.pluginId,
+          detail = dose.medication.dose?.takeIf { it.isNotBlank() },
+          time = dose.time,
+          done = dose.intake != null,
+          toggle = { dev.akkraizen.berill.plugins.health.ui.toggleDose(ctx, dose) }
+        ) { ctx.nav.openPlugin(ctx.pluginId, page = HealthPlugin.PAGE_TODAY) }
+      }
+    }
+}

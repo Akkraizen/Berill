@@ -9,6 +9,8 @@ internal object BooksText {
 
   val title = pluginI18n.tr("books.title")
   val description = pluginI18n.tr("books.description")
+  val view = pluginI18n.tr("books.view")
+  val listView = pluginI18n.tr("books.listView")
   val readingNowCard = pluginI18n.tr("books.readingNowCard")
   val nothingReading = pluginI18n.tr("books.nothingReading")
   val bookFallback = pluginI18n.tr("books.bookFallback")

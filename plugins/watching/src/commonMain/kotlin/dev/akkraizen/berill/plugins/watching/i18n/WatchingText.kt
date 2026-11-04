@@ -10,6 +10,8 @@ import dev.akkraizen.berill.plugins.watching.data.WATCHING
 internal object WatchingText {
 
   val title = pluginI18n.tr("watching.title")
+  val view = pluginI18n.tr("watching.view")
+  val listView = pluginI18n.tr("watching.listView")
   val description =
     pluginI18n.tr("watching.description")
   val watchingNowCard = pluginI18n.tr("watching.watchingNowCard")

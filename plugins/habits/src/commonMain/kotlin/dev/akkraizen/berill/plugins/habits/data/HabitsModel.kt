@@ -98,3 +98,25 @@ internal fun dayValue(fields: Map<String, JsonElement>?, habitId: String): Int =
 internal fun List<Item<HabitDef>>.active(): List<Item<HabitDef>> = filter { !it.value.archived }.sortedBy { it.value.order }
 
 internal fun RawRecord?.valueOf(habitId: String) = dayValue(this?.fields, habitId)
+
+internal class HabitsToday(private val ctx: PluginContext) : dev.akkraizen.berill.api.TodaySource {
+  override fun today(date: LocalDate): Flow<List<dev.akkraizen.berill.api.TodayItem>> {
+    val data = HabitsData(ctx)
+    return kotlinx.coroutines.flow.combine(data.defs.observe(), data.days.observe()) { defs, days ->
+      val day = days.firstOrNull { it.id == date.toString() }
+      defs.active().map { habit ->
+        val value = day.valueOf(habit.id)
+        val goal = habit.value.defaultDuration.coerceAtLeast(1)
+        dev.akkraizen.berill.api.TodayItem(
+          id = "${ctx.pluginId}/${habit.id}",
+          title = habit.value.label,
+          kind = dev.akkraizen.berill.api.TodayKind.HABIT,
+          pluginId = ctx.pluginId,
+          detail = if (value > 0) formatAmount(habit.value.unit, value) else formatAmount(habit.value.unit, goal),
+          done = value >= goal,
+          toggle = { data.toggle(habit.id, habit.value, date, data.days.get(date.toString()).valueOf(habit.id)) }
+        ) { ctx.nav.openPlugin(ctx.pluginId) }
+      }
+    }
+  }
+}

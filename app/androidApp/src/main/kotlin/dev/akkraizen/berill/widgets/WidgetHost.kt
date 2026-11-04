@@ -26,7 +26,9 @@ import dev.akkraizen.berill.core.ui.theme.cachedAndroidAppearance
 import dev.akkraizen.berill.core.widgets.WidgetHub
 import dev.akkraizen.berill.core.widgets.WidgetInstance
 import dev.akkraizen.berill.core.widgets.WidgetText
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -76,36 +78,85 @@ internal object WidgetHost {
     return WidgetInstance(key, prefs[CHOICE], decodeState(prefs[STATE]))
   }
 
-  suspend fun prepare(context: Context, glanceId: GlanceId) =
+  private val prepared = ConcurrentHashMap<String, Long>()
+  private val pendingAll = AtomicBoolean(false)
+
+  /** Whether [provideGlance] can reuse content that [refresh] stored a moment ago. */
+  fun recentlyPrepared(glanceId: GlanceId): Boolean =
+    prepared[glanceId.toString()]?.let { System.currentTimeMillis() - it < FRESH_MS } == true
+
+  /** Rebuilds the content of one widget; returns false when it did not change. */
+  suspend fun prepare(context: Context, glanceId: GlanceId): Boolean =
     withContext(Dispatchers.IO) {
       prepareLanguage(context)
       val hub = core(context).widgets
       val instance = instanceOf(context, glanceId)
       val content = if (instance == null) WidgetHub.notice(WidgetText.pickerTitle(), WidgetText.chooseHint()) else hub.content(instance)
+      val encoded = hub.encode(content)
+      var changed = false
       updateAppWidgetState(context, glanceId) { prefs ->
-        prefs[CONTENT] = hub.encode(content)
-        if (instance != null) prefs[KEY] = instance.key
+        if (prefs[CONTENT] != encoded) {
+          prefs[CONTENT] = encoded
+          changed = true
+        }
+        if (instance != null && prefs[KEY] != instance.key) prefs[KEY] = instance.key
       }
+      prepared[glanceId.toString()] = System.currentTimeMillis()
+      changed
     }
 
-  suspend fun refresh(context: Context, glanceId: GlanceId) {
+  suspend fun refresh(context: Context, glanceId: GlanceId, force: Boolean = true) {
     runCatching {
-      prepare(context, glanceId)
-      BerillGlanceWidget().update(context, glanceId)
+      if (prepare(context, glanceId) || force) BerillGlanceWidget().update(context, glanceId)
     }.onFailure { AppLog.error("widgets", "refresh failed", it) }
   }
 
-  suspend fun refreshAll(context: Context) =
-    refreshLock.withLock {
-      val manager = GlanceAppWidgetManager(context)
-      val appWidgets = AppWidgetManager.getInstance(context)
-      WidgetCatalog.specs.forEach { spec ->
-        appWidgets.getAppWidgetIds(ComponentName(context, spec.receiver)).forEach { appWidgetId ->
-          val glanceId = runCatching { manager.getGlanceIdBy(appWidgetId) }.getOrNull()
-          if (glanceId != null) refresh(context, glanceId)
+  private suspend fun installed(context: Context): List<Pair<GlanceId, String?>> {
+    val manager = GlanceAppWidgetManager(context)
+    val appWidgets = AppWidgetManager.getInstance(context)
+    val result = mutableListOf<Pair<GlanceId, String?>>()
+    for (spec in WidgetCatalog.specs)
+      for (appWidgetId in appWidgets.getAppWidgetIds(ComponentName(context, spec.receiver))) {
+        val glanceId = runCatching { manager.getGlanceIdBy(appWidgetId) }.getOrNull() ?: continue
+        result += glanceId to spec.key
+      }
+    return result
+  }
+
+  suspend fun refreshAll(context: Context) = refreshChanged(context, null, force = true)
+
+  suspend fun refreshOne(context: Context, appWidgetId: Int) {
+    val glanceId = runCatching { GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId) }.getOrNull()
+    if (glanceId == null) refreshAll(context) else refreshLock.withLock { refresh(context, glanceId) }
+  }
+
+  /** Refreshes the widgets that read [collections] (all when null), redrawing only those whose content changed. */
+  suspend fun refreshChanged(context: Context, collections: Set<String>?, force: Boolean = false) {
+    if (collections == null && !pendingAll.compareAndSet(false, true)) return
+    try {
+      refreshLock.withLock {
+        pendingAll.set(false)
+        val hub = core(context).widgets
+        for ((glanceId, fixedKey) in installed(context)) {
+          val key = fixedKey ?: runCatching {
+            getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)[KEY]
+          }.getOrNull()
+          if (key == null || hub.affects(key, collections)) refresh(context, glanceId, force)
         }
       }
+    } finally {
+      if (collections == null) pendingAll.set(false)
     }
+  }
+
+  fun scheduleMidnight(context: Context) {
+    val now = java.time.ZonedDateTime.now()
+    val next = now.toLocalDate().plusDays(1).atStartOfDay(now.zone).plusMinutes(1)
+    val request = OneTimeWorkRequestBuilder<WidgetMidnightWorker>()
+      .setInitialDelay(java.time.Duration.between(now, next).toMillis(), TimeUnit.MILLISECONDS)
+      .build()
+    WorkManager.getInstance(context).enqueueUniqueWork(MIDNIGHT_WORK, ExistingWorkPolicy.REPLACE, request)
+  }
 
   suspend fun configure(context: Context, appWidgetId: Int, key: String, choice: String?) {
     val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
@@ -160,6 +211,7 @@ internal object WidgetHost {
     val delay = (atMillis - System.currentTimeMillis()).coerceAtLeast(0)
     val request = OneTimeWorkRequestBuilder<WidgetRefreshWorker>()
       .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+      .setInputData(androidx.work.workDataOf(WidgetRefreshWorker.APP_WIDGET_ID to appWidgetId))
       .build()
     WorkManager.getInstance(context).enqueueUniqueWork("berill-widget-$appWidgetId", ExistingWorkPolicy.REPLACE, request)
   }
@@ -185,8 +237,12 @@ internal object WidgetHost {
 
   fun observe(context: Context, core: BerillCore, scope: CoroutineScope) {
     val app = context.applicationContext
+    scheduleMidnight(app)
     scope.launch {
-      core.widgets.changes.collect { refreshAll(app) }
+      core.widgets.invalidations.collect { collections -> refreshChanged(app, collections) }
     }
   }
+
+  private const val FRESH_MS = 3_000L
+  private const val MIDNIGHT_WORK = "berill-widgets-midnight"
 }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -123,13 +125,21 @@ internal fun DayCard(
         }
         if (totals.planned == 0 && dayDeadlines.isEmpty()) EmptyHint(PlannerText.empty())
         tasks.forEach { item ->
-          TaskRow(
-            item.value,
-            compact = compact,
-            onToggle = { data.edit(item.id) { it.copy(done = !it.done) } },
-            onNextDay = { data.edit(item.id) { it.rescheduled(date.plusDays(1)) } },
-            onDelete = { data.tasks.delete(item.id) }
-          )
+          dev.akkraizen.berill.api.ui.interaction.SwipeActions(
+            start = dev.akkraizen.berill.api.ui.interaction.RowSwipeAction(
+              if (item.value.done) dev.akkraizen.berill.api.ui.UiText.swipeUndo() else dev.akkraizen.berill.api.ui.UiText.swipeDone(),
+              if (item.value.done) Icons.AutoMirrored.Outlined.Undo else Icons.Outlined.CheckCircle
+            ) { data.edit(item.id) { it.copy(done = !it.done) } },
+            end = dev.akkraizen.berill.api.ui.interaction.RowSwipeAction(dev.akkraizen.berill.api.ui.UiText.bulkDelete(), BerillIcons.Delete, destructive = true) { data.tasks.delete(item.id) }
+          ) {
+            TaskRow(
+              item.value,
+              compact = compact,
+              onToggle = { data.edit(item.id) { it.copy(done = !it.done) } },
+              onNextDay = { data.edit(item.id) { it.rescheduled(date.plusDays(1)) } },
+              onDelete = { data.tasks.delete(item.id) }
+            )
+          }
         }
       }
 

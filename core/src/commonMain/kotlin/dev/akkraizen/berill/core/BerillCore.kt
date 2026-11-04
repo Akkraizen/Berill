@@ -67,6 +67,8 @@ class BerillCore(
   val store = LocalStore(db, clock, dev.akkraizen.berill.core.data.SearchIndex(driver))
   val data: DataAccess = StoreDataAccess(store)
   val homePreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "home.preferences", dev.akkraizen.berill.core.preferences.HomePreferences.serializer(), dev.akkraizen.berill.core.preferences.HomePreferences())
+  val displayPreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "display.preferences", dev.akkraizen.berill.core.preferences.DisplayPreferences.serializer(), dev.akkraizen.berill.core.preferences.DisplayPreferences())
+  val notesView = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "notes.view", dev.akkraizen.berill.core.preferences.NotesViewPreferences.serializer(), dev.akkraizen.berill.core.preferences.NotesViewPreferences())
   val editorPreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "editor.preferences", dev.akkraizen.berill.core.preferences.EditorPreferences.serializer(), dev.akkraizen.berill.core.preferences.EditorPreferences())
   val notificationPreferences = dev.akkraizen.berill.core.preferences.LocalPreferences(store, "notifications.preferences", dev.akkraizen.berill.core.notifications.NotificationPreferences.serializer(), dev.akkraizen.berill.core.notifications.NotificationPreferences())
   val notifications = dev.akkraizen.berill.core.notifications.NotificationCenter(store) { notificationPreferences.state.value }
@@ -92,7 +94,7 @@ class BerillCore(
 
   val external: ExternalPlugins = loadExternalPlugins(externalPlatform, plugins, scope)
   val collections = CollectionRegistry(plugins + external.loaded)
-  val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, pluginFiles, vault, oauth, reminders)
+  val plugins = PluginHost(plugins + external.loaded, store, data, http, nav, scope, pluginFiles, vault, oauth, reminders, dev.akkraizen.berill.core.notes.RepositoryNoteDirectory(notes) { data.newId() })
   val appearance = AppearanceStore(store, scope)
 
   val widgets: WidgetHub = WidgetHub(
@@ -100,7 +102,8 @@ class BerillCore(
     nav = nav,
     store = store,
     coreProviders = coreWidgets(notes, { except -> widgets.summaries(except) }, dailyNotes),
-    now = { Clock.System.now().toEpochMilliseconds() }
+    now = { Clock.System.now().toEpochMilliseconds() },
+    ownerOf = { name -> collections.owner(name)?.id }
   )
 
   val sync = SyncEngine(store, deviceId, scope, encryption, vault, beforeUpload = { attachments.uploadPending(); attachments.trimCache() })
@@ -109,6 +112,7 @@ class BerillCore(
 
   val shortcuts = dev.akkraizen.berill.core.connections.ShortcutSettings(store)
   val connections = dev.akkraizen.berill.core.connections.Connections(this)
+  val todayFeed = dev.akkraizen.berill.core.today.TodayFeed(this)
 
   val updates = AppUpdates(store, updateInstaller, scope) { editorSessions.prepareMutation() }
 
@@ -174,6 +178,7 @@ class BerillCore(
     scope.launch {
       kotlinx.coroutines.delay(60_000) // let startup and the first sync finish first
       while (true) {
+        try { store.purgeExpired(Clock.System.now().toEpochMilliseconds()) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { dev.akkraizen.berill.core.log.AppLog.error("trash", "purge", e) }
         autoExport.runIfDue()
         kotlinx.coroutines.delay(60L * 60 * 1000)
       }

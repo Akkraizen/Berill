@@ -1,9 +1,13 @@
 package dev.akkraizen.berill.core.ui.settings
 
+import dev.akkraizen.berill.api.ui.layout.ListLayout
+import dev.akkraizen.berill.api.ui.layout.listLayoutIcon
+import dev.akkraizen.berill.api.ui.layout.listLayoutLabel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -148,6 +152,32 @@ internal fun AppearanceSettings(core: BerillCore) {
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant
     )
+
+  val display by core.displayPreferences.state.collectAsState()
+  Text(
+    dev.akkraizen.berill.api.ui.UiText.layoutGlobal(),
+    style = MaterialTheme.typography.labelLarge,
+    color = MaterialTheme.colorScheme.onSurfaceVariant
+  )
+  ChoiceChips(
+    listOf(null, ListLayout.ROWS, ListLayout.CARDS),
+    display.lists,
+    { it?.let { l -> listLayoutLabel(l) } ?: dev.akkraizen.berill.api.ui.UiText.layoutModule() },
+    { core.displayPreferences.set(display.copy(lists = it)) },
+    icon = { it?.let { l -> listLayoutIcon(l) } }
+  )
+  Text(
+    dev.akkraizen.berill.api.ui.UiText.layoutGlobalHint(),
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant
+  )
+  androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.weight(1f)) {
+      Text(dev.akkraizen.berill.api.ui.UiText.compactLayout(), style = MaterialTheme.typography.titleSmall)
+      Text(dev.akkraizen.berill.api.ui.UiText.compactLayoutHint(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    androidx.compose.material3.Switch(display.compact, { core.displayPreferences.set(display.copy(compact = it)) })
+  }
 }
 
 @Composable

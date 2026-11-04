@@ -26,4 +26,7 @@ interface PluginContext {
 
   val oauth: OAuthRedirects
     get() = NoOAuthRedirects
+
+  val notes: NoteDirectory
+    get() = NoNotes
 }

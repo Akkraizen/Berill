@@ -84,7 +84,10 @@ internal fun TrashDialog(core: BerillCore, close: () -> Unit) {
       }
     } else {
       Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(deleted.size.toString(), Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+        Column(Modifier.weight(1f)) {
+          Text(deleted.size.toString(), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+          Text(ConnectionsText.trashKeep(dev.akkraizen.berill.core.data.TRASH_KEEP_DAYS)(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        }
         TextButton(onClick = { clearAll = true; pending = deleted.toList() },
           colors = ButtonDefaults.textButtonColors(contentColor = colors.error)) {
           Icon(Icons.Outlined.DeleteSweep, null, Modifier.size(20.dp))
@@ -100,7 +103,8 @@ internal fun TrashDialog(core: BerillCore, close: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                   Text(RawRecord(record.id, record.fields).label(), style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                  Text(core.collections.owner(record.collection)?.title ?: ConnectionsText.notes(),
+                  val left = core.store.deletedMillis(record)?.let { at -> dev.akkraizen.berill.core.data.TRASH_KEEP_DAYS - ((kotlin.time.Clock.System.now().toEpochMilliseconds() - at) / (24L * 60 * 60 * 1000)).toInt() }
+                  Text(listOfNotNull(core.collections.owner(record.collection)?.title ?: ConnectionsText.notes(), left?.let { ConnectionsText.trashDaysLeft(it.coerceAtLeast(0))() }).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
                 val remove = { clearAll = false; pending = listOf(record) }

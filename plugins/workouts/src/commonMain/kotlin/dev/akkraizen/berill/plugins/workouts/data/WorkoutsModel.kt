@@ -3,6 +3,9 @@ package dev.akkraizen.berill.plugins.workouts.data
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.nowMillis
 import dev.akkraizen.berill.api.ui.today
+import dev.akkraizen.berill.api.ui.toDateOrNull
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
 import dev.akkraizen.berill.plugins.workouts.WorkoutsPlugin
 import kotlin.math.floor
 import kotlin.math.round
@@ -315,4 +318,45 @@ internal fun withPreviousWeights(exercises: List<LoggedExercise>, history: List<
       if (set.weight == null && set.durationSeconds == null && old?.weight != null) set.copy(weight = old.weight) else set
     })
   }
+}
+
+internal class WorkoutsToday(private val ctx: PluginContext) : dev.akkraizen.berill.api.TodaySource {
+  override fun today(date: kotlinx.datetime.LocalDate): kotlinx.coroutines.flow.Flow<List<dev.akkraizen.berill.api.TodayItem>> =
+    kotlinx.coroutines.flow.combine(cycles(ctx).observe(), logs(ctx).observe()) { all, done ->
+      val monday = date.minus(date.dayOfWeek.ordinal, kotlinx.datetime.DateTimeUnit.DAY)
+      val todayLogs = done.filter { it.value.date == date.toString() }
+      val weekLogs = done.count { log -> log.value.date.toDateOrNull()?.let { it >= monday && it < date } == true }
+      val active = all.mapNotNull { item ->
+        val start = item.value.start.toDateOrNull() ?: return@mapNotNull null
+        val offset = start.daysUntil(date)
+        if (offset < 0 || offset >= item.value.weeks * 7) return@mapNotNull null
+        Triple(item, offset / 7 + 1, item.value)
+      }.maxByOrNull { it.third.createdAt }
+      when {
+        todayLogs.isNotEmpty() -> todayLogs.map { log ->
+          dev.akkraizen.berill.api.TodayItem(
+            id = "${ctx.pluginId}/${log.id}",
+            title = log.value.title,
+            kind = dev.akkraizen.berill.api.TodayKind.WORKOUT,
+            pluginId = ctx.pluginId,
+            detail = dev.akkraizen.berill.plugins.workouts.i18n.WorkoutsText.exercises(log.value.exercises.size),
+            done = log.value.finished || log.value.exercises.any { exercise -> exercise.sets.any { it.done } }
+          ) { ctx.nav.openPlugin(ctx.pluginId, WorkoutsPlugin.LOG_ROUTE + log.id) }
+        }
+        active != null -> {
+          val (item, week, cycle) = active
+          val days = cycle.daysForWeek(week)
+          if (days.isEmpty() || weekLogs >= days.size) emptyList()
+          else listOf(dev.akkraizen.berill.api.TodayItem(
+            id = "${ctx.pluginId}/${item.id}/$week",
+            title = days[weekLogs].title.ifBlank { cycle.title },
+            kind = dev.akkraizen.berill.api.TodayKind.WORKOUT,
+            pluginId = ctx.pluginId,
+            detail = "${cycle.weekPrograms[week]?.title ?: cycle.title} · ${dev.akkraizen.berill.plugins.workouts.i18n.WorkoutsText.week(week)()}",
+            done = false
+          ) { ctx.nav.openPlugin(ctx.pluginId) })
+        }
+        else -> emptyList()
+      }
+    }
 }

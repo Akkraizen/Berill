@@ -21,6 +21,12 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import dev.akkraizen.berill.protocol.Collections
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -43,7 +49,8 @@ class WidgetHub(
   private val nav: AppNavigator,
   private val store: LocalStore,
   coreProviders: List<WidgetProvider>,
-  private val now: () -> Long
+  private val now: () -> Long,
+  private val ownerOf: (String) -> String? = { null }
 ) {
   private val coreEntries: List<WidgetEntry> = coreProviders.map { WidgetEntry(key(CORE, it.id), CORE, { WidgetText.appName() }, it) }
 
@@ -126,6 +133,47 @@ class WidgetHub(
 
   @OptIn(FlowPreview::class)
   val changes: Flow<Unit> = merge(store.changes, plugins.enabled.drop(1).map { }).debounce(CHANGE_DEBOUNCE_MS)
+
+  /**
+   * Batches of changed collections, gathered for [CHANGE_DEBOUNCE_MS] after the first change of a batch;
+   * null means every widget may be affected (modules switched, sync rebuilt everything).
+   */
+  val invalidations: Flow<Set<String>?> = channelFlow {
+    val lock = Mutex()
+    var pending: Set<String>? = emptySet()
+    var scheduled = false
+    suspend fun mark(collections: Set<String>?) = lock.withLock {
+      pending = if (collections == null || pending == null) null else pending!! + collections
+      if (!scheduled) {
+        scheduled = true
+        launch {
+          delay(CHANGE_DEBOUNCE_MS)
+          val batch = lock.withLock {
+            scheduled = false
+            pending.also { pending = emptySet() }
+          }
+          send(batch)
+        }
+      }
+    }
+    launch { plugins.enabled.drop(1).collect { mark(null) } }
+    store.changedCollections.collect { mark(it) }
+  }
+
+  /** Whether a widget has to be rebuilt after [collections] changed. */
+  fun affects(key: String, collections: Set<String>?): Boolean {
+    if (collections == null) return true
+    if (collections.isEmpty()) return false
+    val entry = entry(key) ?: return true
+    if (entry.ownerId == CORE || entry.provider.watchesAllSections) return true
+    return collections.any { name ->
+      when (name) {
+        Collections.NOTES -> false
+        Collections.SETTINGS -> true
+        else -> ownerOf(name).let { it == null || it == entry.ownerId }
+      }
+    }
+  }
 
   suspend fun snapshot(instances: List<WidgetInstance> = available().filterNot { it.provider.choices?.required == true }.map { WidgetInstance(it.key) }): WidgetSnapshot =
     WidgetSnapshot(now(), instances.associate { instanceId(it) to content(it) })

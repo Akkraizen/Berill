@@ -8,6 +8,8 @@ import dev.akkraizen.berill.plugins.languages.data.words
 internal object LanguagesText {
 
   val title = pluginI18n.tr("languages.title")
+  val view = pluginI18n.tr("languages.view")
+  val listView = pluginI18n.tr("languages.listView")
   val description = pluginI18n.tr("languages.description")
 
   val add = pluginI18n.tr("languages.add")

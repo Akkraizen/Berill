@@ -8,6 +8,9 @@ import dev.akkraizen.berill.core.notes.Note
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Science
 import kotlinx.coroutines.delay
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.coroutines.flow.first
 import dev.akkraizen.berill.core.db.BerillDatabase
 import dev.akkraizen.berill.core.secure.MemoryVault
@@ -45,6 +48,7 @@ import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
 class EmbeddedMcpTest {
@@ -134,6 +138,12 @@ class EmbeddedMcpTest {
       assertTrue("create_note" !in names, names.toString())
       val text = (client.callTool("search", mapOf("query" to "embedded")).content.single() as TextContent).text
       assertTrue("n1" in text, text)
+      assertTrue("today" in names && "weekly_review" in names, names.toString())
+      val today = Json.parseToJsonElement((client.callTool("today", emptyMap()).content.single() as TextContent).text).jsonObject
+      assertTrue("items" in today, today.toString())
+      val week = Json.parseToJsonElement((client.callTool("weekly_review", mapOf("week_start" to "2026-11-02")).content.single() as TextContent).text).jsonObject
+      assertEquals("2026-11-08", week["weekEnd"]!!.jsonPrimitive.content)
+      assertEquals(7, week["days"]!!.jsonArray.size)
     }
     mcp.setWritable(true)
     withBridge { client ->
@@ -151,9 +161,15 @@ class EmbeddedMcpTest {
       val names = client.listTools().tools.map { it.name }
       assertTrue("berill_demo_read" in names)
       assertFalse("berill_demo_edit" in names)
+      assertTrue("berill_demo_count" in names, names.toString())
+      assertFalse("berill_demo_stamp" in names, names.toString())
+      val invalid = client.callTool("berill_demo_count", emptyMap())
+      assertTrue(invalid.isError == true)
+      assertEquals("INVALID_ARGUMENT", invalid.structuredContent?.get("error")?.jsonObject?.get("code")?.jsonPrimitive?.content)
     }
     mcp.setWritable(true)
     withBridge { client ->
+      assertTrue("berill_demo_stamp" in client.listTools().tools.map { it.name })
       val created = client.callTool("berill_demo_edit", mapOf("action" to "create", "collection" to "demo_records", "fields" to mapOf("title" to "Plugin record", "body" to "Initial")))
       assertFalse(created.isError == true, created.toString())
       val record = Json.parseToJsonElement((created.content.single() as TextContent).text).jsonObject
@@ -164,6 +180,11 @@ class EmbeddedMcpTest {
       assertTrue(stale.isError == true)
       assertEquals("CONFLICT", stale.structuredContent?.get("error")?.jsonObject?.get("code")?.jsonPrimitive?.content)
       assertEquals("Edited", core.data.collection<Note>("demo_records").get(id)?.body)
+      val counted = client.callTool("berill_demo_count", mapOf("prefix" to "Plugin"))
+      assertEquals(1, Json.parseToJsonElement((counted.content.single() as TextContent).text).jsonObject.getValue("count").jsonPrimitive.int)
+      val stamped = client.callTool("berill_demo_stamp", mapOf("mark" to "!"))
+      assertFalse(stamped.isError == true, stamped.toString())
+      assertEquals("Edited!", core.data.collection<Note>("demo_records").get(id)?.body)
       core.plugins.setEnabled("demo", false)
       withTimeout(5000) { core.plugins.enabled.first { list -> list.none { it.id == "demo" } } }
       withTimeout(5000) { while (client.listTools().tools.any { it.name == "berill_demo_read" }) delay(20) }
@@ -226,5 +247,16 @@ private object DemoMcpPlugin : BerillPlugin {
   override fun provides(ctx: PluginContext): List<Capability> = listOf(object : McpSource {
     override val pluginId = id
     override val collections: List<McpCollection> = listOf(TypedMcpCollection(ctx, "demo_records", Note.serializer(), validate = { require(it.title.isNotBlank()) }))
+    override val actions: List<McpAction> = listOf(
+      McpAction("count", "Counts records whose title starts with a prefix", mcpInput { string("prefix", "Title prefix", required = true) }, readOnly = true) { args ->
+        val prefix = args.mcpString("prefix")
+        buildJsonObject { put("count", ctx.data.collection<Note>("demo_records").all().count { it.value.title.startsWith(prefix) }) }
+      },
+      McpAction("stamp", "Appends a mark to every body", mcpInput { string("mark", "Mark", required = true) }) { args ->
+        val records = ctx.data.collection<Note>("demo_records")
+        records.all().forEach { records.save(it.id, it.value.copy(body = it.value.body + args.mcpString("mark"))) }
+        buildJsonObject { put("stamped", records.all().size) }
+      }
+    )
   })
 }

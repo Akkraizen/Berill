@@ -110,7 +110,7 @@ object PlannerPlugin : BerillPlugin {
       }
     )
 
-  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.plugins.planner.data.PlannerReminders(ctx), dev.akkraizen.berill.api.CollectionDaySource(ctx, TASKS, { title }), dev.akkraizen.berill.api.CollectionSearchSource(ctx, TASKS, { title }))
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.plugins.planner.data.PlannerReminders(ctx), dev.akkraizen.berill.api.CollectionDaySource(ctx, TASKS, { title }), dev.akkraizen.berill.api.CollectionSearchSource(ctx, TASKS, { title }), dev.akkraizen.berill.plugins.planner.data.PlannerToday(ctx))
 
   override fun widgets(ctx: PluginContext) = plannerWidgets(ctx)
 }

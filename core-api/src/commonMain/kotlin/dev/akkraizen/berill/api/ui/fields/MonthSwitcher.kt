@@ -1,6 +1,9 @@
 package dev.akkraizen.berill.api.ui.fields
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -15,7 +18,10 @@ import dev.akkraizen.berill.api.ui.*
 
 @Composable
 fun MonthSwitcher(month: YearMonth, onChange: (YearMonth) -> Unit, modifier: Modifier = Modifier) {
-  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+  Row(
+    modifier.fillMaxWidth().swipeArea { direction -> onChange(month + if (direction == SwipeDirection.NEXT) 1 else -1) },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     IconButton(onClick = { onChange(month + -1) }) {
       Icon(BerillIcons.Prev, contentDescription = UiText.previousMonth())
     }

@@ -8,6 +8,8 @@ internal object StudyText {
  val otherType = pluginI18n.tr("study.otherType")
 
   val title = pluginI18n.tr("study.title")
+  val view = pluginI18n.tr("study.view")
+  val listView = pluginI18n.tr("study.listView")
   val description = pluginI18n.tr("study.description")
   val deadlines = pluginI18n.tr("study.deadlines")
   val noDeadlines = pluginI18n.tr("study.noDeadlines")

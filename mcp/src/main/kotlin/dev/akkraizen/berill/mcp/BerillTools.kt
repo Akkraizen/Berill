@@ -11,6 +11,9 @@ import dev.akkraizen.berill.core.notes.preview
 import dev.akkraizen.berill.core.sync.SyncState
 import dev.akkraizen.berill.protocol.Collections
 import kotlin.time.Instant
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -34,6 +37,75 @@ class BerillTools(private val core: BerillCore) {
   private fun section(name: String): String = if (name == Collections.NOTES) "Notes" else core.collections.owner(name)?.title ?: name
   suspend fun prepareMutation() { core.editorSessions.prepareMutation() }
   fun reportFailure(error: Exception) { core.connections.errors.report(dev.akkraizen.berill.core.connections.FailureOperation.COMMAND, error) }
+
+  fun runAction(pluginId: String, name: String, args: JsonObject): JsonElement {
+    val source = sources().firstOrNull { it.pluginId == pluginId } ?: throw ToolException("Plugin disabled", McpErrorCode.UNAVAILABLE)
+    val action = source.actions.firstOrNull { it.name == name } ?: throw ToolException("Unknown action", McpErrorCode.UNAVAILABLE)
+    return action.run(args)
+  }
+
+  private fun dateArgument(value: String?): kotlinx.datetime.LocalDate? =
+    value?.let { runCatching { kotlinx.datetime.LocalDate.parse(it.trim()) }.getOrNull() ?: throw ToolException("Dates must be YYYY-MM-DD") }
+
+  private fun pluginTitle(id: String): String = core.plugins.enabled.value.firstOrNull { it.id == id }?.title ?: id
+
+  private fun todayJson(item: dev.akkraizen.berill.api.TodayItem): JsonObject = buildJsonObject {
+    put("title", item.title)
+    put("kind", item.kind.name)
+    put("section", pluginTitle(item.pluginId))
+    item.detail?.let { put("detail", it) }
+    item.time?.let { put("time", it) }
+    item.due?.let { put("due", it.toString()) }
+    item.done?.let { put("done", it) }
+    if (item.overdue) put("overdue", true)
+  }
+
+  suspend fun today(date: String?): JsonElement {
+    val day = dateArgument(date) ?: dev.akkraizen.berill.api.ui.today()
+    val items = core.todayFeed.observe(day).first()
+    return buildJsonObject {
+      put("date", day.toString())
+      put("done", items.count { it.done == true })
+      put("checkable", items.count { it.done != null })
+      put("overdue", items.count { it.overdue })
+      put("items", JsonArray(items.map(::todayJson)))
+    }
+  }
+
+  suspend fun weeklyReview(weekStart: String?): JsonElement {
+    val today = dev.akkraizen.berill.api.ui.today()
+    val start = dateArgument(weekStart) ?: today.minus(today.dayOfWeek.ordinal, kotlinx.datetime.DateTimeUnit.DAY)
+    val days = (0 until 7).map { start.plus(it, kotlinx.datetime.DateTimeUnit.DAY) }
+    val zone = kotlinx.datetime.TimeZone.currentSystemDefault()
+    val edited = core.notes.all().filter { note ->
+      note.value.updatedAt > 0 && Instant.fromEpochMilliseconds(note.value.updatedAt).toLocalDateTime(zone).date in days.first()..days.last()
+    }
+    val deadlines = core.plugins.capabilities.all<dev.akkraizen.berill.api.DeadlineSource>().flatMap { source ->
+      runCatching { source.deadlines().first() }.getOrDefault(emptyList())
+    }.filter { it.date > days.last() && it.date <= days.last().plus(7, kotlinx.datetime.DateTimeUnit.DAY) }.sortedBy { it.date }
+    val perDay = days.map { day -> day to core.connections.day(day) }
+    return buildJsonObject {
+      put("weekStart", start.toString())
+      put("weekEnd", days.last().toString())
+      put("sections", buildJsonObject {
+        perDay.flatMap { it.second }.groupBy { it.title }.forEach { (section, entries) -> put(section, entries.size) }
+      })
+      put("days", JsonArray(perDay.map { (day, entries) ->
+        buildJsonObject {
+          put("date", day.toString())
+          put("weekday", day.dayOfWeek.name)
+          put("entries", JsonArray(entries.map { entry -> buildJsonObject { put("section", entry.title); put("detail", entry.detail) } }))
+        }
+      }))
+      put("notesEdited", JsonArray(edited.sortedByDescending { it.value.updatedAt }.take(30).map { note ->
+        buildJsonObject { put("id", note.id); put("title", note.value.displayTitle()) }
+      }))
+      put("nextWeekDeadlines", JsonArray(deadlines.map { deadline ->
+        buildJsonObject { put("title", deadline.title); put("date", deadline.date.toString()); put("section", pluginTitle(deadline.pluginId)) }
+      }))
+      if (today in days) put("today", today(null))
+    }
+  }
 
   suspend fun listCollections(): JsonElement = JsonArray(collections().map { c -> buildJsonObject {
     put("collection", c.name); put("section", section(c.name)); put("records", c.list(1, 0)["total"] ?: JsonPrimitive(0)); put("writable", c.writable); put("schema", c.schema)

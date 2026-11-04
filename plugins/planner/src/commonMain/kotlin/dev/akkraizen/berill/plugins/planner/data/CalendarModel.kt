@@ -198,3 +198,35 @@ internal class CalendarData(val ctx: PluginContext) {
       events.save(id, current.copy(deleted = true, dirty = true, updatedAt = nowMillis()))
   }
 }
+
+internal class PlannerToday(private val ctx: PluginContext) : dev.akkraizen.berill.api.TodaySource {
+  override fun today(date: LocalDate): Flow<List<dev.akkraizen.berill.api.TodayItem>> {
+    val tasks = ctx.data.collection(PlannerPlugin.TASKS, PlannerTask.serializer())
+    return kotlinx.coroutines.flow.combine(tasks.observe(), CalendarData(ctx).observeVisible()) { planned, events ->
+      val day = date.toString()
+      val eventItems = eventsOn(events, date).map { item ->
+        dev.akkraizen.berill.api.TodayItem(
+          id = "${ctx.pluginId}/${PlannerPlugin.EVENTS}/${item.id}",
+          title = item.value.title,
+          kind = dev.akkraizen.berill.api.TodayKind.EVENT,
+          pluginId = ctx.pluginId,
+          detail = item.value.location.takeIf { it.isNotBlank() },
+          time = if (item.value.allDay) null else item.value.start
+        ) { ctx.nav.openPlugin(ctx.pluginId, page = PlannerPlugin.PAGE_CALENDAR) }
+      }
+      val taskItems = planned.filter { it.value.date == day }.sortedWith(taskOrder).map { item ->
+        val parsed = parse(item.value.text)
+        dev.akkraizen.berill.api.TodayItem(
+          id = "${ctx.pluginId}/${PlannerPlugin.TASKS}/${item.id}",
+          title = parsed.title,
+          kind = dev.akkraizen.berill.api.TodayKind.TASK,
+          pluginId = ctx.pluginId,
+          time = parsed.time,
+          done = item.value.done,
+          toggle = { tasks.get(item.id)?.let { tasks.save(item.id, it.copy(done = !it.done)) } }
+        ) { ctx.nav.openPlugin(ctx.pluginId, page = PlannerPlugin.PAGE_PLAN) }
+      }
+      eventItems + taskItems
+    }
+  }
+}

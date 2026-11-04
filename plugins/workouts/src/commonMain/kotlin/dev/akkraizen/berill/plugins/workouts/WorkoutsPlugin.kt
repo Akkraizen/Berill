@@ -94,7 +94,7 @@ object WorkoutsPlugin : BerillPlugin {
       }.withPopup { close, error -> dev.akkraizen.berill.plugins.workouts.ui.QuickWorkoutDialog(ctx, close, error) }
     )
 
-  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionDaySource(ctx, LOGS, { title }, { "log:$it" }, page = PAGE_JOURNAL))
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionDaySource(ctx, LOGS, { title }, { "log:$it" }, page = PAGE_JOURNAL), dev.akkraizen.berill.plugins.workouts.data.WorkoutsToday(ctx), dev.akkraizen.berill.api.CollectionSearchSource(ctx, PROGRAMS, { title }, { "program:$it" }))
 
   override fun widgets(ctx: PluginContext) = workoutsWidgets(ctx)
 }

@@ -8,7 +8,22 @@ import android.graphics.RectF
 import androidx.core.graphics.createBitmap
 
 internal object WidgetBitmaps {
-  fun ring(size: Int, progress: Float, color: Int, track: Int, stroke: Float): Bitmap {
+  private val cache = object : android.util.LruCache<String, Bitmap>(CACHE_BYTES) {
+    override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+  }
+
+  private inline fun cached(key: String, draw: () -> Bitmap): Bitmap =
+    cache.get(key) ?: draw().also { cache.put(key, it) }
+
+  fun ring(size: Int, progress: Float, color: Int, track: Int, stroke: Float): Bitmap =
+    cached("ring:$size:${(progress.coerceIn(0f, 1f) * 1000).toInt()}:$color:$track:$stroke") { drawRing(size, progress, color, track, stroke) }
+
+  fun sparkline(width: Int, height: Int, values: List<Double>, color: Int, stroke: Float): Bitmap =
+    cached("spark:$width:$height:$color:$stroke:${values.hashCode()}:${values.size}") { drawSparkline(width, height, values, color, stroke) }
+
+  private const val CACHE_BYTES = 4 * 1024 * 1024
+
+  private fun drawRing(size: Int, progress: Float, color: Int, track: Int, stroke: Float): Bitmap {
     val bitmap = createBitmap(size, size)
     val canvas = Canvas(bitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -28,7 +43,7 @@ internal object WidgetBitmaps {
     return bitmap
   }
 
-  fun sparkline(width: Int, height: Int, values: List<Double>, color: Int, stroke: Float): Bitmap {
+  private fun drawSparkline(width: Int, height: Int, values: List<Double>, color: Int, stroke: Float): Bitmap {
     val bitmap = createBitmap(width.coerceAtLeast(1), height.coerceAtLeast(1))
     if (values.size < 2) return bitmap
     val canvas = Canvas(bitmap)

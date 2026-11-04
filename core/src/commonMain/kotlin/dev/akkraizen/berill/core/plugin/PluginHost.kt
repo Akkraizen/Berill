@@ -43,7 +43,8 @@ class PluginHost(
   private val files: FileAccess = NoFileAccess,
   private val vault: SecretVault = MemoryVault(),
   private val redirects: OAuthRedirects = NoOAuthRedirects,
-  private val reminderAccess: dev.akkraizen.berill.api.ReminderAccess = dev.akkraizen.berill.api.NoReminders
+  private val reminderAccess: dev.akkraizen.berill.api.ReminderAccess = dev.akkraizen.berill.api.NoReminders,
+  private val noteDirectory: dev.akkraizen.berill.api.NoteDirectory = dev.akkraizen.berill.api.NoNotes
 ) {
 
   val all: List<BerillPlugin> = plugins.sortedWith(compareBy({ it.order }, { it.title }))
@@ -167,6 +168,9 @@ class PluginHost(
 
     override val oauth: OAuthRedirects
       get() = this@PluginHost.redirects
+
+    override val notes: dev.akkraizen.berill.api.NoteDirectory
+      get() = this@PluginHost.noteDirectory
   }
 
   private fun parseSwitches(record: SyncRecord?): Map<String, Boolean> =

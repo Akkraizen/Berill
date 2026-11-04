@@ -37,6 +37,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -238,7 +240,7 @@ private fun MonthView(state: CalendarState, connected: Boolean, edit: (Editing) 
   PluginList {
     item {
       FlowRow(
-        Modifier.fillMaxWidth(),
+        Modifier.fillMaxWidth().swipeArea { direction -> month += if (direction == SwipeDirection.NEXT) 1 else -1 },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically
@@ -263,7 +265,11 @@ private fun MonthView(state: CalendarState, connected: Boolean, edit: (Editing) 
       }
     }
     if (!connected && state.google.isConfigured()) item { GoogleSignInButton(state.google, compact = true) }
-    item { MonthGrid(state, year, monthNumber, now) }
+    item {
+      Box(Modifier.fillMaxWidth().swipeArea { direction -> month += if (direction == SwipeDirection.NEXT) 1 else -1 }) {
+        MonthGrid(state, year, monthNumber, now)
+      }
+    }
   }
 }
 
@@ -404,7 +410,7 @@ private fun DayView(state: CalendarState, day: LocalDate, connected: Boolean, ed
   val segments = daySegments(events + taskItems, day)
   val doneTasks = tasks.filter { it.value.done }.map { TASK_PREFIX + it.id }.toSet()
 
-  Column(Modifier.fillMaxSize()) {
+  Column(Modifier.fillMaxSize().swipeArea { direction -> nav.open(DAY_ROUTE + day.plusDays(if (direction == SwipeDirection.NEXT) 1 else -1)) }) {
     Column(
       Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
       verticalArrangement = Arrangement.spacedBy(8.dp)

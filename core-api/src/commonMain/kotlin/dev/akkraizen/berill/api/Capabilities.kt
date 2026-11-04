@@ -21,3 +21,23 @@ interface DeadlineSource : Capability {
 }
 
 data class Deadline(val title: String, val date: LocalDate, val pluginId: String, val route: String? = null)
+
+enum class TodayKind { TASK, DEADLINE, EVENT, WORKOUT, DOSE, HABIT }
+
+data class TodayItem(
+  val id: String,
+  val title: String,
+  val kind: TodayKind,
+  val pluginId: String,
+  val detail: String? = null,
+  val time: String? = null,
+  val due: LocalDate? = null,
+  val done: Boolean? = null,
+  val overdue: Boolean = false,
+  val toggle: (() -> Unit)? = null,
+  val open: () -> Unit
+)
+
+interface TodaySource : Capability {
+  fun today(date: LocalDate): Flow<List<TodayItem>>
+}

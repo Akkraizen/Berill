@@ -17,6 +17,8 @@ internal object ConnectionsText {
   val cancel = Tr("connections.cancel")
   val trashEmpty = Tr("connections.trashEmpty")
   val trashEmptyHint = Tr("connections.trashEmptyHint")
+  fun trashKeep(days: Int) = Tr("connections.trashKeep", "days" to days)
+  fun trashDaysLeft(days: Int) = Tr("connections.trashDaysLeft", "days" to days)
   val dayEmpty = Tr("connections.dayEmpty")
   val mood = Tr("connections.mood")
   val autoExport = Tr("connections.autoExport")

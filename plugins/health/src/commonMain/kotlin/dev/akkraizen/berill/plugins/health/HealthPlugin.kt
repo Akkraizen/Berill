@@ -87,6 +87,7 @@ object HealthPlugin : BerillPlugin {
   override fun provides(ctx: PluginContext): List<Capability> = listOf(
     HealthActivity(ctx),
     MedicationReminders(ctx),
+    dev.akkraizen.berill.plugins.health.data.HealthToday(ctx),
     HealthMcp(ctx),
     CollectionDaySource(ctx, VITALS, { HealthText.pageVitals() }, describe = ::describeVital, page = PAGE_VITALS),
     CollectionDaySource(ctx, WELLBEING, { HealthText.pageWellbeing() }, describe = ::describeWellbeing, page = PAGE_WELLBEING),

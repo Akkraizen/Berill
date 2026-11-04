@@ -69,7 +69,7 @@ object HabitsPlugin : BerillPlugin {
       }
     )
 
-  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.DailyReminderSource(ctx, { title }, listOf(20), { ctx.data.raw(HABITS).all().any { habit -> (ctx.data.raw(HABIT_DAYS).get(dev.akkraizen.berill.api.ui.today().toString())?.fields?.get(habit.id)?.toString()?.toIntOrNull() ?: 0) < (habit.fields["defaultDuration"]?.toString()?.toIntOrNull() ?: 1) } }), dev.akkraizen.berill.api.CollectionDaySource(ctx, HABIT_DAYS, { title }, describe = { record -> record.fields.entries.joinToString { (key, value) -> (ctx.data.raw("habits").get(key)?.let { it.label() } ?: key) + ": " + value } }), dev.akkraizen.berill.api.CollectionSearchSource(ctx, HABITS, { title }))
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.DailyReminderSource(ctx, { title }, listOf(20), { ctx.data.raw(HABITS).all().any { habit -> (ctx.data.raw(HABIT_DAYS).get(dev.akkraizen.berill.api.ui.today().toString())?.fields?.get(habit.id)?.toString()?.toIntOrNull() ?: 0) < (habit.fields["defaultDuration"]?.toString()?.toIntOrNull() ?: 1) } }), dev.akkraizen.berill.api.CollectionDaySource(ctx, HABIT_DAYS, { title }, describe = { record -> record.fields.entries.joinToString { (key, value) -> (ctx.data.raw("habits").get(key)?.let { it.label() } ?: key) + ": " + value } }), dev.akkraizen.berill.api.CollectionSearchSource(ctx, HABITS, { title }), dev.akkraizen.berill.plugins.habits.data.HabitsToday(ctx))
 
   override fun widgets(ctx: PluginContext) = habitsWidgets(HabitsData(ctx))
 }

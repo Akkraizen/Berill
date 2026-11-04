@@ -51,6 +51,7 @@ fun SectionCard(
   content: @Composable ColumnScope.() -> Unit
 ) {
   var expanded by rememberExpanded(collapseKey)
+  val compact = dev.akkraizen.berill.api.ui.layout.LocalCompactLayout.current
   Surface(
     modifier.fillMaxWidth().let {
       if (onTitleClick != null)
@@ -62,8 +63,8 @@ fun SectionCard(
     color = MaterialTheme.colorScheme.surfaceContainerHigh
   ) {
     Column(
-      Modifier.animateContentSize(BerillMotion.spatial()).padding(18.dp),
-      verticalArrangement = Arrangement.spacedBy(10.dp)
+      Modifier.animateContentSize(BerillMotion.spatial()).padding(if (compact) 12.dp else 18.dp),
+      verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp)
     ) {
       if (title != null || trailing != null) {
         Row(

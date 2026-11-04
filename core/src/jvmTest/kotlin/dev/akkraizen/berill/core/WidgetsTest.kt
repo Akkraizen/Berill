@@ -36,6 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -59,6 +60,7 @@ private class CounterWidget(private val ctx: PluginContext) : WidgetProvider {
 
 private class WidgetPlugin(override val id: String) : BerillPlugin {
   override val title = id
+  override val collections = listOf("${id}_items")
   override val icon = Icons.Outlined.Science
   override val installedByDefault = true
 
@@ -209,4 +211,28 @@ class WidgetsTest {
     assertEquals("🙂 хорошо\n\nтекст", withJournalMood("😞 плохо\n\nтекст", 3, "хорошо"))
     assertEquals("😄 отлично\n\nтекст", withJournalMood("текст", 4, "отлично"))
   }
+
+  @Test
+  fun `виджет обновляется только при изменении своих данных`() {
+    val c = core(WidgetPlugin("demo"), WidgetPlugin("other"))
+    assertTrue(c.widgets.affects("demo.counter", setOf("demo_items")))
+    assertTrue(!c.widgets.affects("demo.counter", setOf("other_items")))
+    assertTrue(!c.widgets.affects("demo.counter", setOf("notes")))
+    assertTrue(!c.widgets.affects("demo.counter", emptySet()))
+    assertTrue(c.widgets.affects("demo.counter", setOf("settings")))
+    assertTrue(c.widgets.affects("demo.counter", null))
+    assertTrue(c.widgets.affects("core.note_pinned", setOf("notes")))
+  }
+
+  @Test
+  fun `изменения собираются в одну пачку`() =
+    runBlocking {
+      val c = core(WidgetPlugin("demo"), WidgetPlugin("other"))
+      val batch = scope.async { withTimeout(5000) { c.widgets.invalidations.first() } }
+      kotlinx.coroutines.delay(100)
+      c.store.put("demo_items", "a", mapOf("x" to kotlinx.serialization.json.JsonPrimitive(1)))
+      c.store.put("other_items", "b", mapOf("x" to kotlinx.serialization.json.JsonPrimitive(2)))
+      c.notes.save("n", "t", "b")
+      assertEquals(setOf("demo_items", "other_items", "notes"), batch.await())
+    }
 }

@@ -84,6 +84,8 @@
     "languages.widget.next": "Дальше",
     "languages.reviewDone": "На сегодня все карточки повторены",
     "languages.defaultLesson": "Урок",
-    "languages.englishName": "Английский"
+    "languages.englishName": "Английский",
+    "languages.view": "Вид",
+    "languages.listView": "Вид словаря"
   }
 }

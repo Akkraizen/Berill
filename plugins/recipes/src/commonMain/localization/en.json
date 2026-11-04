@@ -58,6 +58,8 @@
     "recipes.widget.another": "Another",
     "photos.addFailed": "Could not finish adding photos. Check file access and available storage.",
     "photos.loadFailed": "The photo is unavailable. Check your connection or restore the attachment from a backup.",
-    "photos.retry": "Retry loading"
+    "photos.retry": "Retry loading",
+    "recipes.view": "View",
+    "recipes.listView": "Recipe list view"
   }
 }

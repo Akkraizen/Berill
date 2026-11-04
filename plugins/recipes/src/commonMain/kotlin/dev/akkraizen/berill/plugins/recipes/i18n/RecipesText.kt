@@ -5,6 +5,8 @@ import dev.akkraizen.berill.plugins.recipes.data.recipes
 internal object RecipesText {
 
   val title = pluginI18n.tr("recipes.title")
+  val view = pluginI18n.tr("recipes.view")
+  val listView = pluginI18n.tr("recipes.listView")
   val description = pluginI18n.tr("recipes.description")
 
   private val categories = mapOf(

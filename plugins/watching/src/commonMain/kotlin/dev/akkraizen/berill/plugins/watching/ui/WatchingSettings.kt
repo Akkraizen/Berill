@@ -1,5 +1,9 @@
 package dev.akkraizen.berill.plugins.watching.ui
 
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSetting
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material3.MaterialTheme
@@ -25,29 +29,32 @@ internal fun WatchingSettings(ctx: PluginContext) {
     ctx.secrets.observe(KINOPOISK_KEY)
   }
     .collectAsState(ctx.secrets.get(KINOPOISK_KEY))
-  SectionCard(WatchingText.kinopoisk(), Icons.Outlined.Key) {
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    SectionCard(WatchingText.view()) { ListLayoutSetting(ctx, WATCHING_LAYOUT, WatchingText.listView()) }
+    SectionCard(WatchingText.kinopoisk(), Icons.Outlined.Key) {
+      Text(
+        WatchingText.kinopoiskHint(),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+      CommitTextField(key ?: "", { ctx.secrets.set(KINOPOISK_KEY, it.trim()) }, WatchingText.apiKey())
+      Text(
+        WatchingText.keyLocalHint(),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
+    SectionCard("Shikimori", mediaIcon(ANIME)) {
+      Text(
+        WatchingText.shikimoriHint(),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
     Text(
-      WatchingText.kinopoiskHint(),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    CommitTextField(key ?: "", { ctx.secrets.set(KINOPOISK_KEY, it.trim()) }, WatchingText.apiKey())
-    Text(
-      WatchingText.keyLocalHint(),
+      WatchingText.keysStorageHint(),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant
     )
   }
-  SectionCard("Shikimori", mediaIcon(ANIME)) {
-    Text(
-      WatchingText.shikimoriHint(),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-  }
-  Text(
-    WatchingText.keysStorageHint(),
-    style = MaterialTheme.typography.bodySmall,
-    color = MaterialTheme.colorScheme.onSurfaceVariant
-  )
 }

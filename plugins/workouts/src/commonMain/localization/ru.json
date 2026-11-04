@@ -117,6 +117,8 @@
     "exercise.cable_crunch.name": "Скручивания на блоке",
     "exercise.chest_press_machine.description": "Рукояти на уровне середины груди, спина прижата.",
     "exercise.chest_press_machine.name": "Жим в тренажёре",
+    "exercise.hammer_chest_press.description": "Рычажный тренажёр Hammer Strength: лопатки сведены, рукояти на уровне середины груди, каждая рука работает независимо.",
+    "exercise.hammer_chest_press.name": "Жим в хаммере",
     "exercise.chin_up.description": "Ладони к себе, хват на ширине плеч.",
     "exercise.chin_up.name": "Подтягивания обратным хватом",
     "exercise.close_grip_bench.description": "Хват на ширине плеч, локти вдоль корпуса.",

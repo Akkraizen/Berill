@@ -21,6 +21,7 @@ dependencies {
   testImplementation(project(":plugins:workouts"))
   testImplementation(project(":plugins:health"))
   testImplementation(project(":plugins:books"))
+  testImplementation(project(":plugins:projects"))
   testImplementation(libs.kotlin.testJunit)
   testImplementation(libs.sqldelight.sqliteDriver)
 

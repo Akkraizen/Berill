@@ -34,6 +34,7 @@ internal fun Tone.widgetTone(): WidgetTone =
 
 private class DeadlinesWidget(private val ctx: PluginContext) : WidgetProvider {
   override val id = "deadlines"
+  override val watchesAllSections = true
   override val title: Tr = StudyText.widgetDeadlinesTitle
   override val description: Tr = StudyText.widgetDeadlinesDescription
   override val size = WidgetSize.Medium

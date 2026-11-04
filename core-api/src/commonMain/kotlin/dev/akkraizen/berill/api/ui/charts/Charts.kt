@@ -207,25 +207,28 @@ fun StatisticsChart(
             clipRect(right = size.width * reveal.value) {
               line.values.forEachIndexed point@{ i, value ->
                 if (value == null || !value.isFinite()) return@point
-                val previous = line.values.getOrNull(i - 1)?.takeIf { it.isFinite() }
-                if (previous != null) {
+                val from = (i - 1 downTo 0).firstOrNull { line.values[it]?.isFinite() == true }
+                val previous = from?.let { line.values[it] }
+                if (from != null && previous != null) {
+                  val gap = from < i - 1
                   val fill = Path().apply {
-                    moveTo(x(i - 1), y(previous)); lineTo(x(i), y(value))
+                    moveTo(x(from), y(previous)); lineTo(x(i), y(value))
                     lineTo(x(i), size.height - inset); lineTo(
-                    x(i - 1),
+                    x(from),
                     size.height - inset
                   ); close()
                   }
                   drawPath(
                     fill,
-                    Brush.verticalGradient(listOf(color.copy(alpha = 0.16f), Color.Transparent))
+                    Brush.verticalGradient(listOf(color.copy(alpha = if (gap) 0.08f else 0.16f), Color.Transparent))
                   )
                   drawLine(
-                    color,
-                    Offset(x(i - 1), y(previous)),
+                    if (gap) color.copy(alpha = 0.6f) else color,
+                    Offset(x(from), y(previous)),
                     Offset(x(i), y(value)),
-                    3.dp.toPx(),
-                    StrokeCap.Round
+                    if (gap) 2.dp.toPx() else 3.dp.toPx(),
+                    StrokeCap.Round,
+                    pathEffect = if (gap) PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx())) else null
                   )
                 }
                 if (labels.size <= 31 || i == selected) {

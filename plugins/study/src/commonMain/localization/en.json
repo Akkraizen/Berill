@@ -101,6 +101,8 @@
       "Exam",
       "Project",
       "Other"
-    ]
+    ],
+    "study.view": "View",
+    "study.listView": "Assignment list view"
   }
 }

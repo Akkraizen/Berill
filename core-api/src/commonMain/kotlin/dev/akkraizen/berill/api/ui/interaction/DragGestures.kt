@@ -26,10 +26,16 @@ fun Modifier.dragAnywhere(
         else awaitTouchSlopOrCancellation(down.id) { change, _ -> change.consume() }
       if (start == null) return@awaitEachGesture
       onStart(start.position)
-      val completed = drag(start.id) { change ->
-        onMove(change.positionChange())
-        change.consume()
+      var finished = false
+      try {
+        val completed = drag(start.id) { change ->
+          onMove(change.positionChange())
+          change.consume()
+        }
+        finished = true
+        if (completed) onEnd() else onCancel()
+      } finally {
+        if (!finished) onCancel()
       }
-      if (completed) onEnd() else onCancel()
     }
   }

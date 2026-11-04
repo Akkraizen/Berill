@@ -43,4 +43,14 @@ class ExpandedCatalogTest {
       assertEquals(1, logFromDay(WorkoutDay(exercises = listOf(exercise))).single().sets.size)
     }
   }
+
+  @Test
+  fun hammerChestPressIsAChestMachineFoundByEitherName() {
+    val hammer = builtinExercises().single { it.builtinKey == "hammer_chest_press" }
+    assertEquals(MUSCLE_CHEST, hammer.muscle)
+    assertEquals(EQ_MACHINE, hammer.equipment)
+    assertEquals(ExerciseMode.REPETITIONS, hammer.mode)
+    assertTrue(hammer.matches("жим в хаммере"))
+    assertTrue(hammer.matches("Hammer Strength chest press"))
+  }
 }

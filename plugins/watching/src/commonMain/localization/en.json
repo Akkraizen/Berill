@@ -79,6 +79,8 @@
     "watching.stats.months": "Titles finished by month",
     "watching.stats.completed": "Completed",
     "watching.widget.nowTitle": "Watching now",
-    "watching.widget.nowDescription": "Titles you're watching with a “+1 episode” button"
+    "watching.widget.nowDescription": "Titles you're watching with a “+1 episode” button",
+    "watching.view": "View",
+    "watching.listView": "Title list view"
   }
 }

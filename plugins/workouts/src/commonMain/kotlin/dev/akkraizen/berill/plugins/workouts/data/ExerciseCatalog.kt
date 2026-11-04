@@ -107,6 +107,7 @@ private val BUILTINS = listOf(
   b("dips", MUSCLE_CHEST, EQ_BODYWEIGHT),
   b("push_up", MUSCLE_CHEST, EQ_BODYWEIGHT),
   b("chest_press_machine", MUSCLE_CHEST, EQ_MACHINE),
+  b("hammer_chest_press", MUSCLE_CHEST, EQ_MACHINE),
   b("deadlift", MUSCLE_BACK, EQ_BARBELL),
   b("pull_up", MUSCLE_BACK, EQ_BODYWEIGHT),
   b("chin_up", MUSCLE_BACK, EQ_BODYWEIGHT),

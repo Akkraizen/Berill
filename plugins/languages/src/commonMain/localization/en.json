@@ -88,6 +88,8 @@
     "languages.widget.next": "Next",
     "languages.reviewDone": "All cards reviewed for today",
     "languages.defaultLesson": "Lesson",
-    "languages.englishName": "English"
+    "languages.englishName": "English",
+    "languages.view": "View",
+    "languages.listView": "Dictionary view"
   }
 }

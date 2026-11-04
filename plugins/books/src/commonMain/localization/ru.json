@@ -50,6 +50,8 @@
     "books.widget.readingTitle": "Сейчас читаю",
     "books.widget.readingDescription": "Книги в процессе чтения, касание открывает книгу",
     "books.widget.readingDays": "день {n}",
-    "books.widget.pages": "{n} стр."
+    "books.widget.pages": "{n} стр.",
+    "books.view": "Вид",
+    "books.listView": "Вид списка книг"
   }
 }

@@ -14,6 +14,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
+import kotlinx.datetime.plus
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,10 +83,18 @@ internal fun WellbeingPage(ctx: PluginContext) {
           )
         }
       }
+      item { InsightsCard(ctx) }
       return@TabbedPluginList
     }
     item {
-      SectionCard(HealthText.howAreYou(), Icons.Outlined.SentimentSatisfied) {
+      val day = date.toDateOrNull() ?: today()
+      SectionCard(
+        HealthText.howAreYou(),
+        Icons.Outlined.SentimentSatisfied,
+        modifier = Modifier.swipeArea(canSwipe = { it == SwipeDirection.PREVIOUS || day < today() }) { direction ->
+          date = day.plus(if (direction == SwipeDirection.NEXT) 1 else -1, kotlinx.datetime.DateTimeUnit.DAY).toString()
+        }
+      ) {
         DateField(date, { picked -> picked?.toDateOrNull()?.let { date = it.toString() } }, HealthText.date())
         RatingRow(HealthText.wellbeing(), current.wellbeing) { update(current.copy(wellbeing = it)) }
         RatingRow(HealthText.mood(), current.mood) { update(current.copy(mood = it)) }

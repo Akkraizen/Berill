@@ -101,6 +101,7 @@ private val HINTS: Map<String, List<String>> = mapOf(
   "dips" to listOf("Dips - Chest Version", "Bench_Dips"),
   "push_up" to listOf("Pushups", "Push-Ups", "Push Up"),
   "chest_press_machine" to listOf("Leverage Chest Press", "Machine Bench Press"),
+  "hammer_chest_press" to listOf("Leverage Chest Press", "Leverage Incline Chest Press"),
   "deadlift" to listOf("Barbell_Deadlift"),
   "pull_up" to listOf("Pullups", "Pull-Ups", "Band_Assisted_Pull-Up"),
   "chin_up" to listOf("Chin-Up", "Chin-Ups"),

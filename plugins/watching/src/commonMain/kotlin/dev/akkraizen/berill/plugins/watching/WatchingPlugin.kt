@@ -62,7 +62,7 @@ object WatchingPlugin : BerillPlugin {
   override fun homeCards(ctx: PluginContext) =
     listOf(HomeCard("watching", WatchingText.watchingNowCard, order = 31) { WatchingNow(ctx) })
 
-  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionShareSource(ctx, TITLES, title, "title:"))
+  private fun baseProvides(ctx: PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.api.CollectionShareSource(ctx, TITLES, title, "title:"), dev.akkraizen.berill.api.CollectionSearchSource(ctx, TITLES, { title }, { "title:$it" }))
 
   override fun widgets(ctx: PluginContext) = watchingWidgets(ctx)
 }

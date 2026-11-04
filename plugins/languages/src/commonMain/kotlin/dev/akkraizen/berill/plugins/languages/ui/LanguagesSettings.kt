@@ -1,5 +1,6 @@
 package dev.akkraizen.berill.plugins.languages.ui
 
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSetting
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,6 +64,7 @@ internal fun LanguagesSettings(ctx: PluginContext) {
   var restoring by remember { mutableStateOf<String?>(null) }
   var purging by remember { mutableStateOf<String?>(null) }
 
+  SectionCard(LanguagesText.view()) { ListLayoutSetting(ctx, DICTIONARY_LAYOUT, LanguagesText.listView()) }
   SectionCard(
     LanguagesText.studiedLanguages(),
     Icons.Outlined.Translate,

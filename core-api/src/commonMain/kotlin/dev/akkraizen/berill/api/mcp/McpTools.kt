@@ -101,6 +101,8 @@ enum class McpOperation(val wire: String) {
 interface McpSource : Capability {
   val pluginId: String
   val collections: List<McpCollection>
+  val actions: List<McpAction>
+    get() = emptyList()
 }
 
 interface McpCollection {

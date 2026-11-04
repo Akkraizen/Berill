@@ -4,6 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -12,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.PluginContext
+import dev.akkraizen.berill.api.ui.cards.SectionCard
 import dev.akkraizen.berill.api.ui.selection.ChoiceChips
 import dev.akkraizen.berill.plugins.health.data.DoseStyle
 import dev.akkraizen.berill.plugins.health.data.REMINDER_LEADS
@@ -24,27 +30,35 @@ import dev.akkraizen.berill.plugins.health.i18n.HealthText
 @Composable
 internal fun HealthSettings(ctx: PluginContext) {
   val prefs = rememberHealthPrefs(ctx)
-  Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-    Setting(HealthText.settingDoseStyle(), HealthText.settingDoseStyleHint()) {
-      ChoiceChips(DoseStyle.entries, prefs.doseStyle, ::styleLabel, { setHealthPrefs(ctx, prefs.copy(doseStyle = it)) })
-    }
-    Toggle(HealthText.settingReminders(), HealthText.settingRemindersHint(), prefs.reminders) {
-      setHealthPrefs(ctx, prefs.copy(reminders = it))
-    }
-    if (prefs.reminders)
-      Setting(HealthText.settingLead(), null) {
-        ChoiceChips(REMINDER_LEADS, prefs.reminderLeadMinutes, { if (it == 0) HealthText.leadOnTime() else HealthText.leadBefore(it)() }, {
-          setHealthPrefs(ctx, prefs.copy(reminderLeadMinutes = it))
-        })
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    SectionCard(HealthText.sectionView(), Icons.Outlined.Palette) {
+      Setting(HealthText.settingDoseStyle(), HealthText.settingDoseStyleHint()) {
+        ChoiceChips(DoseStyle.entries, prefs.doseStyle, ::styleLabel, { setHealthPrefs(ctx, prefs.copy(doseStyle = it)) })
       }
-    Setting(HealthText.settingSleepGoal(), null) {
-      ChoiceChips(SLEEP_GOALS, prefs.sleepGoalMinutes, ::formatDuration, { setHealthPrefs(ctx, prefs.copy(sleepGoalMinutes = it)) })
     }
-    Setting(HealthText.settingStepsGoal(), null) {
-      ChoiceChips(STEP_GOALS, prefs.stepsGoal, { formatNumber(it.toDouble()) }, { setHealthPrefs(ctx, prefs.copy(stepsGoal = it)) })
+    SectionCard(HealthText.sectionReminders(), Icons.Outlined.NotificationsActive) {
+      Toggle(HealthText.settingReminders(), HealthText.settingRemindersHint(), prefs.reminders) {
+        setHealthPrefs(ctx, prefs.copy(reminders = it))
+      }
+      if (prefs.reminders)
+        Setting(HealthText.settingLead(), null) {
+          ChoiceChips(REMINDER_LEADS, prefs.reminderLeadMinutes, { if (it == 0) HealthText.leadOnTime() else HealthText.leadBefore(it)() }, {
+            setHealthPrefs(ctx, prefs.copy(reminderLeadMinutes = it))
+          })
+        }
     }
-    Toggle(HealthText.settingHomeSummary(), HealthText.settingHomeSummaryHint(), prefs.homeSummary) {
-      setHealthPrefs(ctx, prefs.copy(homeSummary = it))
+    SectionCard(HealthText.sectionGoals(), Icons.Outlined.Flag) {
+      Setting(HealthText.settingSleepGoal(), null) {
+        ChoiceChips(SLEEP_GOALS, prefs.sleepGoalMinutes, ::formatDuration, { setHealthPrefs(ctx, prefs.copy(sleepGoalMinutes = it)) })
+      }
+      Setting(HealthText.settingStepsGoal(), null) {
+        ChoiceChips(STEP_GOALS, prefs.stepsGoal, { formatNumber(it.toDouble()) }, { setHealthPrefs(ctx, prefs.copy(stepsGoal = it)) })
+      }
+    }
+    SectionCard(HealthText.sectionHome(), Icons.Outlined.Home) {
+      Toggle(HealthText.settingHomeSummary(), HealthText.settingHomeSummaryHint(), prefs.homeSummary) {
+        setHealthPrefs(ctx, prefs.copy(homeSummary = it))
+      }
     }
   }
 }

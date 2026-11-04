@@ -84,7 +84,7 @@ class HealthRenderTest {
           else assertTrue(shown.any { "8 ч" in it }, shown.toString())
         } finally { scene.close() }
       }
-      val settings = ImageComposeScene(420, 900) {
+      val settings = ImageComposeScene(420, 1200) {
         MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
           Surface(Modifier.fillMaxSize()) { HealthPlugin.Settings(ctx) }
         }

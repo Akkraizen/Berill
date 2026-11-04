@@ -75,7 +75,8 @@ fun BerillShell(
   val appearance by core.appearance.state.collectAsState()
 
   val shortcuts by core.shortcuts.state.collectAsState()
-  CompositionLocalProvider(LocalShortcuts provides shortcuts) {
+  val display by core.displayPreferences.state.collectAsState()
+  CompositionLocalProvider(LocalShortcuts provides shortcuts, dev.akkraizen.berill.api.ui.layout.LocalListLayout provides display.lists, dev.akkraizen.berill.api.ui.layout.LocalCompactLayout provides display.compact) {
   key(I18n.language) {
     BerillTheme(appearance) {
       val stack by core.nav.stack.collectAsState()

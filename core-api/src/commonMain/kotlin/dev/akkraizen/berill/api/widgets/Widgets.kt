@@ -19,6 +19,10 @@ interface WidgetProvider {
   val choices: WidgetChoices?
     get() = null
 
+  /** True when the content reads other sections (for example deadlines of every module), so it refreshes on any change. */
+  val watchesAllSections: Boolean
+    get() = false
+
   suspend fun content(request: WidgetRequest): WidgetContent
 
   suspend fun perform(request: WidgetRequest, action: WidgetAction.Run): WidgetEffect = WidgetEffect.Refresh()

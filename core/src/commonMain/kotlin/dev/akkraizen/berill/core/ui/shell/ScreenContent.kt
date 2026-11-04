@@ -18,6 +18,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -84,7 +86,13 @@ internal fun Content(
     contentKey = { screenKey(it.last()) },
     transitionSpec = {
       val topLevel = targetState.size <= 2 && initialState.size <= 2
-      if (topLevel)
+      val from = initialState.last() as? Destination.Plugin
+      val to = targetState.last() as? Destination.Plugin
+      val samePlugin = from != null && to != null && from.id == to.id && from.route == null && to.route == null && from.page != to.page
+      if (samePlugin) {
+        val pages = plugins.firstOrNull { it.id == to!!.id }?.pages.orEmpty().map { it.id }
+        BerillMotion.slide(forward = pages.indexOf(to!!.page ?: pages.firstOrNull()) > pages.indexOf(from!!.page ?: pages.firstOrNull()))
+      } else if (topLevel)
         BerillMotion.fadeThrough()
       else
         BerillMotion.slide(forward = targetState.size > initialState.size)
@@ -138,8 +146,21 @@ private fun ScreenBody(core: BerillCore, current: Destination, plugins: List<Ber
               val page = remember { MutableStateFlow(pageId) }
               val ctx = remember { RouteScopedContext(core.plugins.context(plugin), route, page) }
               val pluginPage = plugin.pages.firstOrNull { it.id == pageId }
-              PluginScope(plugin) {
-                if (pluginPage == null) plugin.Screen(ctx) else pluginPage.content(ctx)
+              val pageIds = plugin.pages.map { it.id }
+              val index = pageIds.indexOf(pageId)
+              val swipeable = current.route == null && pageIds.size > 1 && index >= 0
+              Box(
+                if (!swipeable) Modifier.fillMaxSize()
+                else Modifier.fillMaxSize().swipeArea(
+                  canSwipe = { direction -> if (direction == SwipeDirection.NEXT) index < pageIds.lastIndex else index > 0 }
+                ) { direction ->
+                  val target = pageIds[(index + if (direction == SwipeDirection.NEXT) 1 else -1).coerceIn(0, pageIds.lastIndex)]
+                  core.nav.openSection(plugin.id, target)
+                }
+              ) {
+                PluginScope(plugin) {
+                  if (pluginPage == null) plugin.Screen(ctx) else pluginPage.content(ctx)
+                }
               }
             }
           }

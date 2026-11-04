@@ -1,5 +1,10 @@
 package dev.akkraizen.berill.plugins.languages.ui
 
+import dev.akkraizen.berill.api.ui.layout.rememberListLayout
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSwitcher
+import dev.akkraizen.berill.api.ui.layout.ListLayoutKey
+import dev.akkraizen.berill.api.ui.layout.ListLayout
+import dev.akkraizen.berill.api.ui.layout.CardGrid
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,6 +51,8 @@ import dev.akkraizen.berill.plugins.languages.data.selected
 import dev.akkraizen.berill.plugins.languages.data.words
 import dev.akkraizen.berill.plugins.languages.i18n.LanguagesText
 
+internal val DICTIONARY_LAYOUT = ListLayoutKey("dictionaryLayout", listOf(ListLayout.ROWS, ListLayout.CARDS), ListLayout.ROWS)
+
 @Composable
 internal fun DictionaryScreen(ctx: PluginContext) {
   val languages = rememberLanguages(ctx)
@@ -60,6 +67,7 @@ internal fun DictionaryScreen(ctx: PluginContext) {
   var section by rememberSaveable { mutableStateOf(WORDS_SECTION) }
   var editing by remember { mutableStateOf<Item<Word>?>(null) }
   var adding by remember { mutableStateOf(false) }
+  val layout = rememberListLayout(ctx, DICTIONARY_LAYOUT)
   val l = languages.byCode(lang)
   val q = query.trim().lowercase()
   val shown = all.filter { it.value.language == lang && it.value.section == section }
@@ -73,6 +81,7 @@ internal fun DictionaryScreen(ctx: PluginContext) {
   PluginList {
     item {
       DetailHeader(LanguagesText.dictionaryOf(l.name)(), DICT_ICON) {
+        ListLayoutSwitcher(ctx, DICTIONARY_LAYOUT)
         FilledTonalButton(onClick = { adding = true }) {
           Ic(BerillIcons.Add, size = 18.dp)
           Spacer(Modifier.width(8.dp))
@@ -98,7 +107,21 @@ internal fun DictionaryScreen(ctx: PluginContext) {
         { section = it })
     }
     if (shown.isEmpty()) item { EmptyHint(LanguagesText.nothingFound()) }
-    shown.forEach { entry ->
+    if (layout == ListLayout.CARDS && shown.isNotEmpty()) item {
+      CardGrid(shown, minCardWidth = 190.dp) { entry, modifier ->
+        val w = entry.value
+        Surface(onClick = { editing = entry }, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier) {
+          Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(w.word, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            w.pron?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
+            Text(w.translation, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            val meta = listOfNotNull(w.pos, w.lesson).joinToString(" · ")
+            if (meta.isNotEmpty()) Text(meta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+          }
+        }
+      }
+    }
+    if (layout == ListLayout.ROWS) shown.forEach { entry ->
       item(key = entry.id) {
         val w = entry.value
         Surface(

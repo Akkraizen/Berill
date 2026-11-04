@@ -50,7 +50,14 @@ import dev.akkraizen.berill.api.ui.interaction.BerillChip
 import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
+import dev.akkraizen.berill.api.ui.layout.CardGrid
 import dev.akkraizen.berill.api.ui.layout.DetailHeader
+import dev.akkraizen.berill.api.ui.layout.ListLayout
+import dev.akkraizen.berill.api.ui.layout.ListLayoutKey
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSetting
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSwitcher
+import dev.akkraizen.berill.api.ui.layout.RowList
+import dev.akkraizen.berill.api.ui.layout.rememberListLayout
 import dev.akkraizen.berill.api.ui.layout.FieldWithActions
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.layout.TwoPane
@@ -66,6 +73,13 @@ import dev.akkraizen.berill.plugins.recipes.data.recipes
 import dev.akkraizen.berill.plugins.recipes.data.rememberRecipeImages
 import dev.akkraizen.berill.plugins.recipes.i18n.RecipesText
 
+internal val RECIPES_LAYOUT = ListLayoutKey("listLayout", listOf(ListLayout.CARDS, ListLayout.ROWS), ListLayout.CARDS)
+
+@Composable
+internal fun RecipesSettings(ctx: PluginContext) {
+  SectionCard(RecipesText.view()) { ListLayoutSetting(ctx, RECIPES_LAYOUT, RecipesText.listView()) }
+}
+
 @Composable
 internal fun RecipesGallery(ctx: PluginContext) {
   val collection = remember(ctx) { recipes(ctx) }
@@ -75,6 +89,7 @@ internal fun RecipesGallery(ctx: PluginContext) {
   var category by rememberSaveable { mutableStateOf(ALL) }
   var adding by remember { mutableStateOf(false) }
   val images = rememberRecipeImages(ctx)
+  val layout = rememberListLayout(ctx, RECIPES_LAYOUT)
 
   val categories = listOf(ALL) + all.mapNotNull { it.value.category }.distinct().sorted()
   val q = query.trim().lowercase()
@@ -110,6 +125,7 @@ internal fun RecipesGallery(ctx: PluginContext) {
             Spacer(Modifier.width(8.dp))
             Text(RecipesText.recipe())
           }
+          ListLayoutSwitcher(ctx, RECIPES_LAYOUT)
         }
       )
     }
@@ -123,30 +139,27 @@ internal fun RecipesGallery(ctx: PluginContext) {
       )
     }
     if (shown.isEmpty()) item { EmptyHint(RecipesText.nothingFound()) }
-    item {
-      BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val cols = (maxWidth / 220.dp).toInt().coerceIn(2, 5)
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          shown.chunked(cols).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-              row.forEach { item ->
-                RecipeCard(
-                  item.value,
-                  photo = images[item.id]?.firstOrNull()?.value?.data,
-                  onOpen = { ctx.nav.open(RecipesPlugin.RECIPE_ROUTE + item.id) },
-                  onFavorite = {
-                    collection.get(item.id)?.let {
-                      collection.save(item.id, it.copy(favorite = !it.favorite))
-                    }
-                  },
-                  modifier = Modifier.weight(1f)
-                )
-              }
-              repeat(cols - row.size) { Box(Modifier.weight(1f)) }
-            }
-          }
+    val toggleFavorite: (String) -> Unit = { id -> collection.get(id)?.let { collection.save(id, it.copy(favorite = !it.favorite)) } }
+    if (shown.isNotEmpty()) item {
+      if (layout == ListLayout.ROWS)
+        RowList(shown) { item ->
+          RecipeRow(
+            item.value,
+            photo = images[item.id]?.firstOrNull()?.value?.data,
+            onOpen = { ctx.nav.open(RecipesPlugin.RECIPE_ROUTE + item.id) },
+            onFavorite = { toggleFavorite(item.id) }
+          )
         }
-      }
+      else
+        CardGrid(shown, minCardWidth = 200.dp) { item, modifier ->
+          RecipeCard(
+            item.value,
+            photo = images[item.id]?.firstOrNull()?.value?.data,
+            onOpen = { ctx.nav.open(RecipesPlugin.RECIPE_ROUTE + item.id) },
+            onFavorite = { toggleFavorite(item.id) },
+            modifier = modifier
+          )
+        }
     }
   }
 
@@ -160,6 +173,35 @@ internal fun RecipesGallery(ctx: PluginContext) {
         ctx.nav.open(RecipesPlugin.RECIPE_ROUTE + id)
       }
     )
+}
+
+@Composable
+private fun RecipeMeta(r: Recipe) {
+  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Ic(categoryIcon(r.category), size = 14.dp, tint = muted)
+    Text(r.category?.let(RecipesText::categoryLabel) ?: RecipesText.noCategory(), style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1)
+    r.time?.let {
+      Spacer(Modifier.width(6.dp))
+      Ic(Icons.Outlined.Timer, size = 14.dp, tint = muted)
+      Text(formatMinutes(it), style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1)
+    }
+  }
+}
+
+@Composable
+private fun RecipeRow(r: Recipe, photo: String?, onOpen: () -> Unit, onFavorite: () -> Unit) {
+  val photoBytes = rememberImageBytes(photo)
+  Row(Modifier.fillMaxWidth().interactive(onClick = onOpen), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Cover(r.cover, categoryIcon(r.category), Modifier.size(56.dp), MaterialTheme.shapes.medium, bytes = photoBytes)
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Text(r.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      RecipeMeta(r)
+      if (r.tags.isNotEmpty())
+        Text(r.tags.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+    FavoriteButton(r.favorite, onFavorite, Modifier)
+  }
 }
 
 @Composable

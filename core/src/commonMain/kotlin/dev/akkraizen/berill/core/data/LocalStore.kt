@@ -67,9 +67,15 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
 
   val changes: SharedFlow<Unit> = _changes
 
-  private fun changed() {
+  private val _changedCollections = MutableSharedFlow<Set<String>?>(extraBufferCapacity = 64)
+
+  /** Names of the collections touched by each change; null when any collection may have changed. */
+  val changedCollections: SharedFlow<Set<String>?> = _changedCollections
+
+  private fun changed(collections: Set<String>?) {
     _localChanges.tryEmit(Unit)
     _changes.tryEmit(Unit)
+    _changedCollections.tryEmit(collections)
   }
 
   private val _pendingDeletions = MutableStateFlow(emptyList<PendingDeletion>())
@@ -102,7 +108,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       val patch = SyncRecord(collection, id, JsonObject(changed), changed.keys.associateWith { stamp })
       write(current.mergeWith(patch), dirty = true, version = (row?.version ?: 0) + 1)
     }
-    changed()
+    changed(setOf(collection))
   }
 
   fun putIfCurrent(collection: String, id: String, field: String, expected: JsonElement, value: JsonElement): Boolean {
@@ -116,7 +122,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       write(current.mergeWith(patch), dirty = true, version = row.version + 1)
       updated = true
     }
-    if (updated) changed()
+    if (updated) changed(setOf(collection))
     return updated
   }
 
@@ -131,7 +137,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       deletion = PendingDeletion(collection, id, stamp)
     }
     deletion?.let { item -> _pendingDeletions.update { it + item } }
-    changed()
+    changed(setOf(collection))
   }
 
   fun dismissDeletions(batch: List<PendingDeletion>) {
@@ -149,7 +155,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       }
     }
     dismissDeletions(batch)
-    changed()
+    changed(batch.map { it.collection }.toSet())
   }
 
   fun restampAll() {
@@ -162,7 +168,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
         write(next, dirty = true, version = row.version + 1)
       }
     }
-    changed()
+    changed(null)
   }
 
   fun enqueueAllForSync() {
@@ -176,6 +182,17 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
 
   fun deletedRecords(): List<SyncRecord> =
     q.selectDeleted().executeAsList().map(::toRecord).filter { it.deleted && it.fields[PURGED] != JsonPrimitive(true) }
+
+  fun deletedMillis(record: SyncRecord): Long? = record.deletedAt?.let { HybridClock.decode(it)?.first }
+
+  fun expiredDeleted(now: Long, keepMillis: Long = TRASH_KEEP_MILLIS): List<SyncRecord> =
+    deletedRecords().filter { record -> deletedMillis(record)?.let { now - it > keepMillis } == true }
+
+  fun purgeExpired(now: Long, keepMillis: Long = TRASH_KEEP_MILLIS): Int {
+    val expired = expiredDeleted(now, keepMillis)
+    if (expired.isNotEmpty()) purgeDeleted(expired)
+    return expired.size
+  }
 
   fun restore(collection: String, id: String) {
     val record = get(collection, id)?.takeIf { it.deleted && it.fields[PURGED] != JsonPrimitive(true) } ?: return
@@ -201,7 +218,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       }
     }
     conflicts.reload()
-    changed()
+    changed(records.map { it.collection }.toSet())
   }
 
   fun countAll(): Long = q.countAll().executeAsOne()
@@ -263,6 +280,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
     }
     conflicts.reload()
     _changes.tryEmit(Unit)
+    _changedCollections.tryEmit(records.map { it.collection }.toSet())
   }
 
   fun markClean(record: SyncRecord, version: Long) {
@@ -322,7 +340,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       }
     }
     conflicts.reload()
-    if (wrote) changed()
+    if (wrote) changed(setOf(collection))
     return result
   }
 
@@ -360,7 +378,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       resolved = true
     }
     conflicts.reload()
-    if (resolved) changed()
+    if (resolved) changed(null)
     return resolved
   }
 
@@ -372,7 +390,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       write(SyncRecord(collection, id, fields, fields.keys.associateWith { stamp }), dirty = true, version = 1)
       created = true
     }
-    if (created) changed()
+    if (created) changed(setOf(collection))
     return created
   }
 
@@ -394,7 +412,7 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
       updated = true
     }
     deletion?.let { item -> _pendingDeletions.update { it + item } }
-    if (updated) changed()
+    if (updated) changed(setOf(collection))
     return updated
   }
 
@@ -439,3 +457,6 @@ class LocalStore(private val db: BerillDatabase, private val clock: HybridClock,
     const val SEARCH_INDEXED = "maintenance.search_index_v1"
   }
 }
+
+const val TRASH_KEEP_DAYS = 30
+const val TRASH_KEEP_MILLIS = TRASH_KEEP_DAYS * 24L * 60 * 60 * 1000

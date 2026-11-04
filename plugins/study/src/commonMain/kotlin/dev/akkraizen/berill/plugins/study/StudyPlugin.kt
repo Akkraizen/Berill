@@ -52,6 +52,7 @@ object StudyPlugin : BerillPlugin {
   @Composable
   override fun Settings(ctx: PluginContext) {
     val types = rememberTaskTypes(ctx)
+    SectionCard(StudyText.view()) { dev.akkraizen.berill.api.ui.layout.ListLayoutSetting(ctx, dev.akkraizen.berill.plugins.study.ui.STUDY_LAYOUT, StudyText.listView()) }
     SectionCard(StudyText.taskTypes(), Icons.Outlined.Category) {
       EditableList(
         items = types,

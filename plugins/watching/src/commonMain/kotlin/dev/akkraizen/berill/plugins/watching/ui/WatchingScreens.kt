@@ -3,6 +3,10 @@ package dev.akkraizen.berill.plugins.watching.ui
 import dev.akkraizen.berill.api.ui.layout.TAB_STATISTICS
 import dev.akkraizen.berill.api.ui.layout.TabbedPluginList
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -12,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
@@ -47,7 +52,13 @@ import dev.akkraizen.berill.api.ui.interaction.BerillTextField
 import dev.akkraizen.berill.api.ui.interaction.DialogKeys
 import dev.akkraizen.berill.api.ui.interaction.interactive
 import dev.akkraizen.berill.api.ui.layout.FieldsRow
+import dev.akkraizen.berill.api.ui.layout.CollectionGroup
+import dev.akkraizen.berill.api.ui.layout.GroupedCollection
 import dev.akkraizen.berill.api.ui.layout.KanbanBoard
+import dev.akkraizen.berill.api.ui.layout.ListLayout
+import dev.akkraizen.berill.api.ui.layout.ListLayoutKey
+import dev.akkraizen.berill.api.ui.layout.ListLayoutSwitcher
+import dev.akkraizen.berill.api.ui.layout.rememberListLayout
 import dev.akkraizen.berill.api.ui.layout.KanbanColumn
 import dev.akkraizen.berill.api.ui.layout.PluginList
 import dev.akkraizen.berill.api.ui.media.Cover
@@ -79,6 +90,9 @@ private val FILTERS = WatchingFilter.entries
 private fun filterLabel(f: WatchingFilter) = f.media?.let(WatchingText::mediaLabel) ?: WatchingText.filterAll()
 private fun filterIcon(f: WatchingFilter): ImageVector = f.media?.let(::mediaIcon) ?: Icons.Outlined.AutoAwesome
 
+internal val WATCHING_LAYOUT = ListLayoutKey("listLayout", listOf(ListLayout.BOARD, ListLayout.CARDS, ListLayout.ROWS), ListLayout.BOARD)
+internal val WATCHING_ORDER = dev.akkraizen.berill.api.ui.layout.ManualOrder("listOrder")
+
 @Composable
 internal fun WatchBoard(ctx: PluginContext) {
   val collection = remember(ctx) { titles(ctx) }
@@ -86,12 +100,16 @@ internal fun WatchBoard(ctx: PluginContext) {
   var filter by rememberSaveable { mutableStateOf(WatchingFilter.ALL) }
   var adding by remember { mutableStateOf(false) }
   var searching by rememberSaveable { mutableStateOf<String?>(null) }
+  val layout = rememberListLayout(ctx, WATCHING_LAYOUT)
+  val modes = dev.akkraizen.berill.api.ui.layout.rememberCollectionModes()
+  val manual = dev.akkraizen.berill.api.ui.layout.rememberManualOrder(ctx, WATCHING_ORDER)
+  fun arrange(list: List<dev.akkraizen.berill.api.Item<dev.akkraizen.berill.plugins.watching.data.Title>>) = if (layout == ListLayout.BOARD) list else dev.akkraizen.berill.api.ui.layout.applyManualOrder(list, manual) { it.id }
 
   val shown = if (filter == WatchingFilter.ALL) all else all.filter { it.value.media == filter.media }
   val byStatus = shown.groupBy { it.value.normalizedStatus }
-  val planned = byStatus[PLANNED].orEmpty().sortedBy { it.value.title.lowercase() }
-  val watching = byStatus[WATCHING].orEmpty().sortedByDescending { it.value.started ?: "" }
-  val watched = byStatus[WATCHED].orEmpty().sortedByDescending { it.value.finished ?: "" }
+  val planned = arrange(byStatus[PLANNED].orEmpty().sortedBy { it.value.title.lowercase() })
+  val watching = arrange(byStatus[WATCHING].orEmpty().sortedByDescending { it.value.started ?: "" })
+  val watched = arrange(byStatus[WATCHED].orEmpty().sortedByDescending { it.value.finished ?: "" })
 
   TabbedPluginList { tab ->
     if (tab == TAB_STATISTICS) {
@@ -119,10 +137,24 @@ internal fun WatchBoard(ctx: PluginContext) {
           Spacer(Modifier.width(8.dp))
           Text(WatchingText.manually())
         }
+        ListLayoutSwitcher(ctx, WATCHING_LAYOUT, modes.takeIf { layout != ListLayout.BOARD })
         IconButton(onClick = { ctx.nav.openSettings() }) {
           Icon(Icons.Outlined.Settings, contentDescription = WatchingText.sectionSettings())
         }
       }
+    }
+    if (layout != ListLayout.BOARD && !modes.idle) item {
+      dev.akkraizen.berill.api.ui.layout.CollectionModeBar(
+        modes,
+        listOf(
+          dev.akkraizen.berill.api.ui.layout.BulkAction(
+            dev.akkraizen.berill.api.ui.UiText.bulkStatus(), Icons.Outlined.SwapHoriz,
+            choices = STATUSES.map { status -> WatchingText.statusLabel(status) to { ids: List<String> -> ids.forEach { id -> collection.get(id)?.let { collection.save(id, it.moveTo(status)) } } } }
+          ),
+          dev.akkraizen.berill.api.ui.layout.BulkAction(dev.akkraizen.berill.api.ui.UiText.bulkDelete(), BerillIcons.Delete, destructive = true) { ids -> ids.forEach(collection::delete) }
+        ),
+        (watching + planned + watched).map { it.id }
+      )
     }
     when (searching) {
       "anime" ->
@@ -130,7 +162,26 @@ internal fun WatchBoard(ctx: PluginContext) {
 
       "kp" -> item(key = "search-kp") { TitleSearch(ctx, kinopoisk = true) { searching = null } }
     }
-    item {
+    val plusOne: (String) -> Unit = { id -> collection.get(id)?.let { collection.save(id, it.plusEpisode()) } }
+    if (layout != ListLayout.BOARD) item {
+      GroupedCollection(
+        listOf(
+          CollectionGroup(WatchingText.statusLabel(WATCHING), ICONS[WATCHING], watching),
+          CollectionGroup(WatchingText.statusLabel(PLANNED), ICONS[PLANNED], planned),
+          CollectionGroup(WatchingText.statusLabel(WATCHED), ICONS[WATCHED], watched)
+        ),
+        layout,
+        minCardWidth = 112.dp,
+        maxColumns = 12,
+        emptyText = WatchingText.empty(),
+        id = { it.id },
+        modes = modes,
+        onReorder = { ids -> WATCHING_ORDER.save(ctx, ids) },
+        row = { item -> TitleCard(item, onOpen = { ctx.nav.open(WatchingPlugin.TITLE_ROUTE + item.id) }, onPlusOne = { plusOne(item.id) }) },
+        card = { item, modifier -> TitleTile(item, modifier, onOpen = { ctx.nav.open(WatchingPlugin.TITLE_ROUTE + item.id) }, onPlusOne = { plusOne(item.id) }) }
+      )
+    }
+    if (layout == ListLayout.BOARD) item {
       KanbanBoard(
         columns = listOf(
           KanbanColumn(
@@ -185,6 +236,30 @@ internal fun WatchBoard(ctx: PluginContext) {
         adding = false
       }
     )
+}
+
+@Composable
+private fun TitleTile(item: Item<Title>, modifier: Modifier, onOpen: () -> Unit, onPlusOne: () -> Unit) {
+  val t = item.value
+  Column(modifier.interactive(MaterialTheme.shapes.large, onClick = onOpen), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Box {
+      Cover(t.cover, mediaIcon(t.media), Modifier.fillMaxWidth().aspectRatio(2f / 3f), MaterialTheme.shapes.large)
+      if (t.isSeries && t.normalizedStatus == WATCHING)
+        FilledTonalButton(onClick = onPlusOne, modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp)) { Text("+1") }
+    }
+    Text(t.title, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    Text(
+      listOfNotNull(WatchingText.mediaLabel(t.media), t.year?.toString()).joinToString(" · "),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      maxLines = 1
+    )
+    Stars(t.rating)
+    if (t.isSeries && t.normalizedStatus != PLANNED) {
+      ProgressLine((t.watched ?: 0) / t.episodes!!.toFloat())
+      Text("${t.watched ?: 0}/${t.episodes}", style = MaterialTheme.typography.labelSmall)
+    }
+  }
 }
 
 @Composable

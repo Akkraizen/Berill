@@ -26,10 +26,13 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 
 private const val INSTRUCTIONS =
-  "Berill is the user's personal workspace: notes, planner, habits, workouts, nutrition, finance, books, " +
+  "Berill is the user's personal workspace: notes, planner, habits, workouts, health, nutrition, finance, books, " +
     "watching, study, projects, languages and recipes. Data lives in collections of records; notes are in `notes`. " +
-    "Start with search or list_collections, then read_records for a section. Changes made here sync to the " +
-    "user's other devices. Never delete anything without asking the user first."
+    "Start with search or list_collections, then read_records for a section; `today` lists what is due now and " +
+    "`weekly_review` summarizes a week across sections. Section tools named " +
+    "berill_<section>_<action> perform domain operations with the app's own rules (for example assigning a workout " +
+    "program to cycle weeks or completing a project task); prefer them over editing nested fields by hand. Changes " +
+    "made here sync to the user's other devices. Never delete anything without asking the user first."
 
 fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
   val server = Server(
@@ -53,6 +56,12 @@ fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
       string("query", "Text to look for, case-insensitive")
       integer("limit", "Maximum results, 1–50, default 20")
     }, read) { args -> tools.search(args.string("query"), args.int("limit", 20, 1..50)) }
+
+  register("today", "Everything due today across sections: project and planner tasks, calendar events, the next workout, medication doses, habits and nearby deadlines, with done and overdue flags.",
+    schema { string("date", "Day YYYY-MM-DD, default today") }, read) { args -> tools.today(args.optionalString("date")) }
+
+  register("weekly_review", "Summarizes a week across every section: what was logged each day, notes edited, deadlines in the following week and, for the current week, today's open items. Use it to review the week with the user.",
+    schema { string("week_start", "First day YYYY-MM-DD, default this Monday") }, read) { args -> tools.weeklyReview(args.optionalString("week_start")) }
 
   register("list_collections", "Lists data collections, the section each belongs to and how many records it has.",
     schema {}, read) { tools.listCollections() }
@@ -144,7 +153,11 @@ fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
   var registered = emptySet<String>()
   fun refreshPluginTools() {
     val active = tools.sources()
-    val desired = active.flatMap { listOf("berill_${it.pluginId}_read") + if (readOnly || it.collections.none { c -> c.writable }) emptyList() else listOf("berill_${it.pluginId}_edit") }.toSet()
+    val desired = active.flatMap { source ->
+      listOf("berill_${source.pluginId}_read") +
+        (if (readOnly || source.collections.none { c -> c.writable }) emptyList() else listOf("berill_${source.pluginId}_edit")) +
+        source.actions.filter { !readOnly || it.readOnly }.map { "berill_${source.pluginId}_${it.name}" }
+    }.toSet()
     (registered - desired).forEach(server::removeTool)
     active.forEach { source ->
       val readName = "berill_${source.pluginId}_read"
@@ -159,6 +172,15 @@ fun createBerillServer(tools: BerillTools, readOnly: Boolean): Server {
         val collection = current.collections.firstOrNull { it.name == args.string("collection") && it.writable } ?: throw ToolException("Collection is not editable")
         when (args.operation()) { McpOperation.CREATE -> collection.create(args.obj("fields")); McpOperation.UPDATE -> args.string("id").let { id -> collection.update(id, args.obj("fields"), collection.expectedFor(id, args.optionalString("etag"), args.optionalObj("expected"))) }
           McpOperation.DELETE -> args.string("id").let { id -> collection.delete(id, collection.expectedFor(id, args.optionalString("etag"), args.optionalObj("expected")), args.boolean("confirm")) }; else -> throw ToolException("Unknown edit action") }
+      }
+      source.actions.forEach { action ->
+        val actionName = "berill_${source.pluginId}_${action.name}"
+        if (actionName in desired && actionName !in registered) {
+          val annotations = if (action.readOnly) read else ToolAnnotations(readOnlyHint = false, destructiveHint = action.destructive, openWorldHint = false)
+          register(actionName, action.description, ToolSchema(properties = action.input.properties, required = action.input.required.takeIf { it.isNotEmpty() }), annotations) { args ->
+            tools.runAction(source.pluginId, action.name, args)
+          }
+        }
       }
     }
     registered = desired

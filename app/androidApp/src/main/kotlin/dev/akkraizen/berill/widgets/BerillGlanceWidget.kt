@@ -21,7 +21,7 @@ class BerillGlanceWidget : GlanceAppWidget() {
   override val sizeMode: SizeMode = SizeMode.Exact
 
   override suspend fun provideGlance(context: Context, id: GlanceId) {
-    WidgetHost.prepare(context, id)
+    if (!WidgetHost.recentlyPrepared(id)) WidgetHost.prepare(context, id)
     provideContent {
       val schemes = remember(currentState<Preferences>()) { widgetColorSchemes(cachedAndroidAppearance(context)) }
       GlanceTheme(colors = schemes?.let { ColorProviders(light = it.first, dark = it.second) } ?: GlanceTheme.colors) {

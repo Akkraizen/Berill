@@ -79,6 +79,8 @@
     "watching.stats.months": "Просмотрено по месяцам",
     "watching.stats.completed": "Завершено",
     "watching.widget.nowTitle": "Смотрю сейчас",
-    "watching.widget.nowDescription": "Тайтлы в просмотре и кнопка «+1 серия»"
+    "watching.widget.nowDescription": "Тайтлы в просмотре и кнопка «+1 серия»",
+    "watching.view": "Вид",
+    "watching.listView": "Вид списка тайтлов"
   }
 }

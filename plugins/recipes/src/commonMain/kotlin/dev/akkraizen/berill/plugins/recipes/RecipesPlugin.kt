@@ -39,6 +39,11 @@ object RecipesPlugin : BerillPlugin {
 
   internal const val RECIPE_ROUTE = "recipe:"
 
+  override val hasSettings = true
+
+  @Composable
+  override fun Settings(ctx: PluginContext) = dev.akkraizen.berill.plugins.recipes.ui.RecipesSettings(ctx)
+
   @Composable
   override fun Screen(ctx: PluginContext) {
     androidx.compose.runtime.CompositionLocalProvider(dev.akkraizen.berill.plugins.recipes.ui.LocalRecipeFiles provides ctx.files) {

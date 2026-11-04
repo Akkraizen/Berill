@@ -113,6 +113,8 @@ merge with them.
 | `get_record` | read | One record by collection and id, with the `expected` snapshot used for edits. |
 | `list_notes` | read | Notes, newest first, with previews. |
 | `read_note` | read | Full Markdown text of a note. |
+| `today` | read | Everything due on a day across sections: tasks, events, the next workout, doses, habits and nearby deadlines, with `done` and `overdue` flags. |
+| `weekly_review` | read | A week across every section: what was logged each day, notes edited, deadlines of the following week and, for the current week, today's open items. |
 | `sync_status` | read | Sync configuration, last run, pending changes. |
 | `sync_now` | network | Syncs immediately. |
 | `create_note` | write | Creates a note. |
@@ -124,9 +126,31 @@ merge with them.
 | `delete_record` | destructive | Moves a record to trash; requires `expected` and `confirm: true`. |
 | `berill_<module>_read` | read | `list` / `get` for the collections of one enabled module, e.g. `berill_health_read`. |
 | `berill_<module>_edit` | write | `create` / `update` / `delete` for the writable collections of one module. |
+| `berill_<module>_<action>` | read or write | Domain operations a module offers, applied with the app's own rules (see below). |
+
+Module actions:
+
+| Tool | Access | Purpose |
+| --- | --- | --- |
+| `berill_workouts_week_plan` | read | The computed plan of a cycle week or day: sets, reps and kilograms resolved from 1RM percentages, progression, deload and overrides; or which program every week uses. |
+| `berill_workouts_assign_program` | write | Copies a saved program into chosen weeks of a cycle (a list or a `from`/`to` range); the weeks stay linked to the program. |
+| `berill_workouts_reset_weeks` | destructive | Removes programs and overrides from weeks so they use the cycle's own days. |
+| `berill_workouts_set_override` | write | Changes sets, reps, weight, percent or duration of one exercise in one week only. |
+| `berill_workouts_set_one_rep_max` | write | Saves the 1RM used for percentage-based weights. |
+| `berill_projects_overview` | read | All projects with progress and next tasks, or one project with every task, milestone and linked note. |
+| `berill_projects_add_task` | write | Adds a task with due date, priority and milestone; dated tasks appear in the planner and the daily overview. |
+| `berill_projects_set_task_status` | write | Moves a task to `TODO`, `DOING` or `DONE`. |
+| `berill_projects_move_project` | write | Moves a project between board columns with start and finish dates, or archives it. |
+| `berill_health_doses` | read | Doses scheduled for a day and whether each was taken or skipped. |
+| `berill_health_mark_dose` | write | Marks a dose as taken or skipped, or clears the mark. |
+| `berill_study_upcoming` | read | Unsubmitted assignments due within a number of days plus every overdue one, with subject and days left. |
+| `berill_study_add_deadline` | write | Adds an assignment with a deadline to a subject matched by id or title; a missing subject is created. |
+| `berill_study_set_status` | write | Moves an assignment to `TODO`, `DOING` or `SUBMITTED`, optionally with a grade. |
+| `berill_habits_status` | read | Every active habit for a day with target, progress, done flag and current streak. |
+| `berill_habits_mark` | write | Marks a habit done, records an amount, adds to it or clears it for a day. |
 
 With `--read-only` (or with **Allow changes** off in the app), the write tools are not offered at
-all. Module tools appear and disappear as modules are enabled or disabled; clients are notified with
+all; read-only actions stay available. Module tools appear and disappear as modules are enabled or disabled; clients are notified with
 `notifications/tools/list_changed`. Results are returned both as text and as `structuredContent`.
 
 ### Installation

@@ -60,6 +60,19 @@ class Connections(private val core: BerillCore) {
     return results.distinctBy { it.id }.take(100)
   }
 
+  suspend fun findRecord(title: String): SearchResult? {
+    val wanted = title.trim()
+    if (wanted.isEmpty()) return null
+    for (plugin in core.plugins.enabled.value) {
+      val ctx = tolerateSource(plugin.id, {}) { core.plugins.context(plugin) } ?: continue
+      for (source in tolerateSource(plugin.id, {}) { plugin.provides(ctx) }.orEmpty().filterIsInstance<SearchSource>()) {
+        val hit = tolerateSource(plugin.id, {}) { source.search(wanted) }.orEmpty().firstOrNull { it.title.trim().equals(wanted, ignoreCase = true) }
+        if (hit != null) return hit
+      }
+    }
+    return null
+  }
+
   /** Notes matching [query]: ranked full-text hits, or a scan when the store has no index. */
   private fun noteMatches(query: String): List<Pair<String, String>> {
     val indexed = core.store.search(query, setOf(Collections.NOTES), 50)

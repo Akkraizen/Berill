@@ -9,6 +9,130 @@ are released together with them.
 
 ## [Unreleased]
 
+### Added
+
+#### Today
+
+- A Today card at the top of Home gathers what is due across sections: overdue and due project tasks
+  and milestones, planner tasks and calendar events, the next workout of the current cycle,
+  medication doses, habits, and study deadlines for the next three days. Tasks, doses, habits and
+  milestones are checked off right on the card, with progress for the day; done items fold away.
+  The card can be hidden or moved in the Home editor like any other card.
+
+#### Gestures
+
+- Swipe left or right over the content to switch between Records and Statistics; past the last tab
+  the swipe moves on to the next page of the section (for example from Wellbeing to Sleep), and back.
+  Pages slide in the direction of the swipe.
+- Swipe rows to act on them: on the Today card right marks an item done and left opens it; project,
+  planner and study tasks are completed or submitted with a right swipe and deleted with a left one;
+  notes are pinned with a right swipe and deleted with a left one. Deletions can be undone from the
+  snackbar.
+- Swipe over the month switcher, the calendar month and day, the planner week, day strip and day card,
+  the nutrition day and the wellbeing entry to step through months, weeks and days.
+- On touch screens these are finger swipes; on desktop a horizontal two-finger trackpad scroll does
+  the same for tabs, pages and dates, and rows can be dragged with the mouse.
+
+#### Projects
+
+- Tasks are separate records with a status (to do, in progress, done), priority, due date, milestone,
+  details and a linked note, shown as rows, cards or a task board inside the project. Checklists from
+  the project text are converted into tasks once, on every device the same way.
+- Milestones with due dates and progress counted from their tasks, drawn as a timeline with progress
+  rings, a horizontal roadmap or cards; the board card shows task progress and the next milestone.
+- Tags, a project deadline, search across projects and their tasks, tag filters, sorting by name,
+  deadline, progress, recency or a manual order, and an archive that keeps finished projects off the
+  board.
+- Notes can be linked to a project or created from it. Task, milestone and project deadlines appear
+  in the planner calendar, and tasks due or completed on a day appear in the daily overview and
+  global search. Statistics show tasks completed by month.
+- Projects settings: the view of the project list and of tasks, and the milestone style.
+
+#### Notes
+
+- Notes can be pinned and given one of eight colours, from the editor toolbar or the card's
+  long-press menu; pinned notes are shown first, coloured notes get a tinted card with a stripe.
+- `#tags` in the text become filter chips above the list; headings, links and code are not tags.
+- Sorting by date modified, title, colour or a manual order arranged by dragging.
+- Templates: lecture notes, journal, week plan and meeting, plus any note tagged `#template`
+  (`#шаблон` in Russian); `{date}` is replaced with today's date.
+- `[[Title]]` links open a record of any section with that exact title (a book, project, recipe,
+  workout program and so on) when no note has it.
+
+#### Health
+
+- Patterns on the wellbeing statistics tab compare wellbeing, mood and energy on days with sleep or
+  steps above and below your goals over the last 90 days, with the strength of the link.
+
+#### Lists and views
+
+- A list view setting in Appearance (rows or a grid of cards for every section) and a view of its own
+  for each list, chosen in the section settings or with the view button above the list: projects as
+  a board, cards or rows; project tasks as rows, cards or a board; books and titles as a board, a
+  cover grid or rows; recipes as cards or rows; study assignments and the language dictionary as rows
+  or cards.
+- Select several books, titles, projects or notes from the view button and change their status,
+  archive, pin, colour or delete them at once.
+- Manual order by dragging for books, titles and projects in cards and rows; the order syncs between
+  devices. The manual order of notes is kept on the device.
+- Compact density in Appearance tightens sections, lists and cards.
+
+#### AI assistants (MCP)
+
+- `today` and `weekly_review` tools summarize the day and the week across sections: what is due and
+  overdue, what was logged each day, notes edited and deadlines of the following week.
+- Module actions, exposed as `berill_<module>_<action>` tools, run domain operations with the app's
+  own rules:
+  - Workouts: assign a saved program to cycle weeks, reset weeks, override one exercise in a week,
+    save a 1RM and return the computed plan of a week with resolved weights.
+  - Projects: an overview, adding tasks, changing task status, moving or archiving projects.
+  - Health: listing and marking medication doses.
+  - Study: upcoming deadlines, adding a deadline to a subject, changing an assignment's status.
+  - Habits: progress with streaks and marking a habit for a day.
+- Read-only actions stay available in read-only mode.
+
+#### For plugin developers
+
+- `TodaySource` adds items to the Today card; sections that only report `DeadlineSource` deadlines
+  appear there automatically.
+- `PluginContext.notes` reads, links and creates notes.
+- `McpSource.actions` with `McpAction` and the `mcpInput` builder describe module actions.
+- `ListLayoutKey`, `ListLayoutSwitcher`, `GroupedCollection`, `CardGrid` and `RowList` give a list the
+  shared views; `CollectionModes`, `CollectionModeBar`, `ManualOrder` and `Modifier.reorderable` add
+  selection, bulk actions and drag ordering; `LocalCompactLayout` reports the compact density.
+- `WidgetProvider.watchesAllSections` marks widgets that read other sections, so they refresh on any
+  change.
+- `Modifier.swipeArea` handles horizontal swipes and trackpad scrolling, with the innermost area that
+  accepts a direction taking the gesture; `SwipeActions` adds swipe actions to a row.
+
+### Changed
+
+- Android widgets refresh only when the data they show changes: an edit in one section rebuilds that
+  section's widgets (and the summary widgets), unchanged widgets are not redrawn, a widget's own timer
+  refreshes just that widget, ring and chart images are cached, and date-based widgets roll over
+  right after midnight.
+- Workouts: the Hammer Strength chest press («Жим в хаммере») is in the exercise list.
+- Notes are shown as a grid of cards of equal height; the global rows setting keeps them as a list.
+- Cover cards in Reading and Watching are smaller, so more fit in a row.
+- Line charts connect points across days without records with a dashed line, so wellbeing, mood and
+  energy read as continuous trends.
+- Health and Projects settings are grouped into section cards like the other sections.
+- Titles from Watching and workout programs show up in global search.
+- Deleted items are erased for good 30 days after deletion; the trash shows how many days each one
+  has left.
+
+### Fixed
+
+- Dragging a quick action in the Home editor no longer freezes it halfway once it passes another
+  action: the chip keeps following the pointer and settles in its new place.
+- Home cards stay in their columns without gaps, each one right under the previous card of its column.
+  Dragging a card works like moving app icons on Android: it is inserted into the column under the pointer
+  between the cards it is dropped between, only that column makes room, and the cards of the other columns
+  keep their places. Columns are remembered separately for each window width.
+- Manual ordering in lists takes the place of the card a dragged item is dropped on.
+- Saving a note from the editor no longer resets fields it does not edit, such as the pin and colour
+  set on another device.
+
 ## [1.3.0] - 2026-11-02
 
 ### Added

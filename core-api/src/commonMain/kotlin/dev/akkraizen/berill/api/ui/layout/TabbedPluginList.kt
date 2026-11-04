@@ -1,5 +1,6 @@
 package dev.akkraizen.berill.api.ui.layout
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.akkraizen.berill.api.ui.UiText
+import dev.akkraizen.berill.api.ui.animation.BerillMotion
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
 import dev.akkraizen.berill.api.ui.selection.BerillTabs
 
 const val TAB_RECORDS = 0
@@ -34,10 +38,21 @@ fun TabbedPluginList(
 ) {
   var selected by rememberSaveable { mutableIntStateOf(0) }
   val saved = rememberSaveableStateHolder()
+  val current = selected.coerceIn(0, tabs.lastIndex)
   Column(modifier.fillMaxSize()) {
-    TabsToolbar(tabs, selected.coerceIn(0, tabs.lastIndex), { selected = it }, actions)
-    saved.SaveableStateProvider(selected) {
-      PluginList(Modifier.weight(1f)) { content(selected) }
+    TabsToolbar(tabs, current, { selected = it }, actions)
+    AnimatedContent(
+      targetState = current,
+      modifier = Modifier.weight(1f).swipeArea(
+        canSwipe = { direction -> if (direction == SwipeDirection.NEXT) current < tabs.lastIndex else current > 0 },
+        feedback = false
+      ) { direction -> selected = (current + if (direction == SwipeDirection.NEXT) 1 else -1).coerceIn(0, tabs.lastIndex) },
+      transitionSpec = { BerillMotion.slide(forward = targetState > initialState) },
+      label = "tabs"
+    ) { tab ->
+      saved.SaveableStateProvider(tab) {
+        PluginList { content(tab) }
+      }
     }
   }
 }

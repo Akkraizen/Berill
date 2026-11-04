@@ -24,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +80,16 @@ internal fun PlannerScreen(ctx: PluginContext) {
     .filter { it < now }
     .flatMap { d -> byDate[d.toString()].orEmpty().filter { !it.value.done }.map { d to it } }
 
+  val stepDay: (SwipeDirection) -> Unit = { direction ->
+    val next = selectedIndex.coerceIn(0, 6) + if (direction == SwipeDirection.NEXT) 1 else -1
+    when {
+      next > 6 -> { weekOffset++; selectedIndex = 0 }
+      next < 0 -> { weekOffset--; selectedIndex = 6 }
+      else -> selectedIndex = next
+    }
+  }
+  val stepWeek: (SwipeDirection) -> Unit = { direction -> weekOffset += if (direction == SwipeDirection.NEXT) 1 else -1 }
+
   TabbedPluginList { tab ->
     if (tab == TAB_STATISTICS) {
       item { PlannerStatistics(all.map { it.value }, days) }
@@ -85,7 +97,7 @@ internal fun PlannerScreen(ctx: PluginContext) {
     }
     item {
       FlowRow(
-        Modifier.fillMaxWidth(),
+        Modifier.fillMaxWidth().swipeArea(onSwipe = stepWeek),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically
@@ -129,6 +141,7 @@ internal fun PlannerScreen(ctx: PluginContext) {
     if (!weekView) {
       item {
         FlowRow(
+          Modifier.fillMaxWidth().swipeArea(onSwipe = stepDay),
           horizontalArrangement = Arrangement.spacedBy(6.dp),
           verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -153,6 +166,7 @@ internal fun PlannerScreen(ctx: PluginContext) {
           left = {
             AnimatedContent(
               targetState = selected,
+              modifier = Modifier.swipeArea(feedback = false, onSwipe = stepDay),
               transitionSpec = { BerillMotion.slide(forward = targetState > initialState) },
               label = "day"
             ) { day ->
@@ -204,7 +218,7 @@ internal fun PlannerScreen(ctx: PluginContext) {
       }
     } else {
       item {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.fillMaxWidth().swipeArea(onSwipe = stepWeek)) {
           val cols = (maxWidth / 230.dp).toInt().coerceIn(1, 7)
           Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             days.chunked(cols).forEach { row ->

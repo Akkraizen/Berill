@@ -16,7 +16,7 @@ fun PluginList(modifier: Modifier = Modifier, content: LazyListScope.() -> Unit)
   LazyColumn(
     modifier = modifier.fillMaxSize(),
     contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp),
-    verticalArrangement = Arrangement.spacedBy(12.dp),
+    verticalArrangement = Arrangement.spacedBy(if (LocalCompactLayout.current) 8.dp else 12.dp),
     content = content
   )
 }

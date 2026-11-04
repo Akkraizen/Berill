@@ -2,12 +2,17 @@ package dev.akkraizen.berill.plugins.nutrition.ui
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import dev.akkraizen.berill.api.ui.interaction.SwipeDirection
+import dev.akkraizen.berill.api.ui.interaction.swipeArea
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,8 +78,17 @@ private fun DiaryHome(ctx: PluginContext) {
   var editing by remember { mutableStateOf<Item<FoodEntry>?>(null) }
 
   PluginList {
-    item { DaySwitcher(date) }
-    item { dev.akkraizen.berill.api.ui.display.HealthSummary(ctx, date) }
+    item {
+      androidx.compose.foundation.layout.Column(
+        Modifier.fillMaxWidth().swipeArea(canSwipe = { it == SwipeDirection.PREVIOUS || date < today() }) { direction ->
+          DiaryDay.selected = if (direction == SwipeDirection.NEXT) date.plusDays(1) else date.minusDays(1)
+        },
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+      ) {
+        DaySwitcher(date)
+        dev.akkraizen.berill.api.ui.display.HealthSummary(ctx, date)
+      }
+    }
     item {
       TwoPane(
         left = {

@@ -6,19 +6,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dev.akkraizen.berill.api.BerillPlugin
+import dev.akkraizen.berill.api.Capability
 import dev.akkraizen.berill.api.HomeCard
 import dev.akkraizen.berill.api.PluginContext
 import dev.akkraizen.berill.api.ui.animation.AnimatedRoute
-import dev.akkraizen.berill.plugins.projects.data.projects
+import dev.akkraizen.berill.plugins.projects.data.ChecklistMigration
+import dev.akkraizen.berill.plugins.projects.data.ProjectDays
+import dev.akkraizen.berill.plugins.projects.data.ProjectDeadlines
+import dev.akkraizen.berill.plugins.projects.data.ProjectSearch
+import dev.akkraizen.berill.plugins.projects.mcp.ProjectsMcp
 import dev.akkraizen.berill.plugins.projects.i18n.ProjectsText
 import dev.akkraizen.berill.plugins.projects.ui.ActiveProjects
 import dev.akkraizen.berill.plugins.projects.ui.ProjectScreen
+import dev.akkraizen.berill.plugins.projects.ui.ProjectsSettings
 import dev.akkraizen.berill.plugins.projects.ui.ProjectsBoard
 
 object ProjectsPlugin : BerillPlugin {
-  override fun provides(ctx: dev.akkraizen.berill.api.PluginContext): List<dev.akkraizen.berill.api.Capability> = listOf(dev.akkraizen.berill.plugins.projects.mcp.ProjectsMcp(ctx))
+  override fun provides(ctx: PluginContext): List<Capability> = listOf(
+    ProjectsMcp(ctx),
+    ProjectDeadlines(ctx),
+    ProjectDays(ctx),
+    dev.akkraizen.berill.plugins.projects.data.ProjectsToday(ctx),
+    ProjectSearch(ctx),
+    ChecklistMigration(ctx)
+  )
 
   const val PROJECTS = "projects"
+  const val TASKS = "project_tasks"
+  const val MILESTONES = "project_milestones"
 
   override val id = "projects"
   override val title
@@ -30,9 +45,14 @@ object ProjectsPlugin : BerillPlugin {
     get() = ProjectsText.description()
 
   override val installedByDefault = true
-  override val collections = listOf(PROJECTS)
+  override val collections = listOf(PROJECTS, TASKS, MILESTONES)
 
   internal const val PROJECT_ROUTE = "project:"
+
+  override val hasSettings = true
+
+  @Composable
+  override fun Settings(ctx: PluginContext) = ProjectsSettings(ctx)
 
   @Composable
   override fun Screen(ctx: PluginContext) {
