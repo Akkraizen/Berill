@@ -208,7 +208,7 @@ internal fun WatchBoard(ctx: PluginContext) {
         ),
         itemKey = { it.id },
         onMove = { item, statusKey ->
-          val status = dev.akkraizen.berill.plugins.watching.data.WatchStatus.valueOf(statusKey)
+          val status = dev.akkraizen.berill.plugins.watching.data.WatchStatus.entries.first { it.name == statusKey }
           collection
             .get(item.id)
             ?.takeIf { it.normalizedStatus != status }

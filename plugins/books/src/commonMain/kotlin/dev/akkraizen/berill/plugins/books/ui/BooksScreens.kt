@@ -181,7 +181,7 @@ internal fun BooksBoard(ctx: PluginContext) {
         ),
         itemKey = { it.id },
         onMove = { item, statusKey ->
-          val status = dev.akkraizen.berill.plugins.books.data.BookStatus.valueOf(statusKey)
+          val status = dev.akkraizen.berill.plugins.books.data.BookStatus.entries.first { it.name == statusKey }
           collection
             .get(item.id)
             ?.takeIf { it.normalizedStatus != status }

@@ -9,6 +9,11 @@ are released together with them.
 
 ## [Unreleased]
 
+### Fixed
+
+- Moving a project, task, book or title to another column of a board no longer fails in the release build
+  with "ProjectStatus is not an enum class".
+
 ## [1.3.1] - 2026-11-04
 
 ### Added

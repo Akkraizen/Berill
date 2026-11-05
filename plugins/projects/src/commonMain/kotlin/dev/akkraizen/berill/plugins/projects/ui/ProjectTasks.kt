@@ -119,7 +119,7 @@ internal fun TasksCard(ctx: PluginContext, projectId: String, project: Project) 
           KanbanColumn(status.name, taskStatusLabel(status), tasks.filter { it.value.status == status }, ProjectsText.empty(), taskStatusIcon(status))
         },
         itemKey = { it.id },
-        onMove = { item, key -> move(item.id, TaskStatus.valueOf(key)) },
+        onMove = { item, key -> move(item.id, TaskStatus.entries.first { it.name == key }) },
         card = { item -> TaskBoardCard(item, own) { editing = item.id } }
       )
     } else {

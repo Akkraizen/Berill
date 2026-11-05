@@ -257,7 +257,7 @@ internal fun ProjectsBoard(ctx: PluginContext) {
         },
         itemKey = { it.item.id },
         onMove = { info, statusKey ->
-          val status = ProjectStatus.valueOf(statusKey)
+          val status = ProjectStatus.entries.first { it.name == statusKey }
           collection.get(info.item.id)?.takeIf { it.normalizedStatus != status }?.let { collection.save(info.item.id, it.moveTo(status)) }
         },
         card = { info -> ProjectCard(info) { ctx.nav.open(ProjectsPlugin.PROJECT_ROUTE + info.item.id) } }

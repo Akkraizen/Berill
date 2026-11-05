@@ -1,5 +1,10 @@
 -dontoptimize
 
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
 -keepattributes *Annotation*, InnerClasses, Signature, EnclosingMethod
 -keepclassmembers class **$$serializer { *; }
 -keepclasseswithmembers class ** { kotlinx.serialization.KSerializer serializer(...); }

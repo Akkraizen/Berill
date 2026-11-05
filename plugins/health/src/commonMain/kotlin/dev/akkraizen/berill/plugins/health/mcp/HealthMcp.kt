@@ -178,7 +178,7 @@ internal class HealthMcp(private val ctx: PluginContext) : McpSource {
     val log = intakes(ctx)
     when (status) {
       "NONE" -> log.delete(dose.id)
-      "TAKEN", "SKIPPED" -> log.save(dose.id, Intake(dose.medicationId, dose.date, dose.time, IntakeStatus.valueOf(status), nowMillis()))
+      "TAKEN", "SKIPPED" -> log.save(dose.id, Intake(dose.medicationId, dose.date, dose.time, IntakeStatus.entries.first { it.name == status }, nowMillis()))
       else -> throw McpException("Status must be TAKEN, SKIPPED or NONE")
     }
     return buildJsonObject {

@@ -113,7 +113,7 @@ internal class StudyMcp(private val ctx: PluginContext) : McpSource {
   private fun setStatus(args: JsonObject): JsonElement {
     val id = args.mcpString("task")
     val current = tasks(ctx).get(id) ?: throw McpException("Assignment not found")
-    val status = runCatching { TaskStatus.valueOf(args.mcpString("status")) }.getOrNull() ?: throw McpException("Unknown status")
+    val status = runCatching { args.mcpString("status") }.getOrNull()?.let { name -> TaskStatus.entries.firstOrNull { it.name == name } } ?: throw McpException("Unknown status")
     val next = current.copy(status = status, grade = args.mcpOptionalString("grade")?.trim()?.takeIf { it.isNotEmpty() } ?: current.grade)
     tasks(ctx).save(id, next)
     return describe(Item(id, next), subjectTitles())
