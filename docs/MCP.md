@@ -32,7 +32,7 @@ Open **Settings → AI assistants (MCP)** and turn on the server. It is off by d
 
 | Setting | Effect |
 | --- | --- |
-| Turn on the MCP server | Starts the server on `http://127.0.0.1:39871/mcp`. If the port is busy, another free port is used and remembered. |
+| Turn on the MCP server | Starts the server on `http://127.0.0.1:39871/mcp`. If the port is busy, another free port is used until the default port is free again; the server then moves back by itself. The `Berill --mcp` bridge follows these moves, so prefer it over a fixed URL. |
 | Allow changes | Offers the note-writing tools. Without it, assistants can only read. |
 | Access token | Required by every HTTP request as `Authorization: Bearer <token>`. Changing it disconnects HTTP clients that use the old one. |
 

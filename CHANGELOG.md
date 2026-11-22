@@ -13,6 +13,21 @@ are released together with them.
 
 - Moving a project, task, book or title to another column of a board no longer fails in the release build
   with "ProjectStatus is not an enum class".
+- The MCP server no longer stays on a random port after the default port `39871` was busy once (for example
+  while the previous instance was still closing). It returns to the default port on the next start, and
+  moves back by itself as soon as the port is free, so HTTP clients such as Claude Desktop with
+  `mcp-remote` connect again.
+- The `Berill --mcp` bridge reconnects when Berill restarts or moves to another port instead of answering
+  "Berill is not reachable", and starts a fresh HTTP connection after one breaks, for example after sleep.
+- A failed TLS handshake with the sync server is reported as a connection problem, not as a file error.
+- A busy MCP port no longer writes two crash reports to the log and no longer leaves a half-started server
+  behind.
+- `sync_status` over MCP reports `lastError` only while it is newer than the last successful sync.
+- The Windows installer no longer puts Berill into `C:\Windows`. An update of such an installation offers
+  `Program Files\Berill` instead and moves the app there; after the update Berill starts from the new folder
+  and fixes its autostart entry.
+- Start with Windows shows as off when it was turned off in Task Manager, and turning it on in Berill
+  turns it back on there too.
 
 ## [1.3.1] - 2026-11-04
 

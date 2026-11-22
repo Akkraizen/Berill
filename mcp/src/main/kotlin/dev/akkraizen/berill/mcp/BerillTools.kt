@@ -193,7 +193,8 @@ class BerillTools(private val core: BerillCore) {
         is SyncState.Failed -> "failed: ${state.message}"
       })
       d.lastOkMillis?.let { put("lastSync", time(it)) }
-      d.lastError?.let { put("lastError", it) }
+      // The journal keeps the last error forever; after a later successful sync it is history, not the current state.
+      d.lastError?.takeIf { (d.lastErrorMillis ?: 0) > (d.lastOkMillis ?: -1) }?.let { put("lastError", it) }
       put("pendingChanges", d.pending)
       put("records", d.totalRecords)
       put("encryption", d.encryption.name.lowercase())

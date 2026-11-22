@@ -24,7 +24,8 @@ Pass `-SkipMsiBuild` to package the latest existing release MSI or
 The wizard runs as administrator because the MSI installs for all users.
 It forwards INSTALLDIR and JP_INSTALL_DESKTOP_SHORTCUT, always creates a Start
 menu shortcut, and repairs an already installed MSI with the same ProductCode.
-If that product has an InstallLocation, the existing location is kept.
+If that product has an InstallLocation, the existing location is kept, except the Windows folder used by
+installers built before `CreateAppDir` was enabled: an upgrade moves such an installation to `Program Files\Berill`.
 Exit code 3010 requests a restart; other MSI errors stop the wizard instead
 of displaying success. MSI logs remain in `%LOCALAPPDATA%\Berill\Installer Logs`.
 Exit Berill through its tray menu before updating.

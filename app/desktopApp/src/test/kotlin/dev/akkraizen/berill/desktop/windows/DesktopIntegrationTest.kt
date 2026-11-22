@@ -9,6 +9,15 @@ import kotlin.test.assertTrue
 
 class DesktopIntegrationTest {
   @Test
+  fun taskManagerSwitchOffIsRespected() {
+    assertTrue(startupApproved(null))
+    assertTrue(startupApproved(byteArrayOf(2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+    assertTrue(startupApproved(byteArrayOf(6, 0, 0, 0)))
+    assertTrue(!startupApproved(byteArrayOf(3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8)))
+    assertTrue(!startupApproved(byteArrayOf(7, 0, 0, 0)))
+  }
+
+  @Test
   fun installedAppStartsItsOwnExecutableInBackground() {
     val home = Files.createTempDirectory("jdk").toFile()
     val launch = launchCommand("C:\\Program Files\\Berill\\Berill.exe", home, "a.jar", home.resolve("autostart.args"))!!

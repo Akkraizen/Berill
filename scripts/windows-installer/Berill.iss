@@ -36,7 +36,6 @@ DisableDirPage=no
 DisableProgramGroupPage=yes
 DisableReadyPage=no
 Uninstallable=no
-CreateAppDir=no
 UsePreviousAppDir=no
 UsePreviousTasks=no
 PrivilegesRequired=admin
@@ -82,6 +81,7 @@ english.InstallDescription=Setting up the app on your computer.
 english.InstallFiles=Installing application files and bundled Java
 english.InstallWait=This may take a few minutes. Please wait for installation to finish.
 english.ExistingInstallation=An existing Berill installation was found. Files will be updated in the current folder.
+english.MovedInstallation=Berill was installed into the Windows folder by an older installer. Choose a new folder; the update moves it there.
 english.StartFailed=Could not start installation: %1
 english.InstallBusy=Windows is already installing another application. Wait for it to finish and try again.
 english.InstallCancelled=Installation was cancelled. Berill was not installed.
@@ -100,6 +100,7 @@ russian.InstallDescription=Настраиваем приложение на ва
 russian.InstallFiles=Устанавливаем файлы и встроенную Java
 russian.InstallWait=Это может занять несколько минут. Дождитесь завершения установки.
 russian.ExistingInstallation=Обнаружена установленная версия Berill. Файлы будут обновлены в существующей папке.
+russian.MovedInstallation=Старый установщик поместил Berill в папку Windows. Выберите новую папку — при обновлении приложение будет перенесено туда.
 russian.StartFailed=Не удалось запустить установку: %1
 russian.InstallBusy=Windows уже выполняет другую установку. Дождитесь её завершения и повторите попытку.
 russian.InstallCancelled=Установка отменена. Berill не был установлен.
@@ -127,6 +128,15 @@ var
   RestartRequired: Boolean;
 
 #include "upgrade.iss"
+
+{ Older installers put Berill straight into the Windows folder. An upgrade to a new ProductCode is a major
+  upgrade, so Windows Installer can move it to another folder; a repair of the same package cannot. }
+function KeepExistingDirectory: Boolean;
+begin
+  Result := ExistingDirectory <> '';
+  if Result and (CompareText(RemoveBackslash(ExistingDirectory), RemoveBackslash(ExpandConstant('{win}'))) = 0) then
+    Result := CompareText(ExistingProduct, '{#ProductCode}') = 0;
+end;
 
 function CanLaunch: Boolean;
 begin
@@ -157,7 +167,10 @@ begin
   WizardForm.NoRadio.Left := ScaleX(24);
   WizardForm.NoRadio.Width := WizardForm.FinishedHeadingLabel.Width;
   FindInstalledBerill;
-  if ExistingDirectory <> '' then begin
+  if (ExistingDirectory <> '') and not KeepExistingDirectory then begin
+    WizardForm.DirEdit.Text := ExpandConstant('{autopf}\Berill');
+    WizardForm.SelectDirLabel.Caption := CustomMessage('MovedInstallation');
+  end else if ExistingDirectory <> '' then begin
     WizardForm.DirEdit.Text := ExistingDirectory;
     WizardForm.DirEdit.Enabled := False;
     WizardForm.DirBrowseButton.Enabled := False;
@@ -194,7 +207,7 @@ begin
     Result := FmtMessage(CustomMessage('NewerInstalled'), [ExistingVersion]);
     Exit;
   end;
-  if ExistingDirectory <> '' then WizardForm.DirEdit.Text := ExistingDirectory;
+  if KeepExistingDirectory then WizardForm.DirEdit.Text := ExistingDirectory;
   if WizardIsTaskSelected('desktopicon') then Shortcut := '1' else Shortcut := '0';
   ForceDirectories(ExpandConstant('{localappdata}\Berill\Installer Logs'));
   LogFile := ExpandConstant('{localappdata}\Berill\Installer Logs\install-') +

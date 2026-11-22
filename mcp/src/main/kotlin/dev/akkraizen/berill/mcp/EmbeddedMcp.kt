@@ -16,10 +16,18 @@ import io.ktor.server.response.respondText
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import java.io.File
 import java.net.BindException
+import java.net.InetAddress
+import java.net.ServerSocket
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
@@ -33,12 +41,14 @@ class EmbeddedMcp(
   private val core: BerillCore,
   private val dataDir: File,
   override val bridgeCommand: String? = null,
-  private val preferredPort: Int = DEFAULT_PORT
+  private val preferredPort: Int = DEFAULT_PORT,
+  private val reclaimInterval: Duration = 30.seconds
 ) : McpAccess {
   private val store = core.store
   private val vault = core.vault
   private val lock = Any()
   private var server: EmbeddedServer<*, *>? = null
+  private var reclaim: Job? = null
 
   private val _status = MutableStateFlow(McpStatus(enabled = flag(ENABLED), writable = flag(WRITABLE)))
   override val status: StateFlow<McpStatus> = _status
@@ -46,7 +56,7 @@ class EmbeddedMcp(
   private fun flag(key: String) = store.meta(key) == "1"
 
   override fun start() {
-    if (flag(ENABLED)) launch()
+    if (flag(ENABLED)) restart()
   }
 
   override fun stop() =
@@ -58,13 +68,13 @@ class EmbeddedMcp(
   override fun setEnabled(enabled: Boolean) {
     store.setMeta(ENABLED, if (enabled) "1" else "0")
     _status.update { it.copy(enabled = enabled, error = null) }
-    if (enabled) launch() else stop()
+    if (enabled) restart() else stop()
   }
 
   override fun setWritable(writable: Boolean) {
     store.setMeta(WRITABLE, if (writable) "1" else "0")
     _status.update { it.copy(writable = writable) }
-    if (_status.value.enabled) launch()
+    if (_status.value.enabled) restart()
   }
 
   override fun token(): String =
@@ -74,7 +84,7 @@ class EmbeddedMcp(
 
   override fun regenerateToken() {
     synchronized(lock) { vault.write(TOKEN_SECRET, newToken()) }
-    if (_status.value.enabled) launch()
+    if (_status.value.enabled) restart()
   }
 
   override fun desktopClientConfig(): String = McpClients.render(McpClient.CLAUDE_DESKTOP, SERVER_NAME, preferredLaunch())
@@ -91,16 +101,28 @@ class EmbeddedMcp(
 
   private fun url(): String = _status.value.url ?: urlFor(store.meta(PORT)?.toIntOrNull() ?: preferredPort)
 
-  private fun launch() =
+  private fun restart() =
     synchronized(lock) {
       shutdown()
       val token = token()
       val writable = flag(WRITABLE)
-      val ports = listOfNotNull(store.meta(PORT)?.toIntOrNull(), preferredPort, 0).distinct()
+      // The default port comes first: clients configured with a URL point at it, so a fallback chosen while
+      // it was busy (for example while a previous instance was still exiting) must not become permanent.
+      val ports = listOfNotNull(preferredPort.takeIf { it > 0 }, store.meta(PORT)?.toIntOrNull()?.takeIf { it > 0 }, 0).distinct()
       var lastError: Throwable? = null
       for (port in ports) {
-        val started = runCatching { createServer(port, token, writable).also { it.start(wait = false) } }
-          .onFailure { lastError = it }
+        // CIO binds in a background coroutine: a busy port also surfaces there as an uncaught crash and leaves
+        // a half-started engine behind, so check the port first and stop a server that failed anyway.
+        if (port != 0 && !portIsFree(port)) {
+          lastError = BindException("port $port is busy")
+          continue
+        }
+        val candidate = runCatching { createServer(port, token, writable) }.onFailure { lastError = it }.getOrNull() ?: continue
+        val started = runCatching { candidate.also { it.start(wait = false) } }
+          .onFailure {
+            lastError = it
+            runCatching { candidate.stop(gracePeriodMillis = 0, timeoutMillis = 500) }
+          }
           .getOrNull() ?: continue
         val actual = runBlocking { started.engine.resolvedConnectors().first().port }
         server = started
@@ -109,6 +131,10 @@ class EmbeddedMcp(
         writeEndpoint(url)
         _status.update { it.copy(running = true, url = url, error = null) }
         AppLog.info(TAG, "MCP server listening on $url, writable=$writable")
+        if (preferredPort > 0 && actual != preferredPort) {
+          AppLog.warn(TAG, "port $preferredPort is busy; clients configured with ${urlFor(preferredPort)} reconnect once it is free")
+          reclaimPreferredPort()
+        }
         return@synchronized
       }
       AppLog.error(TAG, "MCP server failed to start", lastError)
@@ -134,7 +160,29 @@ class EmbeddedMcp(
     }
   }
 
+  /** Moves the server back to [preferredPort] as soon as whatever held it lets it go. */
+  private fun reclaimPreferredPort() {
+    reclaim = core.scope.launch(Dispatchers.IO) {
+      while (true) {
+        delay(reclaimInterval)
+        if (!portIsFree(preferredPort)) continue
+        synchronized(lock) {
+          if (reclaim === coroutineContext[Job] && server != null) {
+            reclaim = null
+            restart()
+          }
+        }
+        break
+      }
+    }
+  }
+
+  private fun portIsFree(port: Int): Boolean =
+    runCatching { ServerSocket(port, 1, InetAddress.getByName(HOST)).close() }.isSuccess
+
   private fun shutdown() {
+    reclaim?.cancel()
+    reclaim = null
     val current = server ?: return
     server = null
     runCatching { current.stop(gracePeriodMillis = 200, timeoutMillis = 2_000) }

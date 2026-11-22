@@ -24,13 +24,20 @@ internal fun launchCommand(installedExe: String?, javaHome: File, classpath: Str
   )
 }
 
+/**
+ * Task Manager and Settings > Apps > Startup keep their own switch in `StartupApproved/Run`: the first byte is
+ * even (02, 06) when the entry may run and odd (03, 07) when the user turned it off there.
+ */
+internal fun startupApproved(flags: ByteArray?): Boolean = flags == null || flags.isEmpty() || flags[0].toInt() and 1 == 0
+
 internal class Autostart(dataDir: File) {
+  private val argsFile = File(dataDir, "autostart.args")
   private val installedExe = System.getProperty("jpackage.app-path")?.takeIf { File(it).isFile }
   private val launch = launchCommand(
     installedExe,
     File(System.getProperty("java.home")),
     System.getProperty("java.class.path"),
-    File(dataDir, "autostart.args")
+    argsFile
   )
 
   val available: Boolean = launch != null
@@ -43,10 +50,24 @@ internal class Autostart(dataDir: File) {
     buffer.getWideString(0)
   }.getOrNull()
 
+  /** Whether Windows will actually run the entry at sign-in. */
+  fun enabled(): Boolean = current() != null && startupApproved(approval())
+
+  private fun approval(): ByteArray? = runCatching {
+    val size = IntByReference(0)
+    if (Advapi32.INSTANCE.RegGetValueW(HKCU, APPROVED, NAME, RRF_RT_REG_BINARY, null, null, size) != 0) return null
+    if (size.value == 0) return ByteArray(0)
+    val buffer = Memory(size.value.toLong())
+    if (Advapi32.INSTANCE.RegGetValueW(HKCU, APPROVED, NAME, RRF_RT_REG_BINARY, null, buffer, size) != 0) return null
+    buffer.getByteArray(0, size.value)
+  }.getOrNull()
+
   fun set(enabled: Boolean): Boolean = runCatching {
+    // Turning it on in Berill also lifts a switch-off made in Task Manager; otherwise the toggle would do nothing.
+    Advapi32.INSTANCE.RegDeleteKeyValueW(HKCU, APPROVED, NAME)
     if (enabled) {
       val target = launch ?: return false
-      target.argsFile?.let { (file, content) -> file.writeText(content) }
+      target.argsFile?.let { (file, content) -> file.writeText(content) } ?: argsFile.delete()
       val bytes = (target.command + "\u0000").toByteArray(Charsets.UTF_16LE)
       val data = Memory(bytes.size.toLong()).apply { write(0, bytes, 0, bytes.size) }
       Advapi32.INSTANCE.RegSetKeyValueW(HKCU, RUN, NAME, REG_SZ, data, bytes.size) == 0
@@ -66,9 +87,11 @@ internal class Autostart(dataDir: File) {
     const val TAG = "desktop"
     val HKCU: Pointer = Pointer.createConstant(0x80000001.toInt().toLong())
     val RUN = WString("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
+    val APPROVED = WString("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run")
     val NAME = WString("Berill")
     const val REG_SZ = 1
     const val RRF_RT_REG_SZ = 0x2
+    const val RRF_RT_REG_BINARY = 0x8
     const val ERROR_FILE_NOT_FOUND = 2
   }
 }

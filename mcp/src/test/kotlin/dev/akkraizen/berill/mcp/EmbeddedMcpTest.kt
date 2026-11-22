@@ -207,6 +207,60 @@ class EmbeddedMcpTest {
   }
 
   @Test
+  fun busyPreferredPortIsReclaimedInsteadOfStickingToTheFallback() {
+    val host = java.net.InetAddress.getByName(EmbeddedMcp.HOST)
+    var blocker = java.net.ServerSocket(0, 50, host)
+    val preferred = blocker.localPort
+    val slow = kotlin.time.Duration.parse("1h")
+    // The default port was busy at startup, for example while a previous instance was still exiting.
+    val first = EmbeddedMcp(core, dir, preferredPort = preferred, reclaimInterval = slow)
+    first.setEnabled(true)
+    assertTrue(first.status.value.url != EmbeddedMcp.urlFor(preferred), first.status.value.toString())
+    first.stop()
+    blocker.close()
+    // The next start must return to the default port instead of keeping the fallback forever.
+    val restarted = EmbeddedMcp(core, dir, preferredPort = preferred, reclaimInterval = slow)
+    restarted.start()
+    assertEquals(EmbeddedMcp.urlFor(preferred), restarted.status.value.url)
+    restarted.stop()
+    // While running on a fallback, the server moves back once the default port is free.
+    blocker = java.net.ServerSocket(preferred, 50, host)
+    val running = EmbeddedMcp(core, dir, preferredPort = preferred, reclaimInterval = kotlin.time.Duration.parse("200ms"))
+    try {
+      running.start()
+      assertTrue(running.status.value.url != EmbeddedMcp.urlFor(preferred), running.status.value.toString())
+      blocker.close()
+      runBlocking { withTimeout(10_000) { running.status.first { it.url == EmbeddedMcp.urlFor(preferred) } } }
+      assertEquals(EmbeddedMcp.urlFor(preferred), EmbeddedMcp.readEndpoint(dir)?.url)
+      assertTrue(post(EmbeddedMcp.urlFor(preferred), running.token()) != 401)
+    } finally {
+      blocker.close()
+      running.stop()
+    }
+  }
+
+  @Test
+  fun bridgeFollowsTheServerToAnotherPortWithoutFailingACall() {
+    val host = java.net.InetAddress.getByName(EmbeddedMcp.HOST)
+    val blocker = java.net.ServerSocket(0, 50, host)
+    val preferred = blocker.localPort
+    val moving = EmbeddedMcp(core, dir, preferredPort = preferred, reclaimInterval = kotlin.time.Duration.parse("200ms"))
+    try {
+      moving.setEnabled(true)
+      withBridge { client ->
+        assertTrue(client.callTool("list_notes", emptyMap()).isError != true)
+        blocker.close()
+        withTimeout(10_000) { moving.status.first { it.url == EmbeddedMcp.urlFor(preferred) } }
+        val result = client.callTool("list_notes", emptyMap())
+        assertTrue(result.isError != true, (result.content.firstOrNull() as? TextContent)?.text)
+      }
+    } finally {
+      blocker.close()
+      moving.stop()
+    }
+  }
+
+  @Test
   fun bridgeExplainsWhenBerillIsOff() {
     val toBridge = PipedOutputStream()
     val bridgeIn = PipedInputStream(toBridge, 1 shl 16)

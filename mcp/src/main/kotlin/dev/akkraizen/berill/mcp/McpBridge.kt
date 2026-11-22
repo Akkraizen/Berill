@@ -3,8 +3,10 @@ package dev.akkraizen.berill.mcp
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.Writer
+import java.net.ConnectException
 import java.net.URI
 import java.net.http.HttpClient
+import java.net.http.HttpConnectTimeoutException
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
@@ -30,7 +32,7 @@ class McpBridge(
   private val wakeUpTimeout: Duration = Duration.ofSeconds(30),
   private val requestTimeout: Duration = Duration.ofMinutes(5)
 ) {
-  private val http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
+  @Volatile private var http = newClient()
   private val lock = Any()
   private val workers: ExecutorService = Executors.newCachedThreadPool { task ->
     Thread(task, "berill-mcp-request").apply { isDaemon = true }
@@ -91,8 +93,24 @@ class McpBridge(
       if (id != null) reply(error(id, INTERNAL_ERROR, OFF_MESSAGE))
       return
     }
-    val used = session
-    val result = runCatching { send(endpoint, line, forward = true) }
+    var used = session
+    var result = runCatching { send(endpoint, line, forward = true) }
+    if (result.exceptionOrNull()?.let(::notDelivered) == true) {
+      // Nothing reached Berill (it restarted or moved to another port), so sending again cannot repeat a change.
+      log("Berill moved or restarted, reconnecting")
+      val fresh = synchronized(lock) {
+        stopEvents()
+        current = null
+        session = null
+        ready(method)
+      }
+      if (fresh == null) {
+        if (id != null) reply(error(id, INTERNAL_ERROR, OFF_MESSAGE))
+        return
+      }
+      used = session
+      result = runCatching { send(fresh, line, forward = true) }
+    }
     val status = result.getOrNull()
     if ((status == 404 || status == 401) && method != "initialize" && hasHandshake()) {
       log("Berill session was lost, reconnecting")
@@ -106,6 +124,8 @@ class McpBridge(
         stopEvents()
         current = null
         session = null
+        // A connection broken under the client (for example by sleep) can leave it unusable; start clean.
+        http = newClient()
       }
       if (id != null) reply(error(id, INTERNAL_ERROR, "Connection lost. The outcome may be unknown; read the record before retrying a change."))
     } else if (status != null && status >= 400 && id != null) {
@@ -302,6 +322,11 @@ class McpBridge(
         }
       )
     }.toString()
+
+  private fun notDelivered(e: Throwable): Boolean = e is ConnectException || e is HttpConnectTimeoutException
+
+  private fun newClient(): HttpClient =
+    HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build()
 
   companion object {
     const val SESSION_HEADER = "Mcp-Session-Id"

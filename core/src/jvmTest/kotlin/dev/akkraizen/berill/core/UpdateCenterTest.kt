@@ -20,6 +20,8 @@ class UpdateCenterTest {
   private fun hash(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
   private class DownloadOnly(dir: File) : FileUpdateInstaller(dir) {
     override val platform = "windows"
+    // Unsigned test packages; must not depend on the publisher key configured for the local build.
+    override val publicKey = ""
     override suspend fun install(path: String, update: AppUpdate): InstallResult = error("Must not launch installers in tests")
   }
   @Test fun verifiedDownloadIsRestoredAfterRestartAndDiscardedExplicitly() = runBlocking {

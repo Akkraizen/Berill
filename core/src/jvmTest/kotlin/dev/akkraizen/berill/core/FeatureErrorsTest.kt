@@ -17,6 +17,7 @@ class FeatureErrorsTest {
   assertEquals(FailureReason.NETWORK, failureReason(RuntimeException(UnknownHostException("secret host"))))
   assertEquals(FailureReason.ACCESS_DENIED, failureReason(SecurityException("private path")))
   assertEquals(FailureReason.IO, failureReason(IOException("private data")))
+  assertEquals(FailureReason.NETWORK, failureReason(javax.net.ssl.SSLHandshakeException("Remote host terminated the handshake")))
   assertEquals(FailureReason.INVALID_DATA, failureReason(IllegalArgumentException("bad input")))
   val handler = FeatureErrors()
   assertFalse(handler.run(FailureOperation.EXPORT) { error("Bearer secret-token") })

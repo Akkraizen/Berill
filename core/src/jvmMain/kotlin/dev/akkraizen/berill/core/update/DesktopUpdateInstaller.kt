@@ -66,6 +66,10 @@ class DesktopUpdateInstaller(directory: File, private val launcher: String? = Sy
       Remove-Item -LiteralPath ${'$'}package
       Remove-Item -LiteralPath ${quote(File(directory, "installation.failed").absolutePath)} -ErrorAction SilentlyContinue
     } catch { ${'$'}_ | Out-String | Set-Content -LiteralPath ${'$'}log; Set-Content -LiteralPath ${quote(File(directory, "installation.failed").absolutePath)} -Value 'failed' }
+    if (-not (Test-Path -LiteralPath ${'$'}launcher)) {
+      # The update may have moved Berill out of a folder chosen by an older installer.
+      ${'$'}launcher = Join-Path ${'$'}env:ProgramFiles 'Berill\Berill.exe'
+    }
     if (Test-Path -LiteralPath ${'$'}launcher) { Start-Process -FilePath ${'$'}launcher }
   """.trimIndent()
 }

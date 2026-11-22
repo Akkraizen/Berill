@@ -22,7 +22,7 @@ internal class WindowsIntegration(dir: File, onHotkey: () -> Unit) : DesktopInte
 
   override val autostartAvailable: Boolean = isWindows && autostart.available
 
-  override fun isAutostartEnabled(): Boolean = isWindows && autostart.current() != null
+  override fun isAutostartEnabled(): Boolean = isWindows && autostart.enabled()
 
   override fun setAutostart(enabled: Boolean): Boolean {
     if (!autostartAvailable) return false
