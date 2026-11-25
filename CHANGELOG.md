@@ -9,6 +9,8 @@ are released together with them.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-11-25
+
 ### Fixed
 
 - Moving a project, task, book or title to another column of a board no longer fails in the release build
@@ -445,7 +447,8 @@ First public release.
   processes; a sample `counters` plugin.
 - Release, deployment, and server workflows for GitHub Actions.
 
-[Unreleased]: https://github.com/Akkraizen/Berill/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/Akkraizen/Berill/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/Akkraizen/Berill/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/Akkraizen/Berill/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Akkraizen/Berill/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Akkraizen/Berill/compare/v1.1.0...v1.2.0
